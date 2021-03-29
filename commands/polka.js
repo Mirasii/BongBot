@@ -59,6 +59,5 @@ function polkaOld(Message) {
 
 function polka() {
     const exampleEmbed = new Discord.MessageEmbed().setImage(urls[Math.floor(Math.random() * urls.length)]);
-
     return exampleEmbed;
 }

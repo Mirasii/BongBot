@@ -85,7 +85,7 @@ bot.on('message', msg => {
 
     bot.commands.get('commands').execute(command, args, bot, msg, Discord);
     
-})
+});
 
 var schedule = require('node-schedule');
 const { TIMEOUT } = require('dns');

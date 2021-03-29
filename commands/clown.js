@@ -4,7 +4,7 @@ module.exports = {
     testOnly: true,
     name: 'you',
     description: 'displays what you are to everyone.',
-    callback:({}) => {
+    slashCommand() {
         return clown();
     },
 
