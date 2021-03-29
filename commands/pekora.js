@@ -1,14 +1,21 @@
 var urls;
+const Discord = require('discord.js');
 
 module.exports = {
-    name: 'pekora',
-    description: 'finds pekora image',
+    slash: true,
+    testOnly: true,
+    name: 'rabbit',
+    description: 'finds image of a bouncy rabbit.',
+    callback:({}) => {
+        return pekora();
+    },
+
     urlGen(){
         image();
     },
     
-    execute(Message, Discord){
-        pekora(Message, Discord);
+    message(Message){
+        pekoraOld(Message);
     }
 }
 
@@ -43,9 +50,14 @@ function image() {
     })
 }
 
-function pekora(Message, Discord) {
+function pekoraOld(Message) {
     const exampleEmbed = new Discord.MessageEmbed().setImage(urls[Math.floor(Math.random() * urls.length)]);
 
-        Message.channel.send(exampleEmbed);
-        Message.delete();
+    Message.channel.send(exampleEmbed);
+    Message.delete();
+}
+
+function pekora() {
+    const exampleEmbed = new Discord.MessageEmbed().setImage(urls[Math.floor(Math.random() * urls.length)]);
+    return exampleEmbed;
 }

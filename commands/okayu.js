@@ -1,14 +1,21 @@
 var urls;
+const Discord = require('discord.js');
 
 module.exports = {
-    name: 'okayu',
-    description: 'finds okayu image',
+    slash: true,
+    testOnly: true,
+    name: 'cat',
+    description: 'finds image of a smug cat.',
+    callback:({}) => {
+        return Okayu();
+    },
+
     urlGen(){
         image();
     },
     
-    execute(Message, Discord){
-        Okayu(Message, Discord);
+    message(Message){
+        OkayuOld(Message);
     }
 }
 
@@ -43,9 +50,15 @@ function image() {
     })
 }
 
-function Okayu(Message, Discord) {
+function OkayuOld(Message) {
     const exampleEmbed = new Discord.MessageEmbed().setImage(urls[Math.floor(Math.random() * urls.length)]);
 
         Message.channel.send(exampleEmbed);
         Message.delete();
+}
+
+function Okayu() {
+    const exampleEmbed = new Discord.MessageEmbed().setImage(urls[Math.floor(Math.random() * urls.length)]);
+
+    return exampleEmbed;
 }

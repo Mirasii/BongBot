@@ -4,10 +4,10 @@ module.exports = {
 
     refresh(bot) {
         bot.commands.get('dog').urlGen();
-        bot.commands.get('okayu').urlGen();
+        bot.commands.get('cat').urlGen();
         bot.commands.get('lion').urlGen();
-        bot.commands.get('polka').urlGen();
-        bot.commands.get('pekora').urlGen();
+        bot.commands.get('clown').urlGen();
+        bot.commands.get('rabbit').urlGen();
         bot.commands.get('fox').urlGen();
     },
 
@@ -16,10 +16,10 @@ module.exports = {
         bot.commands.get('timerun').setList(bot).then(console.log('channels set for time based nodes'));
         bot.commands.get('channelSet').setList(bot).then(console.log('channels set for channel checker'));
         bot.commands.get('dog').urlGen();
-        bot.commands.get('okayu').urlGen();
+        bot.commands.get('cat').urlGen();
         bot.commands.get('lion').urlGen();
-        bot.commands.get('polka').urlGen();
-        bot.commands.get('pekora').urlGen();
+        bot.commands.get('clown').urlGen();
+        bot.commands.get('rabbit').urlGen();
         bot.commands.get('fox').urlGen();
         console.log('images set');
 

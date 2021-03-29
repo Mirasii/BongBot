@@ -1,21 +1,18 @@
 const Discord = require('discord.js');
 module.exports = {
-    slash: 'both',
+    slash: true,
     testOnly: true,
     name: 'cringe',
     description: 'sends cringe image',
-    callback: ({message}) => {
-        if (message) {
-            return cringe(message);
-        }
+    callback: () => {
         return cringe();
+    },
+    message(Message){
+        cringeOld(Message);
     }
-    // execute(Message, Discord){
-    //     cringe(Message, Discord);
-    // }
 }
 
-function cringe(Message) {
+function cringeOld(Message) {
     const exampleEmbed = new Discord.MessageEmbed().setImage('https://cdn.discordapp.com/attachments/643509757474504724/783704555942051910/En1TIzSW8AUh7hG.png');
 
     Message.channel.send(exampleEmbed);

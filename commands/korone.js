@@ -14,7 +14,7 @@ module.exports = {
     },
     
     message(Message){
-        korone(Message);
+        koroneOld(Message);
     }
 }
 
@@ -51,7 +51,7 @@ function image() {
     })
 }
 
-function korone(Message) {
+function koroneOld(Message) {
     const exampleEmbed = new Discord.MessageEmbed().setImage(urls[Math.floor(Math.random() * urls.length)]);
 
         Message.channel.send(exampleEmbed);

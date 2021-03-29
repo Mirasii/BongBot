@@ -15,7 +15,7 @@ module.exports = {
     },
 
     message(Message) {
-        fubuki(Message);
+        fubukiOld(Message);
     }
 }
 
@@ -50,7 +50,7 @@ function image() {
     })
 }
 
-function fubuki(Message) {
+function fubukiOld(Message) {
     const exampleEmbed = new Discord.MessageEmbed().setImage(urls[Math.floor(Math.random() * urls.length)]);
 
     Message.channel.send(exampleEmbed);

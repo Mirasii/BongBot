@@ -1,4 +1,3 @@
-const randomFile = require('select-random-file');
 require('dotenv').config();
 const Discord = require('discord.js');
 const bot = new Discord.Client();
@@ -35,7 +34,6 @@ bot.on('message', msg => {
     }
 
     const lower = msg.content.toLowerCase();
-
 
     if (lower.includes('752902075192442911>')){
 
@@ -85,7 +83,7 @@ bot.on('message', msg => {
     const command = msg.content.slice(PREFIX.length).split(/ +/).shift().toLowerCase();
     let args = msg.content.substring(PREFIX.length).split(' ');
 
-    bot.commands.get('commands').execute(command, args, bot, msg, Discord, randomFile);
+    bot.commands.get('commands').execute(command, args, bot, msg, Discord);
     
 })
 
