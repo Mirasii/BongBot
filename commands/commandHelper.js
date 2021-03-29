@@ -46,7 +46,7 @@ function commands(command, args, bot, msg, Discord, randomFile) {
             return;
 
         case 'lion':
-            bot.commands.get('botan').execute(msg, Discord);
+            bot.commands.get('botan').message(msg, Discord);
             return;
 
         case 'fox':

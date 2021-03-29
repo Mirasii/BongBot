@@ -1,14 +1,19 @@
 var urls;
+const Discord = require('discord.js');
 
 module.exports = {
+    slash: true,
+    testOnly: true,
     name: 'botan',
     description: 'finds botan image',
+    callback:({}) => {
+        return botan();
+    },
     urlGen(){
         image();
     },
-    
-    execute(Message, Discord){
-        botan(Message, Discord);
+    message(Message){
+        botan(Message);
     }
 }
 
@@ -43,9 +48,14 @@ function image() {
     })
 }
 
-function botan(Message, Discord) {
+function botan(Message) {
     const exampleEmbed = new Discord.MessageEmbed().setImage(urls[Math.floor(Math.random() * urls.length)]);
 
         Message.channel.send(exampleEmbed);
         Message.delete();
+}
+
+function botan() {
+    const exampleEmbed = new Discord.MessageEmbed().setImage(urls[Math.floor(Math.random() * urls.length)]);
+    return exampleEmbed;
 }

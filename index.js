@@ -1,8 +1,11 @@
-const randomFile = require('select-random-file')
+const randomFile = require('select-random-file');
+require('dotenv').config();
 const Discord = require('discord.js');
 const bot = new Discord.Client();
 const fs = require('fs');
-const token = 'NzUyOTAyMDc1MTkyNDQyOTEx.X1eYsg.zbFKJaPteRjI1KDQTdof_VddbrE';
+const token = process.env.TOKEN;
+const guildId = process.env.GUILDID;
+const WOKCommands = require('wokcommands');
 const PREFIX = ']';
 
 var hornyCD = new Map();
@@ -15,12 +18,12 @@ for (const file of commandFiles) {
     bot.commands.set(command.name, command);
 }
 
-
-const sheetFiles = fs.readdirSync('./google-sheets-node').filter(file => file.endsWith('.js'));
-for (const file of sheetFiles) {
-    const command = require(`./google-sheets-node/${file}`);
-    bot.commands.set(command.name, command);
-}
+bot.on('ready', async() => {
+    new WOKCommands (bot, {
+        commandsDir: 'commands',
+        testServers: [guildId]
+    });
+});
 
 bot.commands.get('init').init(bot);
 
@@ -30,9 +33,6 @@ bot.on('message', msg => {
         msg.reply("Yubi yubi!")
     }
 
-    // if (msg.content === "a") {
-    //     msg.channel.send({files: ['./files/a.mp4']}).catch(console.error);
-    // }
     const lower = msg.content.toLowerCase();
 
 
