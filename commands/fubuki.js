@@ -1,14 +1,21 @@
 var urls;
+const Discord = require('discord.js');
 
 module.exports = {
-    name: 'fubuki',
-    description: 'finds fubuki image',
-    urlGen(){
-        image();
+    slash: true,
+    testOnly: true,
+    name: 'fox',
+    description: 'finds image of a cunning fox!',
+    callback:({}) => {
+        return fubuki();
     },
     
-    execute(Message, Discord){
-        fubuki(Message, Discord);
+    urlGen() {
+        image();
+    },
+
+    message(Message) {
+        fubuki(Message);
     }
 }
 
@@ -22,11 +29,11 @@ function image() {
         method: "GET",
         headers: {
             "Accept": "text/html",
-            "User-Agent":"Chrome"
+            "User-Agent": "Chrome"
         }
     };
 
-    request(options, function(error, response, responseBody) {
+    request(options, function (error, response, responseBody) {
         if (error) {
             console.log(error);
             return;
@@ -43,9 +50,15 @@ function image() {
     })
 }
 
-function fubuki(Message, Discord) {
+function fubuki(Message) {
     const exampleEmbed = new Discord.MessageEmbed().setImage(urls[Math.floor(Math.random() * urls.length)]);
 
-        Message.channel.send(exampleEmbed);
-        Message.delete();
+    Message.channel.send(exampleEmbed);
+    Message.delete();
+}
+
+function fubuki() {
+    const exampleEmbed = new Discord.MessageEmbed().setImage(urls[Math.floor(Math.random() * urls.length)]);
+
+    return exampleEmbed;
 }

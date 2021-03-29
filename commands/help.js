@@ -10,6 +10,6 @@ module.exports = {
     description: 'help embed',
     help(Discord, msg){
         embed = help(Discord);
-        msg.channel.send(embed);
+        msg.channel.send('BongBot now supports slash commands! Try typing / to see them. \n Legacy commands using prefix ] still work.');
     }
 }

@@ -8,7 +8,7 @@ module.exports = {
         bot.commands.get('lion').urlGen();
         bot.commands.get('polka').urlGen();
         bot.commands.get('pekora').urlGen();
-        bot.commands.get('fubuki').urlGen();
+        bot.commands.get('fox').urlGen();
     },
 
     init(bot) {
@@ -20,7 +20,7 @@ module.exports = {
         bot.commands.get('lion').urlGen();
         bot.commands.get('polka').urlGen();
         bot.commands.get('pekora').urlGen();
-        bot.commands.get('fubuki').urlGen();
+        bot.commands.get('fox').urlGen();
         console.log('images set');
 
         console.log(`Logged in as ${bot.user.tag}!`);

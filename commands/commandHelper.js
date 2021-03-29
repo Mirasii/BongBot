@@ -38,7 +38,7 @@ function commands(command, args, bot, msg, Discord, randomFile) {
             return;
         
         case 'dog':
-            bot.commands.get('korone').message(msg, Discord);
+            bot.commands.get('dog').message(msg);
             return;
 
         case 'cat':
@@ -46,11 +46,11 @@ function commands(command, args, bot, msg, Discord, randomFile) {
             return;
 
         case 'lion':
-            bot.commands.get('botan').message(msg, Discord);
+            bot.commands.get('lion').message(msg);
             return;
 
         case 'fox':
-            bot.commands.get('fubuki').execute(msg, Discord);
+            bot.commands.get('fox').message(msg);
             return;
 
         case 'clown':
