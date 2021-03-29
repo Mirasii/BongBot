@@ -19,13 +19,14 @@ for (const file of commandFiles) {
 }
 
 bot.on('ready', async() => {
+    bot.commands.get('init').init(bot);
     new WOKCommands (bot, {
         commandsDir: 'commands',
         testServers: [guildId]
     });
 });
 
-bot.commands.get('init').init(bot);
+
 
 bot.on('message', msg => {
 

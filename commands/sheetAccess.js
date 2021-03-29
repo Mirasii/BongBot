@@ -3,6 +3,20 @@ const { GoogleSpreadsheet } = require('../node_modules/google-spreadsheet');
 const creds = require('../client_secret.json');
 const doc = new GoogleSpreadsheet('1kNaDMAmB8l5uu1ssoW86dDiRv-oEVbq5n5kuy6VjAqk');
 
+module.exports = {
+    name: 'sheet',
+    description:'',
+    async access(){
+        var toReturn = await accessSpreadsheet().then((value) => {return value});
+        return toReturn;
+    },
+    
+    async add(channeldef) {
+        var toReturn = await appendSpreadsheet(channeldef).then((result) => {return result;}); 
+        return toReturn;
+    }
+}
+
 async function accessSpreadsheet() {
 
     await doc.useServiceAccountAuth({
@@ -51,19 +65,5 @@ async function appendSpreadsheet(channeldef) {
         console.log('added');
     }
     return true;
-}
-
-module.exports = {
-    name: 'sheet',
-    description:'',
-    async access(){
-        var toReturn = await accessSpreadsheet().then((value) => {return value});
-        return toReturn;
-    },
-    
-    async add(channeldef) {
-        var toReturn = await appendSpreadsheet(channeldef).then((result) => {return result;}); 
-        return toReturn;
-    }
 }
 

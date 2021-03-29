@@ -1,14 +1,20 @@
 var urls;
+const Discord = require('discord.js');
 
 module.exports = {
-    name: 'korone',
-    description: 'finds korone image',
+    slash: true,
+    testOnly: true,
+    name: 'dog',
+    description: 'finds an image of a very friendly dog.',
+    callback:({}) => {
+        return korone();
+    },
     urlGen(){
         image();
     },
     
-    execute(Message, Discord){
-        korone(Message, Discord);
+    message(Message){
+        korone(Message);
     }
 }
 
@@ -45,9 +51,14 @@ function image() {
     })
 }
 
-function korone(Message, Discord) {
+function korone(Message) {
     const exampleEmbed = new Discord.MessageEmbed().setImage(urls[Math.floor(Math.random() * urls.length)]);
 
         Message.channel.send(exampleEmbed);
         Message.delete();
+}
+
+function korone() {
+    const exampleEmbed = new Discord.MessageEmbed().setImage(urls[Math.floor(Math.random() * urls.length)]);
+    return exampleEmbed;
 }

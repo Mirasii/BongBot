@@ -4,8 +4,8 @@ const Discord = require('discord.js');
 module.exports = {
     slash: true,
     testOnly: true,
-    name: 'botan',
-    description: 'finds botan image',
+    name: 'lion',
+    description: 'finds an image of a very scary lion.',
     callback:({}) => {
         return botan();
     },

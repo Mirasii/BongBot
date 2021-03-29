@@ -38,7 +38,7 @@ function commands(command, args, bot, msg, Discord, randomFile) {
             return;
         
         case 'dog':
-            bot.commands.get('korone').execute(msg, Discord);
+            bot.commands.get('korone').message(msg, Discord);
             return;
 
         case 'cat':
