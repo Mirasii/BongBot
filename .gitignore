@@ -2,3 +2,5 @@ client_secret.json
 package-lock.json
 package.json
 woven-coral-289718-871ccf962975.json
+./node_modules
+BongBot.env
