@@ -2,3 +2,4 @@ client_secret.json
 woven-coral-289718-871ccf962975.json
 ./node_modules/*
 BongBot.env
+node_modules
