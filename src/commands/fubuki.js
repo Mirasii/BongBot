@@ -1,6 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder } = require('discord.js');
-require('dotenv').config();
 
 const axios = require('axios');
 
@@ -18,7 +17,7 @@ async function image() {
 
     // Headers containing the API key
     const headers = {
-        'Ocp-Apim-Subscription-Key': process.env.BING_API_KEY,
+        'Ocp-Apim-Subscription-Key': process.env.BING_API_KEY.trim(),
     };
 
     try {

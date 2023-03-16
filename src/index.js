@@ -1,9 +1,8 @@
 const Discord = require('discord.js');
 const bot = new Discord.Client({ intents: [Discord.GatewayIntentBits.Guilds, Discord.GatewayIntentBits.GuildMessages] });
-require('dotenv').config({ path: './BongBot.env' });
 
 const fs = require('fs');
-const token = process.env.DISCORD_API_KEY;
+const token = process.env.DISCORD_API_KEY.trim();
 const PREFIX = ']';
 
 const commandFiles = fs.readdirSync('./src/commands/').filter(file => file.endsWith('.js'));

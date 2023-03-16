@@ -3,7 +3,7 @@ const axios = require('axios');
 
 require('dotenv').config({ path: './BongBot.env' });
 
-const clevapiKey = process.env.CLEVERBOT_API_KEY;
+const clevapiKey = process.env.CLEVERBOT_API_KEY.trim();
 const csMap = new Map();
 
 module.exports = {
