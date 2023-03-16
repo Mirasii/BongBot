@@ -33,7 +33,7 @@ bot.on('interactionCreate', async interaction => {
 
 bot.on('messageCreate', async message => {
     if (message.author.bot) return; // Ignore messages from other bots
-    if (message.content.includes(`<@!${bot.user.id}>`) || message.content.includes(`<@${bot.user.id}>`)) {
+    if (message?.mentions?.users?.has(`${bot.user.id}`)) {
         // The bot was mentioned, send a response
         try {
             const response = await bot.commands.get('talk').executeLegacy(message, bot);
