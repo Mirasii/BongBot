@@ -42,7 +42,7 @@ async function image() {
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('fubuki')
+        .setName('fox')
         .setDescription('Finds a random fubuki image'),
     async execute(interaction, client) {
         try {
@@ -54,7 +54,7 @@ module.exports = {
                 const response = {
                     embeds: [exampleEmbed.toJSON()]
                 };
-                
+
                 return response;
             }
         } catch (error) {

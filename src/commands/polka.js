@@ -42,7 +42,7 @@ async function image() {
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('polka')
+        .setName('clown')
         .setDescription('Finds a random polka image'),
     async execute(interaction, client) {
         try {
@@ -69,7 +69,7 @@ module.exports = {
         }
     },
     fullDesc: {
-        options: null,
+        options: [],
         description: "Gets a random picture of Omaru Polka, and posts it to the chat."
     }
 }
