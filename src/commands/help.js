@@ -9,12 +9,10 @@ module.exports = {
     async execute(interaction, client) {
         var command = interaction.options.getString('command') ? interaction.options.getString('command') : null;
         const embed = new EmbedBuilder().setTitle('Mogu Mogu!');
-        console.log('here');
-        if (!command) {
+                if (!command) {
             var list = [];
             client.commands.forEach(com => {
-                console.log(com.data.name);
-                list.push(com.data.name);
+                                list.push(com.data.name);
             });
             embed.addFields({ name: "commands", value: list.join('\n'), inline: true });
             const response = {
@@ -36,8 +34,7 @@ module.exports = {
             } else {
                 embed.setDescription('descriptive help not yet implemented for ' + command);
             }
-            console.log('embed',embed);
-            return { embeds: [embed.toJSON()] };
+                        return { embeds: [embed.toJSON()] };
         }
     },
 };
