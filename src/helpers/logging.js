@@ -4,7 +4,7 @@ var logFile;
 module.exports = {
     async init(sessionId) {
         this.logFile = `./logs/${sessionId}.log`
-        fs.writeFile(this.logFile, 'Logger Initialised', function (err) {
+        fs.writeFile(this.logFile, 'Logger Initialised\n\n', function (err) {
             if (err) throw err;
             console.log('Logger Initialised')
             return;
