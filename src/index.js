@@ -1,8 +1,8 @@
 const Discord = require('discord.js');
 const bot = new Discord.Client({ intents: [Discord.GatewayIntentBits.Guilds, Discord.GatewayIntentBits.GuildMessages] });
-import logger from './helpers/logging.js';
+const LOGGER = require('./helpers/logging')
 const fs = require('fs');
-logger.init();
+LOGGER.init();
 
 const token = process.env.DISCORD_API_KEY.trim();
 const sessionId = crypto.randomUUID();
@@ -29,11 +29,11 @@ bot.on('interactionCreate', async interaction => {
             try {
                 await interaction.reply(response);
             } catch (error) {
-                logger.log(error);
+                LOGGER.log(error);
                 await interaction.reply({ content: errorMsg, ephemeral: true });
             }
         } catch (error) {
-            logger.log(error);
+            LOGGER.log(error);
             await message.reply({content: errorMsg, ephemeral: true});
         }
     }
@@ -48,11 +48,11 @@ bot.on('messageCreate', async message => {
             try {
                 await message.reply(response);
             } catch (error) {
-                logger.log(error);
+                LOGGER.log(error);
                 await message.reply({ content: errorMsg, ephemeral: true });
             }
         } catch (error) {
-            logger.log(error);
+            LOGGER.log(error);
             await message.reply({content: errorMsg, ephemeral: true});
         }
         
@@ -64,7 +64,7 @@ bot.on('ready', async () => {
         await bot.application.commands.set(commands);
         console.log('Commands Initiated!');
     } catch (error) {
-        logger.log(error);
+        LOGGER.log(error);
     }
 });
 
