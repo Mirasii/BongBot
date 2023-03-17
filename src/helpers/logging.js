@@ -20,7 +20,6 @@ module.exports = {
                 + currentdate.getSeconds();
         fs.appendFile(this.logFile, `${datetime} | ${error}\n\n`, function (err) {
             if (err) throw err;
-            console.log('Saved!');
         });
         console.error(error);
     }
