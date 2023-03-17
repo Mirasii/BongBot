@@ -2,11 +2,13 @@ const Discord = require('discord.js');
 const bot = new Discord.Client({ intents: [Discord.GatewayIntentBits.Guilds, Discord.GatewayIntentBits.GuildMessages] });
 const LOGGER = require('./helpers/logging')
 const fs = require('fs');
-LOGGER.init();
+const crypto = require('crypto');
 
 const token = process.env.DISCORD_API_KEY.trim();
 const sessionId = crypto.randomUUID();
 const errorMsg = 'Leave me alone! I\'m not talking to you! (there was an error)';
+
+LOGGER.init(sessionId);
 
 const commandFiles = fs.readdirSync('./src/commands/').filter(file => file.endsWith('.js'));
 
