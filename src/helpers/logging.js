@@ -1,7 +1,7 @@
 const fs = require('fs');
 var logFile;
 
-module.exports = {
+exports.logger = {
     async init(sessionId) {
         this.logFile = `./logs/${sessionId}.log`
         fs.writeFile(logFile, 'Logger Initialised', function (err) {
