@@ -3,8 +3,8 @@ var logFile;
 
 module.exports = {
     async init(sessionId) {
-        this.logFile = `./logs/${sessionId}.log`
-        fs.writeFile(this.logFile, 'Logger Initialised\n\n', function (err) {
+        logFile = `./logs/${sessionId}.log`
+        fs.writeFile(logFile, 'Logger Initialised\n\n', function (err) {
             if (err) throw err;
             console.log('Logger Initialised')
             return;
@@ -18,9 +18,9 @@ module.exports = {
                 + currentdate.getHours() + ":"  
                 + currentdate.getMinutes() + ":" 
                 + currentdate.getSeconds();
-        fs.appendFile(this.logFile, `${datetime} | ${error}\n\n`, function (err) {
+        fs.appendFile(logFile, `${datetime} | ${error}\n\n`, function (err) {
             if (err) throw err;
+            console.log(`error saved to logfile ${this.logFile}`);
         });
-        console.error(error);
     }
 }
