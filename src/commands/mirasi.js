@@ -12,7 +12,7 @@ module.exports = {
                 files: [
                     {
                         attachment: file,
-                        name: "mirasi.mp4"
+                        name: "Mirasi.mp4"
                     }
                 ]
             }
