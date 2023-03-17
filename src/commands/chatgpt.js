@@ -50,6 +50,13 @@ module.exports = {
         }
         
         return { embeds: [embed], files: [attach] };
+    },
+    fullDesc: {
+        options: [{
+            "name":"input",
+            "description":"The input you want to send to BongBot, how else are you going to talk to them?"
+        }],
+        description: "Talk to BongBot! talkGPT uses the /completions api from openai to send your message to the davinci model.\nwhen the /chats/ api is available, this will be adapted to become the main ai interaction of bongbot over cleverbot, the ai behind the normal /talk command."
     }
 };
 
