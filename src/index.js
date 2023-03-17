@@ -1,6 +1,6 @@
 const Discord = require('discord.js');
 const bot = new Discord.Client({ intents: [Discord.GatewayIntentBits.Guilds, Discord.GatewayIntentBits.GuildMessages] });
-const LOGGER = require('./src/helpers/logger');
+const LOGGER = require('../src/helpers/logger');
 
 const fs = require('fs');
 LOGGER.init();
