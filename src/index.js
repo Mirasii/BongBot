@@ -3,7 +3,7 @@ const bot = new Discord.Client({ intents: [Discord.GatewayIntentBits.Guilds, Dis
 
 const fs = require('fs');
 const token = process.env.DISCORD_API_KEY.trim();
-const PREFIX = ']';
+const errorMsg = 'Leave me alone! I\'m not talking to you! (there was an error)';
 
 const commandFiles = fs.readdirSync('./src/commands/').filter(file => file.endsWith('.js'));
 
@@ -23,10 +23,15 @@ bot.on('interactionCreate', async interaction => {
 
         try {
             const response = await command.execute(interaction, bot); // updated here
-            await interaction.reply(response);
+            try {
+                await interaction.reply(response);
+            } catch (error) {
+                console.error(error);
+                await interaction.reply({ content: errorMsg, ephemeral: true });
+            }
         } catch (error) {
             console.error(error);
-            await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+            await message.reply({content: errorMsg, ephemeral: true});
         }
     }
 });
@@ -37,10 +42,15 @@ bot.on('messageCreate', async message => {
         // The bot was mentioned, send a response
         try {
             const response = await bot.commands.get('talk').executeLegacy(message, bot);
-            await message.reply(response);
+            try {
+                await interaction.reply(response);
+            } catch (error) {
+                console.error(error);
+                await interaction.reply({ content: errorMsg, ephemeral: true });
+            }
         } catch (error) {
             console.error(error);
-            await message.reply('Leave me alone! I\'m not talking to you! (there was an error)');
+            await message.reply({content: errorMsg, ephemeral: true});
         }
         
     }
