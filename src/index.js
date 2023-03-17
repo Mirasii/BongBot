@@ -43,10 +43,10 @@ bot.on('messageCreate', async message => {
         try {
             const response = await bot.commands.get('talk').executeLegacy(message, bot);
             try {
-                await interaction.reply(response);
+                await message.reply(response);
             } catch (error) {
                 console.error(error);
-                await interaction.reply({ content: errorMsg, ephemeral: true });
+                await message.reply({ content: errorMsg, ephemeral: true });
             }
         } catch (error) {
             console.error(error);
