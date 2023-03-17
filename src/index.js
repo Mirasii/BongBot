@@ -8,7 +8,6 @@ LOGGER.init();
 const token = process.env.DISCORD_API_KEY.trim();
 const sessionId = crypto.randomUUID();
 const errorMsg = 'Leave me alone! I\'m not talking to you! (there was an error)';
-const log = `./logs/${sessionId}`
 
 const commandFiles = fs.readdirSync('./src/commands/').filter(file => file.endsWith('.js'));
 
