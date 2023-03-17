@@ -6,6 +6,7 @@ module.exports = {
         this.logFile = `./logs/${sessionId}.log`
         fs.writeFile(logFile, 'Logger Initialised', function (err) {
             if (err) throw err;
+            console.log('Logger Initialised')
             return;
         });
     },
