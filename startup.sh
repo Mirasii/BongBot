@@ -1,7 +1,6 @@
 #!/bin/bash
-
 # Activate the service account
-gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
+#gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
 
 # Retrieve the secret and set environment variables
 export $(gcloud secrets versions access latest --secret=ENVIRONMENT --format=json | jq -r '.payload.data' | base64 -d | tr '\n' ' ')
