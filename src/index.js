@@ -1,9 +1,14 @@
 const Discord = require('discord.js');
 const bot = new Discord.Client({ intents: [Discord.GatewayIntentBits.Guilds, Discord.GatewayIntentBits.GuildMessages] });
+const LOGGER = require('./src/helpers/logging.js');
 
 const fs = require('fs');
+LOGGER.init();
+
 const token = process.env.DISCORD_API_KEY.trim();
+const sessionId = crypto.randomUUID();
 const errorMsg = 'Leave me alone! I\'m not talking to you! (there was an error)';
+const log = `./logs/${sessionId}`
 
 const commandFiles = fs.readdirSync('./src/commands/').filter(file => file.endsWith('.js'));
 
@@ -26,11 +31,11 @@ bot.on('interactionCreate', async interaction => {
             try {
                 await interaction.reply(response);
             } catch (error) {
-                console.error(error);
+                LOGGER.log(error);
                 await interaction.reply({ content: errorMsg, ephemeral: true });
             }
         } catch (error) {
-            console.error(error);
+            LOGGER.log(error);
             await message.reply({content: errorMsg, ephemeral: true});
         }
     }
@@ -45,11 +50,11 @@ bot.on('messageCreate', async message => {
             try {
                 await message.reply(response);
             } catch (error) {
-                console.error(error);
+                LOGGER.log(error);
                 await message.reply({ content: errorMsg, ephemeral: true });
             }
         } catch (error) {
-            console.error(error);
+            LOGGER.log(error);
             await message.reply({content: errorMsg, ephemeral: true});
         }
         
@@ -61,9 +66,10 @@ bot.on('ready', async () => {
         await bot.application.commands.set(commands);
         console.log('Commands Initiated!');
     } catch (error) {
-        console.error(error);
+        LOGGER.log(error);
     }
 });
 
 bot.login(token);
 console.log('BongBot Online!');
+console.log(`sessionId: ${sessionId}`)
