@@ -30,14 +30,14 @@ bot.on('interactionCreate', async interaction => {
             await interaction.deferReply();
             const response = await command.execute(interaction, bot); // updated here
             try {
-                await interaction.reply(response);
+                await interaction.followUp(response);
             } catch (error) {
                 LOGGER.log(error);
-                await interaction.reply({ content: errorMsg, ephemeral: true });
+                await interaction.followUp({ content: errorMsg, ephemeral: true });
             }
         } catch (error) {
             LOGGER.log(error);
-            await interaction.reply({content: errorMsg, ephemeral: true});
+            await interaction.followUp({content: errorMsg, ephemeral: true});
         }
     }
 });
