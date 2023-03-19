@@ -27,6 +27,7 @@ bot.on('interactionCreate', async interaction => {
         if (!command) return;
 
         try {
+            await interaction.deferReply();
             const response = await command.execute(interaction, bot); // updated here
             try {
                 await interaction.reply(response);
