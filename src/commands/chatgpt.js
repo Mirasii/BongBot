@@ -64,7 +64,7 @@ async function getChatbotResponse(message, history) {
     const prompt = `Conversation history:\n${history}\nUser message: Pretend you are a young girl with the personality archetype of Tsundere. Reply to the following: "${message}".`;
     const completion = await openai.createCompletion({
         prompt: prompt,
-        model: "gpt-3.5-turbo",
+        model: "text-davinci-003",
         max_tokens: 2000,
         temperature: 0.5,
     });
