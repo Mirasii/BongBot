@@ -36,7 +36,7 @@ bot.on('interactionCreate', async interaction => {
             }
         } catch (error) {
             LOGGER.log(error);
-            await message.reply({content: errorMsg, ephemeral: true});
+            await interaction.reply({content: errorMsg, ephemeral: true});
         }
     }
 });
