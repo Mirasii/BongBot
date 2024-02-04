@@ -29,7 +29,7 @@ module.exports = {
 }
 
 async function makeRequest(content = {}) {
-    let key = "meL%zD%L4CP*=f";
+    let key = process.env.PALWORLD_API_KEY.trim();
     let keystr = "";
     let params = content ? content : {};
 
@@ -64,8 +64,6 @@ async function makeRequest(content = {}) {
                 'Referer': 'https://panel.pebblehost.com'
             }
         });
-        console.log(digest);
-        console.log(data);
         return data;
     } catch (e) {
         throw new Error("API responded with error status " + e.status);
