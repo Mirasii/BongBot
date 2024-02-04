@@ -11,8 +11,8 @@ module.exports = {
         try { 
             const data = await makeRequest();
             let status = 'offline';
-            if (data.hasOwnProperty('status')) {
-                status = data.status;
+            if (data.hasOwnProperty('data')) {
+                status = data.data.status;
             }
             return `Server Status: ${status}\nServer Address: 146.59.220.140:25578\nServer Password: MiraPal\nPlease consider donating to server costs! <https://ko-fi.com/mirasi>`;
         } catch (error) {
