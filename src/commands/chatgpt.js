@@ -1,20 +1,11 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder, AttachmentBuilder  } = require('discord.js');
-const { Configuration, OpenAIApi } = require("openai");
 const randomFile = require('select-random-file')
-const fs = require('fs');
-const path = require('path');
 const dir = './src/responses'
 const openaiApiKey = process.env.CHATGPT_API_KEY;
 
-const configuration = new Configuration({
-    organization: "org-b86iylxzXxKqqDmgjPdC7Tx5",
-    apiKey: openaiApiKey,
-});
-const openai = new OpenAIApi(configuration);
-
 const MAX_HISTORY_LENGTH = 100;
-const chatHistory = new Map();
+const chatHistory = {};
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -23,33 +14,16 @@ module.exports = {
         .addStringOption(option => option.setName('input').setDescription('Say something to BongBot!').setRequired(true)),
     async execute(interaction) {
         const input = interaction.options.getString('input');
-        const authorId = interaction.user.id;
+        const authorId = interaction.user.username;
+        const serverId = interaction.guild_id;
+        return await getChatbotResponse(input, authorId, serverId);
 
-        let history = chatHistory.get(authorId) || [];
-        if (history.length >= MAX_HISTORY_LENGTH) {
-            // Remove the oldest message if the history is too long
-            history.shift();
-            history.shift();
-        }
-        const prompt = history.join('\n');
-        const response = await getChatbotResponse(input, prompt);
-        console.log(response);
-        // Store the conversation history
-        history.push(`User: ${input}`, `BongBot: ${response}`);
-    
-        chatHistory.set(authorId, history);
-    
-        const embed = new EmbedBuilder()
-            .setDescription(response);
-
-        const file = await selectRandomFile(dir);
-        if (file) {
-            console.log(file);
-            var attach = new AttachmentBuilder(`./src/responses/${file}`);
-            embed.setThumbnail(`attachment://${file}`);
-        }
-        
-        return { embeds: [embed], files: [attach] };
+    },
+    async executeLegacy(msg) {
+        const send = msg.content.replace(/<@!?(\d+)>/g, '').trim();
+        const userId = msg.author.username;
+        const serverId =  msg.guild.id;
+        return await getChatbotResponse(send, userId, serverId);
     },
     fullDesc: {
         options: [{
@@ -60,16 +34,46 @@ module.exports = {
     }
 };
 
-async function getChatbotResponse(message, history) {
-    const prompt = `Conversation history:\n${history}\nUser message: Pretend you are a young girl with the personality archetype of Tsundere. Reply to the following: "${message}".`;
-    const completion = await openai.createCompletion({
-        prompt: prompt,
-        model: "text-davinci-003",
-        max_tokens: 2000,
-        temperature: 0.5,
+async function getChatbotResponse(message, authorId, serverId) {
+    let history = getHistory(message, authorId, serverId);
+    const requestData = {
+        "model": "gpt-4",
+        "messages": [
+            {"role": "system","content": "You are a Discord chatbot AI meant to mimic a Tsundere personality. Messages from different users have the Discord username appended as NAME: before each message in the chat history. You do not need to prefix your messages."},
+            ...history
+        ]
+    }
+    let resp = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json','Authorization': `Bearer ${openaiApiKey}`},
+        body: JSON.stringify(requestData)
+    }).then(response => {
+        if (!response.ok) { throw new Error(`Network response was not ok: ${response.status} ${response.statusText} ${response.text()}`); }
+        return response.json();
+    }).then(data => {
+        return data.choices[0].message.content;
     });
-    var resp = completion.data.choices[0].text.includes(':') ? completion.data.choices[0].text.split(':')[1].trim() : completion.data.choices[0].text;
-    return resp;
+    history.push({"role":"assistant","content":resp});
+    chatHistory[serverId] = history;
+    return await constructEmbed(resp);
+}
+
+function getHistory(message, authorId, serverId){
+    let history = chatHistory[serverId] || [];
+    if (history.length >= MAX_HISTORY_LENGTH) {
+        history.splice(1, 2);
+    }
+    history.push({"role": "user" ,"content":`${authorId}: ${message}`})
+    return history;
+}
+
+async function constructEmbed(response) {
+    const embed = new EmbedBuilder()
+    .setDescription(response);
+    const file = await selectRandomFile(dir);
+    let attach = new AttachmentBuilder(`./src/responses/${file}`);
+    embed.setThumbnail(`attachment://${file}`);
+    return { embeds: [embed], files: [attach] };
 }
 
 async function selectRandomFile(dir) {
@@ -83,3 +87,4 @@ async function selectRandomFile(dir) {
         });
     });
 }
+
