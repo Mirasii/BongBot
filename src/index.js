@@ -29,12 +29,7 @@ bot.on('interactionCreate', async interaction => {
         try {
             await interaction.deferReply();
             const response = await command.execute(interaction, bot); // updated here
-            try {
-                await interaction.followUp(response);
-            } catch (error) {
-                LOGGER.log(error);
-                await interaction.followUp({ content: errorMsg, ephemeral: true });
-            }
+            await interaction.followUp(response);
         } catch (error) {
             LOGGER.log(error);
             await interaction.followUp({content: errorMsg, ephemeral: true});
@@ -47,13 +42,8 @@ bot.on('messageCreate', async message => {
     if (message?.mentions?.users?.has(`${bot.user.id}`)) {
         // The bot was mentioned, send a response
         try {
-            const response = await bot.commands.get('talk').executeLegacy(message, bot);
-            try {
-                await message.reply(response);
-            } catch (error) {
-                LOGGER.log(error);
-                await message.reply({ content: errorMsg, ephemeral: true });
-            }
+            const response = await bot.commands.get('talkgpt').executeLegacy(message, bot);
+            await message.reply(response);
         } catch (error) {
             LOGGER.log(error);
             await message.reply({content: errorMsg, ephemeral: true});
