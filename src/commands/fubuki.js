@@ -1,38 +1,25 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder } = require('discord.js');
+const CALLER = require('./helpers/caller')
 
-const axios = require('axios');
 
 async function image() {
     const query = 'Shirakami Fubuki'; // Query for the image search
-
     // API endpoint and query parameters
-    const endpoint = 'https://api.bing.microsoft.com/v7.0/images/search';
-    const params = {
+    const endpoint = 'https://www.googleapis.com/customsearch/v1';
+    const params = new URLSearchParams({
         q: query,
-        count: 50,
-        offset: 0,
-        safeSearch: 'Moderate', // Modify this parameter as needed
-    };
-
-    // Headers containing the API key
-    const headers = {
-        'Ocp-Apim-Subscription-Key': process.env.BING_API_KEY.trim(),
-    };
+        key: process.env.GOOGLE_API_KEY,
+        cx: '70c596884ffe34920',
+        searchType: 'image'
+    }).toString();
 
     try {
-        const response = await axios.get(endpoint, {
-            headers: headers,
-            params: params,
-        });
-
-        // Extract image URLs from the response
-        const urls = response.data.value.map((item) => item.contentUrl);
-
+        const response = await CALLER.get(endpoint, null, params, null);
+        const urls = response.items.map((item) => item.link);
         if (!urls.length) {
             throw new Error('No images found');
         }
-
         return urls;
     } catch (error) {
         console.error(error);
