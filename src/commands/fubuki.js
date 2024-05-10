@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder } = require('discord.js');
-const CALLER = require('./helpers/caller')
+const CALLER = require(`../helpers/caller.js`)
 
 
 async function image() {
@@ -15,7 +15,7 @@ async function image() {
     }).toString();
 
     try {
-        const response = await CALLER.get(endpoint, null, params, null);
+        const response = await CALLER.get(endpoint, null, params, {});
         const urls = response.items.map((item) => item.link);
         if (!urls.length) {
             throw new Error('No images found');

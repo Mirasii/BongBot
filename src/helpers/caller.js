@@ -1,7 +1,6 @@
 module.exports = {
     async get(url, path, params, headers) {
         let fullPath = `${url}${path ? path : ''}${params ? `?${params}`:''}`;
-        console.log(fullPath);
         let resp = await fetch(fullPath, {
             method: 'GET',
             headers: headers
