@@ -12,7 +12,7 @@ module.exports = {
         return resp;
     },
     async post(url, path, headers, body) {
-        let fullPath = url + path;
+        let fullPath = `${url}${path ? path : ''}`;
         let resp = await fetch(fullPath, {
             method: 'POST',
             headers: headers,
