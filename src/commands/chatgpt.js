@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder, AttachmentBuilder  } = require('discord.js');
 const randomFile = require('select-random-file')
+const CALLER = require(`../helpers/caller.js`)
 const dir = './src/responses'
 const openaiApiKey = process.env.CHATGPT_API_KEY;
 
@@ -43,16 +44,9 @@ async function getChatbotResponse(message, authorId, serverId) {
             ...history
         ]
     }
-    let resp = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json','Authorization': `Bearer ${openaiApiKey}`},
-        body: JSON.stringify(requestData)
-    }).then(response => {
-        if (!response.ok) { throw new Error(`Network response was not ok: ${response.status} ${response.statusText} ${response.text()}`); }
-        return response.json();
-    }).then(data => {
-        return data.choices[0].message.content;
-    });
+    const headers = {'Content-Type': 'application/json','Authorization': `Bearer ${openaiApiKey}`};
+    let resp = CALLER.post('https://api.openai.com','/v1/chat/completions', headers, requestData)
+                     .then(data => { return data.choices[0].message.content; });
     history.push({"role":"assistant","content":resp});
     chatHistory[serverId] = history;
     return await constructEmbed(resp);
