@@ -71,11 +71,8 @@ async function constructEmbed(response) {
 async function selectRandomFile(dir) {
     return new Promise((resolve, reject) => {
         randomFile(dir, (err, file) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(file);
-            }
+            if (err) { reject(err); return; } 
+            resolve(file);
         });
     });
 }
