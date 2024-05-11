@@ -2,7 +2,6 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder } = require('discord.js');
 const CALLER = require(`../helpers/caller.js`)
 
-
 async function image() {
     const query = 'Shirakami Fubuki'; // Query for the image search
     // API endpoint and query parameters
@@ -15,8 +14,8 @@ async function image() {
     }).toString();
 
     try {
-        const response = await CALLER.get(endpoint, null, params, {});
-        const urls = response.items.map((item) => item.link);
+        const urls = await CALLER.get(endpoint, null, params, {})
+                                .then(data => {return data.items.map((item) => item.link)});
         if (!urls.length) {
             throw new Error('No images found');
         }
