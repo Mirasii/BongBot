@@ -6,6 +6,7 @@ const dir = './src/responses'
 const openaiApiKey = process.env.CHATGPT_API_KEY;
 
 const MAX_HISTORY_LENGTH = 100;
+const botContext = "You are a Discord chatbot AI meant to mimic a Tsundere personality. Messages from different users have the Discord username appended as NAME: before each message in the chat history. You do not need to prefix your messages.";
 const chatHistory = {};
 
 module.exports = {
@@ -39,10 +40,7 @@ async function getChatbotResponse(message, authorId, serverId) {
     let history = getHistory(message, authorId, serverId);
     const requestData = {
         "model": "gpt-4",
-        "messages": [
-            {"role": "system","content": "You are a Discord chatbot AI meant to mimic a Tsundere personality. Messages from different users have the Discord username appended as NAME: before each message in the chat history. You do not need to prefix your messages."},
-            ...history
-        ]
+        "messages": [ {"role": "system","content": botContext}, ...history ]
     }
     const headers = {'Content-Type': 'application/json','Authorization': `Bearer ${openaiApiKey}`};
     let resp = CALLER.post('https://api.openai.com','/v1/chat/completions', headers, requestData)
