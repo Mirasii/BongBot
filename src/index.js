@@ -22,34 +22,29 @@ for (const file of commandFiles) {
 }
 
 bot.on('interactionCreate', async interaction => {
-    if (interaction.isCommand()) {
-        const command = bot.commands.get(interaction.commandName);
-        if (!command) return;
-
-        try {
-            await interaction.deferReply();
-            const response = await command.execute(interaction, bot); // updated here
-            await interaction.followUp(response);
-        } catch (error) {
-            LOGGER.log(error);
-            await interaction.followUp({content: errorMsg, ephemeral: true});
-        }
+    if (!interaction.isCommand()) { return; }
+    const command = bot.commands.get(interaction.commandName);
+    if (!command) return;
+    try {
+        await interaction.deferReply();
+        const response = await command.execute(interaction, bot); // updated here
+        await interaction.followUp(response);
+    } catch (error) {
+        LOGGER.log(error);
+        await interaction.followUp({content: errorMsg, ephemeral: true});
     }
 });
 
 bot.on('messageCreate', async message => {
     if (message.author.bot) return; // Ignore messages from other bots
-    if (message?.mentions?.users?.has(`${bot.user.id}`)) {
-        // The bot was mentioned, send a response
-        try {
-            const response = await bot.commands.get('talkgpt').executeLegacy(message, bot);
-            await message.reply(response);
-        } catch (error) {
-            LOGGER.log(error);
-            await message.reply({content: errorMsg, ephemeral: true});
-        }
-        
-    }
+    if (!message?.mentions?.users?.has(`${bot.user.id}`)) { return; }
+    try {
+        const response = await bot.commands.get('talkgpt').executeLegacy(message, bot);
+        await message.reply(response);
+    } catch (error) {
+        LOGGER.log(error);
+        await message.reply({content: errorMsg, ephemeral: true});
+    }   
 });
 
 bot.on('ready', async () => {
