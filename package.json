@@ -10,7 +10,7 @@
     "dependencies": {
         "crypto": "^1.0.1",
         "discord.js": "14.15.2",
-        "dotenv": "16.0.3",
+        "dotenv": "16.4.5",
         "querystring": "^0.2.1",
         "select-random-file": "^1.2.4"
     }
