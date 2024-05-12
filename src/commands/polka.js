@@ -11,7 +11,8 @@ async function image() {
         q: query,
         key: process.env.GOOGLE_API_KEY,
         cx: '70c596884ffe34920',
-        searchType: 'image'
+        searchType: 'image',
+        start: Math.floor(Math.random() * 50)
     }).toString();
 
     try {
