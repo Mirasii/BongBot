@@ -15,7 +15,7 @@ module.exports = {
 
             const response = await CALLER.post(
                 api.url,
-                null, 
+                '/api/quotes', 
                 {'Content-Type': 'application/json', 'Authorization': `Bearer ${api.apikey}`}, 
                 { quote: quote, author: author }
             );

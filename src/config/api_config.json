@@ -1,14 +1,14 @@
 {
     "quotedb": {
-        "url": "https://quotes.elmu.dev/api/quotes",
+        "url": "https://quotes.elmu.dev",
         "apikey": "YOUR_QUOTEDB_API_KEY"
     },
     "openai": {
-        "url": "https://api.openai.com/v1/engines/davinci/completions",
+        "url": "https://api.openai.com",
         "apikey": "YOUR_OPENAI_API_KEY"
     },
     "google": {
-        "url": "https://www.googleapis.com/customsearch/v1",
+        "url": "https://www.googleapis.com",
         "apikey": "YOUR_GOOGLE_API_KEY",
         "cx": "70c596884ffe34920"
     }
