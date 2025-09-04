@@ -18,6 +18,10 @@ module.exports = {
                 + currentdate.getHours() + ":"  
                 + currentdate.getMinutes() + ":" 
                 + currentdate.getSeconds();
+        if (!logFile) {
+            console.error('Log file not initialized');
+            return;
+        }
         fs.appendFile(logFile, `${datetime} | ${error}\n\n`, function (err) {
             if (err) throw err;
             console.log(`error saved to logfile ${logFile}`);
