@@ -19,7 +19,7 @@ module.exports = {
                 {'Content-Type': 'application/json', 'Authorization': `Bearer ${api.apikey}`}, 
                 { quote: quote, author: author }
             );
-            return 'Quote added successfully!';
+            return `Quote Successfully Added:\n*"${response}"*`;
         } catch (error) {
             return {
                 type: 4,
