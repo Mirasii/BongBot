@@ -1,14 +1,10 @@
 const LOGGER = require(`${__dirname}/logging.js`);
+const { MessageFlags } = require('discord.js');
+const errorMsg = 'There was an error while executing the command ';
 
 function buildError(interaction, error) {
     console.error(`Error executing ${interaction?.commandName ?? 'unknown'} command`);
     LOGGER.log(error);
-    return {
-        type: 4,
-        data: {
-            content: 'There was an error while executing this command.',
-            flags: 1 << 6 // set the EPHEMERAL flag
-        }
-    };
-}
+    return { content: `${errorMsg}${interaction?.commandName ?? 'unknown'}.` , flags: MessageFlags.Ephemeral };
+};
 module.exports = { buildError };
