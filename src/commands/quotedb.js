@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const apiConfig = require('../config/api_config.json');
-const CALLER = require(`../helpers/caller.js`);
+const api = require(`${__dirname}/../config/api_config.json`).quotedb;
+const CALLER = require(`${__dirname}/../helpers/caller.js`);
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -15,9 +15,9 @@ module.exports = {
             const author = interaction.user.username;
 
             const response = await CALLER.post(
-                apiConfig.quotedb.url,
+                api.url,
                 null, 
-                {'Content-Type': 'application/json', 'Authorization': `Bearer ${apiConfig.quotedb.apikey}`}, 
+                {'Content-Type': 'application/json', 'Authorization': `Bearer ${api.apikey}`}, 
                 { quote: quote, author: author }
             );
             return 'Quote added successfully!';

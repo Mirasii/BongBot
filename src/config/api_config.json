@@ -2,5 +2,14 @@
     "quotedb": {
         "url": "https://quotes.elmu.dev/api/quotes",
         "apikey": "YOUR_QUOTEDB_API_KEY"
+    },
+    "openai": {
+        "url": "https://api.openai.com/v1/engines/davinci/completions",
+        "apikey": "YOUR_OPENAI_API_KEY"
+    },
+    "google": {
+        "url": "https://www.googleapis.com/customsearch/v1",
+        "apikey": "YOUR_GOOGLE_API_KEY",
+        "cx": "70c596884ffe34920"
     }
 }
