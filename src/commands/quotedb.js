@@ -22,7 +22,7 @@ module.exports = {
             );
             return `Quote Successfully Added:\n*"${response}"*`;
         } catch (error) {
-            return ERROR_BUILDER.buildError(interaction, error);
+            return await ERROR_BUILDER.buildError(interaction, error);
         }
     },
     fullDesc: {
