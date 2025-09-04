@@ -4,7 +4,7 @@ const LOGGER = require('./helpers/logging')
 const fs = require('fs');
 const crypto = require('crypto');
 const token = require('./config/discord_config.json').api_key;
-const errorMsg = 'Leave me alone! I\'m not talking to you! (there was an error)';
+const ERROR_BUILDER = require(`${__dirname}/helpers/errorBuilder.js`);
 
 /** set up logging */
 const sessionId = crypto.randomUUID();
@@ -31,9 +31,8 @@ bot.on('interactionCreate', async interaction => {
         if (response?.isError === true) { await interaction.deleteReply(); }
         await interaction.followUp(response);
     } catch (error) {
-        LOGGER.log(error);
         await interaction.deleteReply();
-        await interaction.followUp({content: errorMsg, flags: Discord.MessageFlags.Ephemeral});
+        await interaction.followUp(await ERROR_BUILDER.buildUnknownError(error));
     }
 });
 
@@ -45,8 +44,7 @@ bot.on('messageCreate', async message => {
         const response = await bot.commands.get('talkgpt').executeLegacy(message, bot);
         await message.reply(response);
     } catch (error) {
-        LOGGER.log(error);
-        await message.reply({content: errorMsg, flags: Discord.MessageFlags.Ephemeral});
+        await message.reply(await ERROR_BUILDER.buildUnknownError(error));
     }   
 });
 

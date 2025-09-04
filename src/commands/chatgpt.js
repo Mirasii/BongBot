@@ -1,9 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder, AttachmentBuilder  } = require('discord.js');
-const randomFile = require('select-random-file')
-const CALLER = require(`../helpers/caller.js`)
-const api = require('../config/api_config.json').openai;
-const dir = './src/responses'
+const CALLER = require(`../helpers/caller.js`);
+const EMBED_BUILDER = require(`${__dirname}/../helpers/embedBuilder.js`);
+const api = require(`${__dirname}/../config/api_config.json}`).openai;
 
 const MAX_HISTORY_LENGTH = 100;
 const botContext = "You are a Discord chatbot AI meant to mimic a Tsundere personality. Messages from different users have the Discord username appended as NAME: before each message in the chat history. You do not need to prefix your messages.";
@@ -48,7 +46,7 @@ async function getChatbotResponse(message, authorId, serverId) {
                      .catch(error => { throw new Error(error.message) });
     history.push({"role":"assistant","content":resp});
     chatHistory[serverId] = history;
-    return await constructEmbed(resp);
+    return await EMBED_BUILDER.constructEmbedWithRandomFile(resp);
 }
 
 function getHistory(message, authorId, serverId){
@@ -58,23 +56,5 @@ function getHistory(message, authorId, serverId){
     }
     history.push({"role": "user" ,"content":`${authorId}: ${message}`})
     return history;
-}
-
-async function constructEmbed(response) {
-    const embed = new EmbedBuilder()
-    .setDescription(response);
-    const file = await selectRandomFile(dir);
-    let attach = new AttachmentBuilder(`./src/responses/${file}`);
-    embed.setThumbnail(`attachment://${file}`);
-    return { embeds: [embed], files: [attach] };
-}
-
-async function selectRandomFile(dir) {
-    return new Promise((resolve, reject) => {
-        randomFile(dir, (err, file) => {
-            if (err) { reject(err); return; } 
-            resolve(file);
-        });
-    });
 }
 
