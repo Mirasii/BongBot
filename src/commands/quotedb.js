@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const apiConfig = require('../config/quotedb_api.json');
+const apiConfig = require('../config/api_config.json');
 const CALLER = require(`../helpers/caller.js`);
 
 module.exports = {
