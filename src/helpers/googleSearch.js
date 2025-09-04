@@ -23,7 +23,6 @@ async function searchImage(query) {
             await interaction.reply('No images found');
         } else {
             const embed = new EmbedBuilder().setImage(urls[Math.floor(Math.random() * urls.length)]);
-            console.log(embed.toJSON());
             const response = {
                 embeds: [embed.toJSON()]
             };
