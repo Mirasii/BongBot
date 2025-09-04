@@ -28,10 +28,11 @@ bot.on('interactionCreate', async interaction => {
         if (!command) return;
         await interaction.deferReply();
         const response = await command.execute(interaction, bot); 
+        if (response?.isError === true) { await interaction.deleteReply(); }
         await interaction.followUp(response);
     } catch (error) {
         LOGGER.log(error);
-        await interaction.followUp({content: errorMsg, ephemeral: true});
+        await interaction.followUp({content: errorMsg, flags: Discord.MessageFlags.Ephemeral});
     }
 });
 
@@ -44,12 +45,12 @@ bot.on('messageCreate', async message => {
         await message.reply(response);
     } catch (error) {
         LOGGER.log(error);
-        await message.reply({content: errorMsg, ephemeral: true});
+        await message.reply({content: errorMsg, flags: Discord.MessageFlags.Ephemeral});
     }   
 });
 
 /** set commands on bot ready */
-bot.on('ready', async () => {
+bot.on('clientReady', async () => {
     try {
         await bot.application.commands.set(commands);
         console.log('Commands Initiated!');
