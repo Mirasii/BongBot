@@ -32,6 +32,7 @@ bot.on('interactionCreate', async interaction => {
         await interaction.followUp(response);
     } catch (error) {
         LOGGER.log(error);
+        await interaction.deleteReply();
         await interaction.followUp({content: errorMsg, flags: Discord.MessageFlags.Ephemeral});
     }
 });
