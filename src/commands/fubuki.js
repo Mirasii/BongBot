@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const ErrorBuilder = require(`${__dirname}/../helpers/errorBuilder.js`);
+const ERROR_BUILDER = require(`${__dirname}/../helpers/errorBuilder.js`);
 const google = require(`${__dirname}/../helpers/googleSearch.js`);
 const query = 'Shirakami Fubuki'; // Query for the image search
 
@@ -11,7 +11,7 @@ module.exports = {
         try {
             return await google.searchImage(query);
         } catch (error) {
-            return ErrorBuilder.buildError(interaction, error);
+            return await ERROR_BUILDER.buildError(interaction, error);
         }
     }
 }
