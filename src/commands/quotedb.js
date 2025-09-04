@@ -11,8 +11,7 @@ module.exports = {
     async execute(interaction, client) {
         try {
             const quote = interaction.options.getString('quote');
-            const user = interaction.options.getUser('user');
-            const author = interaction.user.username;
+            const author = interaction.options.getUser('user').username;
 
             const response = await CALLER.post(
                 api.url,
