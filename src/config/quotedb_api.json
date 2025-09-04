@@ -1,0 +1,6 @@
+{
+    "quotedb": {
+        "url": "https://quotes.elmu.dev/api/quotes",
+        "apikey": "YOUR_QUOTEDB_API_KEY"
+    }
+}
