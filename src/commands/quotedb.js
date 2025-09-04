@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const api = require(`${__dirname}/../config/api_config.json`).quotedb;
+const API = require(`${__dirname}/../config/api_config.json`).quotedb;
 const CALLER = require(`${__dirname}/../helpers/caller.js`);
+const ERROR_BUILDER = require(`${__dirname}/../helpers/errorBuilder.js`);
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -14,20 +15,14 @@ module.exports = {
             const author = interaction.options.getUser('user').username;
 
             const response = await CALLER.post(
-                api.url,
-                '/api/quotes', 
-                {'Content-Type': 'application/json', 'Authorization': `Bearer ${api.apikey}`}, 
+                API.url,
+                '/api/quotes',
+                { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API.apikey}` },
                 { quote: quote, author: author }
             );
             return `Quote Successfully Added:\n*"${response}"*`;
         } catch (error) {
-            return {
-                type: 4,
-                data: {
-                    content: 'There was an error while executing this command.',
-                    flags: 1 << 6 // set the EPHEMERAL flag
-                }
-            };
+            return ERROR_BUILDER.buildError(interaction, error);
         }
     },
     fullDesc: {
