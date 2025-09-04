@@ -2,8 +2,8 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder, AttachmentBuilder  } = require('discord.js');
 const randomFile = require('select-random-file')
 const CALLER = require(`../helpers/caller.js`)
+const api = require('../config/api_config.json').openai;
 const dir = './src/responses'
-const openaiApiKey = process.env.CHATGPT_API_KEY;
 
 const MAX_HISTORY_LENGTH = 100;
 const botContext = "You are a Discord chatbot AI meant to mimic a Tsundere personality. Messages from different users have the Discord username appended as NAME: before each message in the chat history. You do not need to prefix your messages.";
@@ -39,12 +39,13 @@ module.exports = {
 async function getChatbotResponse(message, authorId, serverId) {
     let history = getHistory(message, authorId, serverId);
     const requestData = {
-        "model": "gpt-4",
+        "model": "gpt-4o",
         "messages": [ {"role": "system","content": botContext}, ...history ]
     }
-    const headers = {'Content-Type': 'application/json','Authorization': `Bearer ${openaiApiKey}`};
-    let resp = CALLER.post('https://api.openai.com','/v1/chat/completions', headers, requestData)
-                     .then(data => { return data.choices[0].message.content; });
+    const headers = {'Content-Type': 'application/json','Authorization': `Bearer ${api.apikey}`};
+    let resp = await CALLER.post(api.url,'/v1/chat/completions', headers, requestData)
+                     .then(data => { return data.choices[0].message.content; })
+                     .catch(error => { throw new Error(error.message) });
     history.push({"role":"assistant","content":resp});
     chatHistory[serverId] = history;
     return await constructEmbed(resp);
