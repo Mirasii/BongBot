@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const CALLER = require(`../helpers/caller.js`);
+const CALLER = require(`${__dirname}/../helpers/caller.js`);
 const EMBED_BUILDER = require(`${__dirname}/../helpers/embedBuilder.js`);
-const api = require(`${__dirname}/../config/api_config.json}`).openai;
+const api = require(`${__dirname}/../config/api_config.json`).openai;
 
 const MAX_HISTORY_LENGTH = 100;
 const botContext = "You are a Discord chatbot AI meant to mimic a Tsundere personality. Messages from different users have the Discord username appended as NAME: before each message in the chat history. You do not need to prefix your messages.";
