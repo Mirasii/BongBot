@@ -24,7 +24,7 @@ module.exports = {
             if (!response.ok) {  
                 throw new Error(`Network response was not ok: ${response.status} ${response.statusText} `); 
             }
-            return response.json();
+            return await response.json();
         }).finally(() => {
             if (text) { LOGGER.log(`${text}`); }
         });
