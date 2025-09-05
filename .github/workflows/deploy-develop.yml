@@ -53,6 +53,15 @@ jobs:
               comment_id: ${{ steps.find-comment.outputs.comment-id }}
             })
 
+      - name: SSH and Start Service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            sudo systemctl start bongbot-develop
+
       - name: Create New Comment
         uses: peter-evans/create-or-update-comment@v4
         with:
@@ -61,6 +70,7 @@ jobs:
             **BongBot Development Build** 🚀
 
             A new Docker image has been pushed for this pull request.
+            BongBot Dev is running for 1 hour after the build. If you want to start it again, re-run this workflow.
 
             - **Image:** `${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop`
             - **Tag:** `pr-${{ github.event.pull_request.number }}`
