@@ -42,11 +42,15 @@ jobs:
           comment-author: 'github-actions[bot]'
           body-includes: ''
 
-      - name: Delete Previous Comment
-        if: steps.find-comment.outputs.comment-id
-        uses: peter-evans/delete-comment@v3
+      - if: steps.fc.outputs.comment-id != ''
+        uses: actions/github-script@v6
         with:
-          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          script: |
+            github.rest.issues.deleteComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: ${{ steps.find-comment.outputs.comment-id }}
+            })
 
       - name: Create New Comment
         uses: peter-evans/create-or-update-comment@v4
