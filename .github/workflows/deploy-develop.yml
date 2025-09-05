@@ -4,7 +4,6 @@ name: Build and Test on Pull Request
 
 on:
   pull_request:
-    # Run on PRs opened against 'main' and when new commits are pushed to them
     types: [opened, synchronize]
     branches: [ main ]
 
@@ -24,26 +23,35 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and Push Development Image
-        id: build-image # Give this step an ID to reference its output
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
-          # This tags the image with the PR number for easy identification
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:pr-${{ github.event.pull_request.number }}
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:latest
 
+      - name: Find Previous Comment
+        id: find-comment # Give this step an ID
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          # A unique string to identify the comment
+          comment-author: 'github-actions[bot]'
+          body-includes: 'BongBot Development Build'
+
       - name: Create or Update PR Comment
         uses: peter-evans/create-or-update-comment@v4
         with:
-          # This unique ID helps the action find and update its own comment
+          # Use the comment ID found in the previous step
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          # If a comment was found, replace its content. Otherwise, create a new one.
+          edit-mode: replace
           issue-number: ${{ github.event.pull_request.number }}
-          # The content of the comment, written in Markdown
           body: |
-            Build successful! 🚀
+            **BongBot Development Build** 🚀
 
-            A new development Docker image has been pushed for this pull request.
+            A new Docker image has been pushed for this pull request.
 
             - **Image:** `${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop`
             - **Tag:** `pr-${{ github.event.pull_request.number }}`
