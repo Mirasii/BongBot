@@ -34,6 +34,15 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:pr-${{ github.event.pull_request.number }}
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:latest
 
+      - name: SSH and Start Service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            sudo systemctl start bongbot-develop
+
       - name: Find Previous Comment
         id: find-comment
         uses: peter-evans/find-comment@v3
@@ -52,15 +61,6 @@ jobs:
               repo: context.repo.repo,
               comment_id: ${{ steps.find-comment.outputs.comment-id }}
             })
-
-      - name: SSH and Start Service
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            sudo systemctl start bongbot-develop
 
       - name: Create New Comment
         uses: peter-evans/create-or-update-comment@v4
