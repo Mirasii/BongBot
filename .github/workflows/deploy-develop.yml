@@ -41,7 +41,7 @@ jobs:
 
       - name: Delete Previous Comment
         if: steps.find-comment.outputs.comment-id != ''
-        uses: peter-evans/delete-comment@v2
+        uses: peter-evans/delete-comment@v3
         with:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
 
