@@ -49,7 +49,7 @@ jobs:
             - **Tag:** `pr-${{ github.event.pull_request.number }}`
 
             You can pull the image using:
-            \`\`\`
+            ```
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:pr-${{ github.event.pull_request.number }}
-            \`\`\`
+            ```
             [View on Docker Hub](https://hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop/tags)
