@@ -1,0 +1,43 @@
+# .github/workflows/deploy.yml
+
+name: Deploy BongBot to Server
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Update config json files
+        run: |
+          sed -i 's/YOUR_DISCORD_API_KEY_HERE/${{ secrets.DISCORD_API_KEY }}/g' src/config/discord_config.json
+          sed -i 's/YOUR_GOOGLE_API_KEY/${{ secrets.GOOGLE_API_KEY }}/g' src/config/api_config.json
+          sed -i 's/YOUR_OPENAI_API_KEY/${{ secrets.OPENAI_API_KEY }}/g' src/config/api_config.json
+          sed -i 's/YOUR_GOOGLEAI_API_KEY/${{ secrets.GOOGLEAI_API_KEY }}/g' src/config/api_config.json
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/bongbot:latest
+
+      - name: SSH and Restart Service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            sudo systemctl restart bongbot
