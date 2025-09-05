@@ -4,10 +4,12 @@ name: Build and Test on Pull Request
 
 on:
   pull_request:
+    # Run on PRs opened against 'main' and when new commits are pushed to them
+    types: [opened, synchronize]
     branches: [ main ]
 
 jobs:
-  build-and-push-pr:
+  build-and-comment:
     environment: Dev
     runs-on: ubuntu-latest
 
@@ -22,11 +24,32 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and Push Development Image
+        id: build-image # Give this step an ID to reference its output
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
           # This tags the image with the PR number for easy identification
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:pr-${{github.event.pull_request.number}}
+            ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:pr-${{ github.event.pull_request.number }}
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:latest
+
+      - name: Create or Update PR Comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          # This unique ID helps the action find and update its own comment
+          issue-number: ${{ github.event.pull_request.number }}
+          # The content of the comment, written in Markdown
+          body: |
+            Build successful! 🚀
+
+            A new development Docker image has been pushed for this pull request.
+
+            - **Image:** `${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop`
+            - **Tag:** `pr-${{ github.event.pull_request.number }}`
+
+            You can pull the image using:
+            \`\`\`
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:pr-${{ github.event.pull_request.number }}
+            \`\`\`
+            [View on Docker Hub](https://hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop/tags)
