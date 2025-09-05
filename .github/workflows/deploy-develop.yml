@@ -11,6 +11,9 @@ jobs:
   build-and-comment:
     environment: Dev
     runs-on: ubuntu-latest
+    # Add permissions for the GITHUB_TOKEN
+    permissions:
+      pull-requests: write
 
     steps:
       - name: Checkout Code
@@ -40,7 +43,7 @@ jobs:
           body-includes: ''
 
       - name: Delete Previous Comment
-        if: steps.find-comment.outputs.comment-id != ''
+        if: steps.find-comment.outputs.comment-id
         uses: peter-evans/delete-comment@v3
         with:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
