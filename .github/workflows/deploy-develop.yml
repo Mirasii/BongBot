@@ -32,20 +32,18 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:latest
 
       - name: Find Previous Comment
-        id: find-comment # Give this step an ID
+        id: find-comment
         uses: peter-evans/find-comment@v3
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          # A unique string to identify the comment
           comment-author: 'github-actions[bot]'
-          body-includes: 'BongBot Development Build'
+          # ✅ Search for the unique hidden HTML comment
+          body-includes: ''
 
       - name: Create or Update PR Comment
         uses: peter-evans/create-or-update-comment@v4
         with:
-          # Use the comment ID found in the previous step
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
-          # If a comment was found, replace its content. Otherwise, create a new one.
           edit-mode: replace
           issue-number: ${{ github.event.pull_request.number }}
           body: |
