@@ -8,6 +8,7 @@
         "test": "jest"
     },
     "dependencies": {
+        "@google/generative-ai": "^0.24.1",
         "crypto": "^1.0.1",
         "discord.js": "^14.22.1",
         "dotenv": "16.4.5",

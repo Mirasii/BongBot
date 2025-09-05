@@ -1,10 +1,12 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
+const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const CALLER = require(`${__dirname}/../helpers/caller.js`);
 const EMBED_BUILDER = require(`${__dirname}/../helpers/embedBuilder.js`);
-const api = require(`${__dirname}/../config/api_config.json`).openai;
-
+const api = require(`${__dirname}/../config/api_config.json`);
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const MAX_HISTORY_LENGTH = 100;
 const botContext = "You are a Discord chatbot AI meant to mimic a Tsundere personality. Messages from different users have the Discord username appended as NAME: before each message in the chat history. You do not need to prefix your messages.";
+const imageDescription = "Anime style, 1980s aesthetic, young woman, blonde hair, medium length hair, large red bow in hair, fair skin, wearing a navy blue blazer with a crest, white collared shirt, red plaid pleated skirt, Tsundere personality. Retro futuristic cityscape background, warm sunset lighting. Vibrant colors, high detail, dynamic composition, cinematic lighting, 4k resolution. Clear face, face focus. If you previously generated an image, generate a new one with a different pose. Return only the image with no text. Make it suitable for a Discord bot embed thumbnail.";
 const chatHistory = {};
 
 module.exports = {
@@ -16,14 +18,13 @@ module.exports = {
         const input = interaction.options.getString('input');
         const authorId = interaction.user.username;
         const serverId = interaction.guild_id;
-        return await getChatbotResponse(input, authorId, serverId);
-
+        return await executeAI(input, authorId, serverId);
     },
     async executeLegacy(msg) {
-        const send = msg.content.replace(/<@!?(\d+)>/g, '').trim();
-        const userId = msg.author.username;
+        const input = msg.content.replace(/<@!?(\d+)>/g, '').trim();
+        const authorId = msg.author.username;
         const serverId =  msg.guild.id;
-        return await getChatbotResponse(send, userId, serverId);
+        return await executeAI(input, authorId, serverId);
     },
     fullDesc: {
         options: [{
@@ -34,19 +35,76 @@ module.exports = {
     }
 };
 
+async function executeAI(input, authorId, serverId) {
+    if(api.openai.active) return await getChatbotResponse(input, authorId, serverId);
+    if(api.googleai.active) return await getGeminiChatbotResponse(input, authorId, serverId);
+    return EMBED_BUILDER.constructErrorEmbed("Hmph! Why are you trying to talk to me when no AI service is active?");
+}
+
 async function getChatbotResponse(message, authorId, serverId) {
     let history = getHistory(message, authorId, serverId);
     const requestData = {
-        "model": "gpt-4o",
+        "model": api.openai.model,
         "messages": [ {"role": "system","content": botContext}, ...history ]
     }
-    const headers = {'Content-Type': 'application/json','Authorization': `Bearer ${api.apikey}`};
-    let resp = await CALLER.post(api.url,'/v1/chat/completions', headers, requestData)
+    const headers = {'Content-Type': 'application/json','Authorization': `Bearer ${api.openai.apikey}`};
+    let resp = await CALLER.post(api.openai.url,'/v1/chat/completions', headers, requestData)
                      .then(data => { return data.choices[0].message.content; })
                      .catch(error => { throw new Error(error.message) });
     history.push({"role":"assistant","content":resp});
     chatHistory[serverId] = history;
     return await EMBED_BUILDER.constructEmbedWithRandomFile(resp);
+}
+
+async function getGeminiChatbotResponse(message, authorId, serverId) {
+    // Text generation
+    const genAI =  new GoogleGenerativeAI(api.googleai.apikey);
+    const textModel = genAI.getGenerativeModel({ model: api.googleai.model, systemInstruction: botContext });
+    let history = getHistory(message, authorId, serverId);
+
+    const chat = textModel.startChat({
+        history: history.map(msg => ({
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: msg.content }]
+        })),
+        generationConfig: {
+            maxOutputTokens: 2000,
+        },
+    });
+
+    const result = await chat.sendMessage(message);
+    const response = await result.response;
+    const text = response.text();
+
+    history.push({ "role": "assistant", "content": text });
+    chatHistory[serverId] = history;
+
+    // Image generation
+    try {
+        const imageModel = genAI.getGenerativeModel({ model: api.googleai.image_model  });
+        const imageResult = await imageModel.generateContent(imageDescription);
+        const imageResponse = imageResult.response;
+        const imagePart = imageResponse.candidates[0].content.parts[0];
+        console.log(imagePart);
+        let imageAttachment;
+        if (imagePart.inlineData) {
+            const imageBuffer = Buffer.from(imagePart.inlineData.data, 'base64');
+            imageAttachment = new AttachmentBuilder(imageBuffer, { name: 'tsundere.png' });
+        }
+
+        // Create embed
+        const embed = new EmbedBuilder().setDescription(text);
+        console.log(imageAttachment);
+        if (imageAttachment) {
+            embed.setThumbnail('attachment://tsundere.png');
+            return { embeds: [embed], files: [imageAttachment] };
+        }
+    } catch (error) {
+        console.log("Image generation failed, falling back to random file.", error);
+    }
+
+    // Fallback to random file if image generation fails or doesn't return an image
+    return await EMBED_BUILDER.constructEmbedWithRandomFile(text);
 }
 
 function getHistory(message, authorId, serverId){
@@ -57,4 +115,3 @@ function getHistory(message, authorId, serverId){
     history.push({"role": "user" ,"content":`${authorId}: ${message}`})
     return history;
 }
-
