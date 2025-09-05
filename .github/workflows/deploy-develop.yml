@@ -41,9 +41,6 @@ jobs:
           # Create a temporary .env file for the test
           cat <<EOF > .env.test
           DISCORD_API_KEY=${{ secrets.DISCORD_API_KEY }}
-          GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
-          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-          GOOGLEAI_API_KEY=${{ secrets.GOOGLEAI_API_KEY }}
           EOF
 
           # Run the container in the background
