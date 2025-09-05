@@ -27,4 +27,6 @@ jobs:
           context: .
           push: true
           # This tags the image with the PR number for easy identification
-          tags: mirasi/bongbot-develop:pr-${{github.event.pull_request.number}} mirasi/bongbot-develop:latest
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:pr-${{github.event.pull_request.number}}
+            ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:latest
