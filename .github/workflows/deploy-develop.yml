@@ -42,7 +42,8 @@ jobs:
           comment-author: 'github-actions[bot]'
           body-includes: ''
 
-      - if: steps.fc.outputs.comment-id != ''
+      - name: Delete Previous Comment
+        if: steps.find-comment.outputs.comment-id != ''
         uses: actions/github-script@v6
         with:
           script: |
