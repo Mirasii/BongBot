@@ -25,6 +25,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # Build and push the development image
       - name: Build and Push Development Image
         uses: docker/build-push-action@v4
         with:
@@ -33,7 +34,39 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:pr-${{ github.event.pull_request.number }}
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:latest
+      
+      # Smoke test the container
+      - name: Smoke Test Container
+        run: |
+          # Create a temporary .env file for the test
+          cat <<EOF > .env.test
+          DISCORD_API_KEY=${{ secrets.DISCORD_API_KEY }}
+          GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
+          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          GOOGLEAI_API_KEY=${{ secrets.GOOGLEAI_API_KEY }}
+          EOF
 
+          # Run the container in the background
+          docker run -d --rm \
+            --name bongbot-test \
+            --env-file ./.env.test \
+            ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:pr-${{ github.event.pull_request.number }}
+
+          # Wait 15 seconds to see if the container crashes
+          echo "Waiting for 15 seconds to let the container initialize..."
+          sleep 15
+
+          # Check if the container is still running. If not, show logs and fail the job.
+          if [ "$(docker ps -q -f name=bongbot-test)" ]; then
+            echo "✅ Smoke test passed: Container is running."
+            docker stop bongbot-test
+          else
+            echo "❌ Smoke test failed: Container exited unexpectedly."
+            docker logs bongbot-test
+            exit 1
+          fi
+
+      # Start service on server (requires bongbot-develop.service to be set up)
       - name: SSH and Start Service
         uses: appleboy/ssh-action@master
         with:
@@ -43,6 +76,7 @@ jobs:
           script: |
             sudo systemctl start bongbot-develop
 
+      # Manage PR comments
       - name: Find Previous Comment
         id: find-comment
         uses: peter-evans/find-comment@v3
