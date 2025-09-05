@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const API = require(`${__dirname}/../config/api_config.json`).quotedb;
+const API = require(`${__dirname}/../config/index.js`).apis.quotedb;
 const CALLER = require(`${__dirname}/../helpers/caller.js`);
 const ERROR_BUILDER = require(`${__dirname}/../helpers/errorBuilder.js`);
 

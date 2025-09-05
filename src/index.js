@@ -3,7 +3,7 @@ const bot = new Discord.Client({ intents: [Discord.GatewayIntentBits.Guilds, Dis
 const LOGGER = require('./helpers/logging')
 const fs = require('fs');
 const crypto = require('crypto');
-const token = require('./config/discord_config.json').api_key;
+const token = require(`${__dirname}/config/index.js`).discord?.apikey;
 const ERROR_BUILDER = require(`${__dirname}/helpers/errorBuilder.js`);
 
 /** set up logging */

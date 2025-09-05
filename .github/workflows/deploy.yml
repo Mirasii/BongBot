@@ -1,5 +1,4 @@
 # .github/workflows/deploy.yml
-
 name: Deploy BongBot to Server
 
 on:

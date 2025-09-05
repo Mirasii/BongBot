@@ -1,5 +1,5 @@
 const CALLER = require(`${__dirname}/caller.js`)
-const api = require(`${__dirname}/../config/api_config.json`).google;
+const api = require(`${__dirname}/../config/index.js`).apis.google;
 const { EmbedBuilder } = require('discord.js');
 
 async function searchImage(query) {
