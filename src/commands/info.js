@@ -7,7 +7,8 @@ module.exports = {
         .setDescription('Get BongBot Info Card'),
     async execute(interaction, client) {
         try {
-            return await generateCard(client);
+            const embed = await generateCard(client);
+            return { embeds: [embed] };
         } catch (error) {
             return await ERROR_BUILDER.buildError(interaction, error);
         }
