@@ -20,8 +20,8 @@ module.exports = {
             headers: headers,
             body: JSON.stringify(body)
         }).then(async response => {
-            text = await response.text();
-            if (!response.ok) {  
+            if (!response.ok) { 
+                text = await response.text();
                 throw new Error(`Network response was not ok: ${response.status} ${response.statusText} `); 
             }
             return await response.json();
