@@ -11,7 +11,7 @@ const chatHistory = {};
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('talkgpt')
+        .setName('chat')
         .setDescription('Talk to BongBot!')
         .addStringOption(option => option.setName('input').setDescription('Say something to BongBot!').setRequired(true)),
     async execute(interaction) {
