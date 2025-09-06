@@ -67,12 +67,11 @@ jobs:
           EOF
 
           # Run the container in the background
-          docker run -d --rm \
+          docker run -d \
             --name bongbot-test \
             --env-file ./.env.test \
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:pr-${{ github.event.pull_request.number }}
 
-          # Wait 15 seconds to see if the container crashes
           echo "Waiting for 15 seconds to let the container initialize..."
           sleep 15
 
@@ -80,20 +79,18 @@ jobs:
           if [ "$(docker ps -q -f name=bongbot-test)" ]; then
             echo "✅ Smoke test passed: Container is running."
             docker stop bongbot-test
+            docker rm bongbot-test
           else
             echo "❌ Smoke test failed: Container exited unexpectedly."
-            # Capture the logs from the failed container
-            LOGS=$(docker logs bongbot-test)
-            # Prepare the comment body
+            LOGS=$(docker logs bongbot-test 2>&1)
+            docker rm bongbot-test
             BODY="**Smoke Test Failed** ❌
-
             The container exited unexpectedly during the smoke test. Here are the logs:
             \`\`\`
             ${LOGS}
             \`\`\`"
-            # Post the failure comment to the PR using the GitHub CLI
+
             gh pr comment ${{ github.event.pull_request.number }} --body "$BODY"
-            # Fail the workflow
             exit 1
           fi
 
