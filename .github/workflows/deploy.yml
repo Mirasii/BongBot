@@ -61,17 +61,7 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot:${{ steps.get_version.outputs.new_tag }}
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot:latest
 
-      - name: SSH and Restart Service
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            sudo systemctl restart bongbot
-      
-      # --- The following steps only run after a successful deployment ---
-
+      # --- The following steps only run after a successful deployment, but before restart to make sure version tag is available for infocard ---
       - name: Push new version tag
         if: success()
         uses: anothrNick/github-tag-action@1
@@ -93,3 +83,12 @@ jobs:
             This version has been successfully deployed to production.
           draft: false
           prerelease: false
+
+      - name: SSH and Restart Service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            sudo systemctl restart bongbot
