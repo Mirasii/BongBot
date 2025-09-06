@@ -12,7 +12,7 @@ jobs:
       github.event.pull_request.merged == true &&
       (contains(github.event.pull_request.labels.*.name, 'major') ||
        contains(github.event.pull_request.labels.*.name, 'minor') ||
-       contains(github.event.pull_request.labels.*.name, 'bugfix'))
+       contains(github.event.pull_request.labels.*.name, 'bug'))
     environment: Prod
     runs-on: ubuntu-latest
     permissions:
@@ -32,7 +32,7 @@ jobs:
             echo "level=major" >> $GITHUB_OUTPUT
           elif contains(github.event.pull_request.labels.*.name, 'minor'); then
             echo "level=minor" >> $GITHUB_OUTPUT
-          elif contains(github.event.pull_request.labels.*.name, 'bugfix'); then
+          elif contains(github.event.pull_request.labels.*.name, 'bug'); then
             echo "level=patch" >> $GITHUB_OUTPUT
           fi
         shell: bash
