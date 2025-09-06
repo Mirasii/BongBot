@@ -8,12 +8,13 @@ module.exports = {
         .setName('create_quote')
         .setDescription('Quote Someone!')
         .addStringOption(option => option.setName('quote').setDescription('What did he say!?!').setRequired(true))
-        .addUserOption(option => option.setName('author').setDescription('Who said it?').setRequired(true)),
+        .addStringOption(option => option.setName('author').setDescription('Who said it?').setRequired(true)),
     async execute(interaction, client) {
         try {
             const quote = interaction.options.getString('quote');
-            const author = interaction.options.getUser('user').username;
-
+            const author = interaction.options.getString('author');
+            console.log(interaction.guild.id);
+            console.log(interaction.guild.name);
             const response = await CALLER.post(
                 API.url,
                 '/api/v1/add_quote',
@@ -21,7 +22,10 @@ module.exports = {
                 { 
                     quote: quote, 
                     author: author,
-                    user_id: API.user_id,
+                    user:  {
+                        id: interaction.guild.id,
+                        name: interaction.guild.name,
+                    },
                     owner_id: API.owner_id,
                     date: new Date().toLocaleString()
                 }
