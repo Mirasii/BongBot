@@ -8,21 +8,21 @@ class EMBED_BUILDER {
 
     constructor(attachment) {
         this.attachment = attachment;
-    }
-
-    constructEmbedWithAttachment(description, filename) {
-        const embed = new EmbedBuilder().setDescription(description);
-        embed.setThumbnail(`attachment://${filename}`);
-        this.embed = embed;
+        this.embed = new EmbedBuilder();
         return this;
     }
 
-    async constructEmbedWithRandomFile(descrption) {
-        const embed = new EmbedBuilder().setDescription(descrption);
+    constructEmbedWithAttachment(description, filename) {
+        this.embed.setDescription(description);
+        this.embed.setThumbnail(`attachment://${filename}`);
+        return this;
+    }
+
+    async constructEmbedWithRandomFile(description) {
+        this.embed.setDescription(description);
         const file = await selectRandomFile(dir);
         let attach = new AttachmentBuilder(`./src/responses/${file}`);
-        embed.setThumbnail(`attachment://${file}`);
-        this.embed = embed;
+        this.embed.setThumbnail(`attachment://${file}`);
         this.attachment = attach;
         return this.build();
     }
