@@ -1,7 +1,7 @@
 const { MessageFlags, Colors } = require('discord.js');
 const errorMsg = 'There was an error while executing the "{interaction}" command.';
 const LOGGER = require(`${__dirname}/logging.js`);
-const EMBED_BUILDER = require(`${__dirname}/embedBuilder.js`);
+const { EMBED_BUILDER } = require(`${__dirname}/embedBuilder.js`);
 
 async function buildError(interaction, error) {
     console.error(`Error executing ${interaction?.commandName ?? 'unknown'} command`);
@@ -15,7 +15,7 @@ async function buildUnknownError(error) {
 
 async function buildErrorHelper(error, errorMessage) {
     LOGGER.log(error);
-    const returnEmbed = await EMBED_BUILDER.constructEmbedWithRandomFile(error.message);
+    const returnEmbed = await new EMBED_BUILDER.constructEmbedWithRandomFile(error.message);
     const embed = returnEmbed.embeds[0];
     embed.setTitle(errorMessage)
         .setColor(Colors.Red);

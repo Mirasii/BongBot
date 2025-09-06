@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const { AttachmentBuilder } = require('discord.js');
 const CALLER = require(`${__dirname}/../helpers/caller.js`);
-const EMBED_BUILDER = require(`${__dirname}/../helpers/embedBuilder.js`);
+const { EMBED_BUILDER } = require(`${__dirname}/../helpers/embedBuilder.js`);
 const api = require(`${__dirname}/../config/index.js`).apis;
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const MAX_HISTORY_LENGTH = 100;
@@ -38,7 +38,7 @@ module.exports = {
 async function executeAI(input, authorId, serverId) {
     if(api.openai.active) return await getChatbotResponse(input, authorId, serverId);
     if(api.googleai.active) return await getGeminiChatbotResponse(input, authorId, serverId);
-    return EMBED_BUILDER.constructErrorEmbed("Hmph! Why are you trying to talk to me when no AI service is active?");
+    return await new EMBED_BUILDER.constructEmbedWithRandomFile("Hmph! Why are you trying to talk to me when no AI service is active?");
 }
 
 async function getChatbotResponse(message, authorId, serverId) {
@@ -53,7 +53,7 @@ async function getChatbotResponse(message, authorId, serverId) {
                      .catch(error => { throw new Error(error.message) });
     history.push({"role":"assistant","content":resp});
     chatHistory[serverId] = history;
-    return await EMBED_BUILDER.constructEmbedWithRandomFile(resp);
+    return await new EMBED_BUILDER.constructEmbedWithRandomFile(resp);
 }
 
 async function getGeminiChatbotResponse(message, authorId, serverId) {
@@ -85,7 +85,6 @@ async function getGeminiChatbotResponse(message, authorId, serverId) {
         const imageResult = await imageModel.generateContent(imageDescription);
         const imageResponse = imageResult.response;
         const imagePart = imageResponse.candidates[0].content.parts[0];
-        console.log(imagePart);
         let imageAttachment;
         if (imagePart.inlineData) {
             const imageBuffer = Buffer.from(imagePart.inlineData.data, 'base64');
@@ -93,18 +92,13 @@ async function getGeminiChatbotResponse(message, authorId, serverId) {
         }
 
         // Create embed
-        const embed = new EmbedBuilder().setDescription(text);
-        console.log(imageAttachment);
-        if (imageAttachment) {
-            embed.setThumbnail('attachment://tsundere.png');
-            return { embeds: [embed], files: [imageAttachment] };
-        }
+        return new EMBED_BUILDER(imageAttachment).constructEmbedWithAttachment(text, 'tsundere.png');
     } catch (error) {
         console.log("Image generation failed, falling back to random file.", error);
     }
 
     // Fallback to random file if image generation fails or doesn't return an image
-    return await EMBED_BUILDER.constructEmbedWithRandomFile(text);
+    return await new EMBED_BUILDER().constructEmbedWithRandomFile(text);
 }
 
 function getHistory(message, authorId, serverId){
