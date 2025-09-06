@@ -61,6 +61,7 @@ bot.on('clientReady', async () => {
 });
 
 const postDeploymentMessage = async () => {
+    console.log(process.env.DISCORD_CHANNEL_ID);
     const channel = await bot.channels.fetch(process.env.DISCORD_CHANNEL_ID);
     if (!channel || !channel.isTextBased()) return;
     try {
