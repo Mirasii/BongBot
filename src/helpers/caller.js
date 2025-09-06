@@ -1,25 +1,35 @@
+const LOGGER = require(`${__dirname}/logging.js`);
+
 module.exports = {
     async get(url, path, params, headers) {
-        let fullPath = `${url}${path ? path : ''}${params ? `?${params}`:''}`;
-        let resp = await fetch(fullPath, {
+        const config = {
             method: 'GET',
             headers: headers
-        }).then(response => {
-            if (!response.ok) { throw new Error(`Network response was not ok: ${response.status} ${response.statusText} ${response.text()}`); }
-            return response.json();
-        })
-        return resp;
+        };
+        return await makeCallout(constructFullPath(url, path, params), config);
     },
     async post(url, path, headers, body) {
-        let fullPath = `${url}${path ? path : ''}`;
-        let resp = await fetch(fullPath, {
+        const config = {
             method: 'POST',
             headers: headers,
             body: JSON.stringify(body)
-        }).then(response => {
-            if (!response.ok) { throw new Error(`Network response was not ok: ${response.status} ${response.statusText} ${response.text()}`); }
-            return response.json();
-        })
-        return resp;
+        };
+        return await makeCallout(constructFullPath(url, path, null), config);
     }
+}
+
+function constructFullPath(url, path, params) {
+    return `${url}${path ?? ''}${params ? `?${params}` : ''}`;
+}
+
+async function makeCallout(url, config) {
+    let text;
+    let resp = await fetch(url, config).then(async response => {
+        if (response.ok) return await response.json();
+        text = await response.text();
+        throw new Error(`Network response was not ok: ${response.status} ${response.statusText} ${text}`);
+    }).finally(() => {
+        if (text) { LOGGER.log(`${text}`); }
+    });
+    return resp;
 }

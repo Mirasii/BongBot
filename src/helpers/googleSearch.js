@@ -1,5 +1,5 @@
 const CALLER = require(`${__dirname}/caller.js`)
-const api = require(`${__dirname}/../config/api_config.json`).google;
+const api = require(`${__dirname}/../config/index.js`).apis.google;
 const { EmbedBuilder } = require('discord.js');
 
 async function searchImage(query) {
@@ -22,8 +22,8 @@ async function searchImage(query) {
         if (urls.length === 0) {
             await interaction.reply('No images found');
         } else {
-            const embed = new EmbedBuilder().setImage(urls[Math.floor(Math.random() * urls.length)]);
-            console.log(embed.toJSON());
+            const url = urls[Math.floor(Math.random() * urls.length)]
+            const embed = new EmbedBuilder().setImage(url).setDescription(url);
             const response = {
                 embeds: [embed.toJSON()]
             };

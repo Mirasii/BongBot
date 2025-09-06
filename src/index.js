@@ -3,8 +3,9 @@ const bot = new Discord.Client({ intents: [Discord.GatewayIntentBits.Guilds, Dis
 const LOGGER = require('./helpers/logging')
 const fs = require('fs');
 const crypto = require('crypto');
-const token = require('./config/discord_config.json').api_key;
-const errorMsg = 'Leave me alone! I\'m not talking to you! (there was an error)';
+const token = require(`${__dirname}/config/index.js`).discord?.apikey;
+const ERROR_BUILDER = require(`${__dirname}/helpers/errorBuilder.js`);
+const { generateCard } = require(`${__dirname}/helpers/infoCard.js`);
 
 /** set up logging */
 const sessionId = crypto.randomUUID();
@@ -28,10 +29,11 @@ bot.on('interactionCreate', async interaction => {
         if (!command) return;
         await interaction.deferReply();
         const response = await command.execute(interaction, bot); 
+        if (response?.isError === true) { await interaction.deleteReply(); }
         await interaction.followUp(response);
     } catch (error) {
-        LOGGER.log(error);
-        await interaction.followUp({content: errorMsg, ephemeral: true});
+        await interaction.deleteReply();
+        await interaction.followUp(await ERROR_BUILDER.buildUnknownError(error));
     }
 });
 
@@ -40,23 +42,43 @@ bot.on('messageCreate', async message => {
     try {
         if (message.author.bot) return; // Ignore messages from other bots
         if (!message?.mentions?.users?.has(`${bot.user.id}`)) { return; }
-        const response = await bot.commands.get('talkgpt').executeLegacy(message, bot);
+        const response = await bot.commands.get('chat').executeLegacy(message, bot);
         await message.reply(response);
     } catch (error) {
-        LOGGER.log(error);
-        await message.reply({content: errorMsg, ephemeral: true});
+        await message.reply(await ERROR_BUILDER.buildUnknownError(error));
     }   
 });
 
 /** set commands on bot ready */
-bot.on('ready', async () => {
+bot.on('clientReady', async () => {
     try {
         await bot.application.commands.set(commands);
         console.log('Commands Initiated!');
+        postDeploymentMessage();
+        bot.user.setPresence({ activities: [{ 
+            name: `with your heart`, 
+            type: Discord.ActivityType.Playing
+        }], status: 'online' });
     } catch (error) {
         LOGGER.log(error);
     }
 });
+
+const postDeploymentMessage = async () => {
+    const channel = await bot.channels.fetch(process.env.DISCORD_CHANNEL_ID);
+    if (!channel || !channel.isTextBased()) return;
+    try {
+        const messages = await channel.messages.fetch({ limit: 100 });
+        const botMessages = messages.filter(msg => msg.author.id === bot.user.id);
+        botMessages?.forEach(message => message.delete());
+    } catch (err) {
+        console.warn(`Warning: Could not delete messages. The bot might be missing 'Manage Messages' permissions. Error: ${err.message}`);
+    }
+
+    // Send the composed embed to the channel.
+    const card = await generateCard(bot);
+    await channel.send({ embeds: [card] });
+};
 
 /** login to bot */
 bot.login(token);

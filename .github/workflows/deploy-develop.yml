@@ -20,7 +20,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Delete outdated comments from previous runs
+      # --- NEW STEP TO VALIDATE LABELS ---
+      - name: Check for Version Label
+        if: "! (contains(github.event.pull_request.labels.*.name, 'major') || contains(github.event.pull_request.labels.*.name, 'minor') || contains(github.event.pull_request.labels.*.name, 'bug'))"
+        run: |
+          echo "❌ Error: Pull Request must have a 'major', 'minor', or 'bugfix' label."
+          exit 1
+      # --- END OF NEW STEP ---
+
       - name: Find Previous Comment
         id: find-comment
         uses: peter-evans/find-comment@v3
@@ -64,6 +71,7 @@ jobs:
           # Create a temporary .env file for the test
           cat <<EOF > .env.test
           DISCORD_API_KEY=${{ secrets.DISCORD_API_KEY }}
+          DISCORD_CHANNEL_ID=${{ secrets.DISCORD_CHANNEL_ID }}
           EOF
 
           # Run the container in the background
@@ -102,7 +110,13 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            sudo systemctl start bongbot-develop
+            if systemctl is-active --quiet bongbot-develop; then
+              echo "✅ Service 'bongbot-develop' is running. Restarting service..."
+              sudo systemctl restart bongbot-develop
+            else
+              echo "ℹ️ Service 'bongbot-develop' is not running. Starting service..."
+              sudo systemctl start bongbot-develop
+            fi
 
       # Create a new comment with the image details
       - name: Create New Comment
