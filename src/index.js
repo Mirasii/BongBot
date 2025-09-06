@@ -55,6 +55,10 @@ bot.on('clientReady', async () => {
         await bot.application.commands.set(commands);
         console.log('Commands Initiated!');
         postDeploymentMessage();
+        bot.user.setPresence({ activities: [{ 
+            name: `with your heart`, 
+            type: Discord.ActivityType.Playing
+        }], status: 'online' });
     } catch (error) {
         LOGGER.log(error);
     }
