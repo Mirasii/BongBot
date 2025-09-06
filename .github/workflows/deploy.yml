@@ -39,7 +39,7 @@ jobs:
 
       - name: Get next version (Dry Run)
         id: get_version
-        uses: anothrNick/github-tag-action@1.67.0
+        uses: anothrNick/github-tag-action@1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           default_bump: ${{ steps.get_level.outputs.level }}
@@ -74,7 +74,7 @@ jobs:
 
       - name: Push new version tag
         if: success()
-        uses: anothrNick/github-tag-action@1.67.0
+        uses: anothrNick/github-tag-action@1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           default_bump: ${{ steps.get_level.outputs.level }}
