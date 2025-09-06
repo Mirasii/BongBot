@@ -42,7 +42,7 @@ bot.on('messageCreate', async message => {
     try {
         if (message.author.bot) return; // Ignore messages from other bots
         if (!message?.mentions?.users?.has(`${bot.user.id}`)) { return; }
-        const response = await bot.commands.get('talkgpt').executeLegacy(message, bot);
+        const response = await bot.commands.get('chat').executeLegacy(message, bot);
         await message.reply(response);
     } catch (error) {
         await message.reply(await ERROR_BUILDER.buildUnknownError(error));

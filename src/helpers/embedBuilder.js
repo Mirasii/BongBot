@@ -4,7 +4,8 @@ const dir = `${__dirname}/../responses`;
 
 class EMBED_BUILDER {
     attachment;
- 
+    embed;
+
     constructor(attachment) {
         this.attachment = attachment;
     }
@@ -12,7 +13,8 @@ class EMBED_BUILDER {
     constructEmbedWithAttachment(description, filename) {
         const embed = new EmbedBuilder().setDescription(description);
         embed.setThumbnail(`attachment://${filename}`);
-        return { embeds: [embed], files: [this.attachment]}
+        this.embed = embed;
+        return this;
     }
 
     async constructEmbedWithRandomFile(descrption) {
@@ -20,7 +22,18 @@ class EMBED_BUILDER {
         const file = await selectRandomFile(dir);
         let attach = new AttachmentBuilder(`./src/responses/${file}`);
         embed.setThumbnail(`attachment://${file}`);
-        return { embeds: [embed], files: [attach] };
+        this.embed = embed;
+        this.attachment = attach;
+        return this.build();
+    }
+
+    addFooter(text, iconURL) {
+        this.embed.setFooter({ text: text, iconURL: iconURL });
+        return this;
+    }
+
+    build() {
+        return { embeds: [this.embed], files: [this.attachment]};
     }
 }
 

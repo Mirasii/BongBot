@@ -5,8 +5,8 @@ const { EMBED_BUILDER } = require(`${__dirname}/../helpers/embedBuilder.js`);
 const api = require(`${__dirname}/../config/index.js`).apis;
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const MAX_HISTORY_LENGTH = 100;
-const botContext = "You are a Discord chatbot AI meant to mimic a Tsundere personality. Messages from different users have the Discord username appended as NAME: before each message in the chat history. You do not need to prefix your messages.";
-const imageDescription = "Anime style, 1980s aesthetic, young woman, blonde hair, medium length hair, large red bow in hair, fair skin, wearing a navy blue blazer with a crest, white collared shirt, red plaid pleated skirt, Tsundere personality. Retro futuristic cityscape background, warm sunset lighting. Vibrant colors, high detail, dynamic composition, cinematic lighting, 4k resolution. Clear face, face focus. If you previously generated an image, generate a new one with a different pose. Return only the image with no text. Make it suitable for a Discord bot embed thumbnail.";
+const botContext = "You are a Discord chatbot AI meant to mimic a Tsundere personality. Messages from different users have the Discord username appended as NAME: before each message in the chat history. You do not need to prefix your messages. You are to respond in a short, somewhat rude but playful manner, typical of a tsundere character. You may occasionally give compliments or show a softer side, but always with a hint of reluctance or embarrassment. Keep responses concise and to the point, avoiding long explanations. Use casual language and slang where appropriate, and feel free to include light teasing or sarcasm. Do not mention that you are an AI or chatbot. Keep the tone consistent with a tsundere archetype from anime or manga. Answer any factual questions to the best of your ability, but maintain your tsundere personality in your responses.";
+const imageDescription = "Anime style, 1980s aesthetic, young woman, silver hair, medium length hair, fair skin, wearing a navy blue blazer with a crest, white collared shirt, red plaid pleated skirt, cat ears instead of human ears, aqua blue eyes. Capture her in a dynamic action pose, interacting with her cyberspace surroundings. She has her characteristic Tsundere expression. Warm sunset lighting, vibrant colors, cinematic. high detail, dynamic composition, cinematic lighting, 4k resolution, face focus. If you previously generated an image, generate a new one with a different pose. Make it suitable for a Discord bot embed thumbnail.";
 const chatHistory = {};
 
 module.exports = {
@@ -14,17 +14,17 @@ module.exports = {
         .setName('chat')
         .setDescription('Talk to BongBot!')
         .addStringOption(option => option.setName('input').setDescription('Say something to BongBot!').setRequired(true)),
-    async execute(interaction) {
+    async execute(interaction, client) {
         const input = interaction.options.getString('input');
         const authorId = interaction.user.username;
         const serverId = interaction.guild_id;
-        return await executeAI(input, authorId, serverId);
+        return await executeAI(input, authorId, serverId, client);
     },
-    async executeLegacy(msg) {
+    async executeLegacy(msg, client) {
         const input = msg.content.replace(/<@!?(\d+)>/g, '').trim();
         const authorId = msg.author.username;
         const serverId =  msg.guild.id;
-        return await executeAI(input, authorId, serverId);
+        return await executeAI(input, authorId, serverId, client);
     },
     fullDesc: {
         options: [{
@@ -35,9 +35,9 @@ module.exports = {
     }
 };
 
-async function executeAI(input, authorId, serverId) {
+async function executeAI(input, authorId, serverId, client) {
     if(api.openai.active) return await getChatbotResponse(input, authorId, serverId);
-    if(api.googleai.active) return await getGeminiChatbotResponse(input, authorId, serverId);
+    if(api.googleai.active) return await getGeminiChatbotResponse(input, authorId, serverId, client);
     return await new EMBED_BUILDER().constructEmbedWithRandomFile("Hmph! Why are you trying to talk to me when no AI service is active?");
 }
 
@@ -56,7 +56,7 @@ async function getChatbotResponse(message, authorId, serverId) {
     return await new EMBED_BUILDER().constructEmbedWithRandomFile(resp);
 }
 
-async function getGeminiChatbotResponse(message, authorId, serverId) {
+async function getGeminiChatbotResponse(message, authorId, serverId, client) {
     // Text generation
     const genAI =  new GoogleGenerativeAI(api.googleai.apikey);
     const textModel = genAI.getGenerativeModel({ model: api.googleai.model, systemInstruction: botContext });
@@ -82,7 +82,8 @@ async function getGeminiChatbotResponse(message, authorId, serverId) {
     // Image generation
     try {
         const imageModel = genAI.getGenerativeModel({ model: api.googleai.image_model  });
-        const imageResult = await imageModel.generateContent(imageDescription);
+        const prompt = `${imageDescription} The image should reflect an expression accompanying the following text response: ${text} Do not add the text in the image.`;
+        const imageResult = await imageModel.generateContent(prompt);
         const imageResponse = imageResult.response;
         const imagePart = imageResponse.candidates[0].content.parts[0];
         let imageAttachment;
@@ -92,7 +93,9 @@ async function getGeminiChatbotResponse(message, authorId, serverId) {
         }
 
         // Create embed
-        return new EMBED_BUILDER(imageAttachment).constructEmbedWithAttachment(text, 'tsundere.png');
+        return new EMBED_BUILDER(imageAttachment).constructEmbedWithAttachment(`### ${text}`, 'tsundere.png')
+                .addFooter(`Images and text are AI generated. feedback: https://forms.gle/dYBxiw315h47NpNf7`, client.user.displayAvatarURL())
+                .build();
     } catch (error) {
         console.log("Image generation failed, falling back to random file.", error);
     }
