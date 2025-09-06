@@ -6,8 +6,8 @@ const ERROR_BUILDER = require(`${__dirname}/../helpers/errorBuilder.js`);
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('get_server_quotes')
-        .setDescription('Get Quotes for this server!')
+        .setName('get_quotes')
+        .setDescription('Get up to 5 recent quotes!')
         .addIntegerOption(option => option.setName('number').setDescription('How many quotes do you want?').setRequired(false)),
     async execute(interaction, client) {
         try {
@@ -16,15 +16,15 @@ module.exports = {
 
             const response = await CALLER.get(
                 API.url,
-                '/api/v1/get_quote',
-                `user_id=${interaction.guild.id}&max_quotes=${number}`,
+                `/api/v1/quotes/search/user/${API.user_id}`,
+                `max_quotes=${number}`,
                 { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API.apikey}` }
             );
             if (response.length === 0) return await ERROR_BUILDER.buildError(interaction, new Error("No quotes found."));
             const embed = new EmbedBuilder()
-                    .setTitle(`📜 Quotes from ${interaction.guild.name}`)
+                    .setTitle(`📜 Recent Quotes`)
                     .setColor(Colors.Purple)
-                    .addFields(response.map((quote) => ({
+                    .addFields(response.quotes.map((quote) => ({
                         name: `*"${quote.quote}"*`,
                         value: `🪶 - ${quote.author}`,
                         inline: false
