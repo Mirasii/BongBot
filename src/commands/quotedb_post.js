@@ -33,6 +33,6 @@ module.exports = {
     },
     fullDesc: {
         options: [],
-        description: "Praise unto you, my friend"
+        description: "Adds a Quote to dev.elmu.db."
     }
 }
