@@ -82,9 +82,9 @@ jobs:
             docker rm bongbot-test
           else
             echo "❌ Smoke test failed: Container exited unexpectedly."
+            LOGS=$(docker logs bongbot-test 2>&1)
             docker rm bongbot-test
             BODY="**Smoke Test Failed** ❌
-            LOGS=$(docker logs bongbot-test 2>&1)
             The container exited unexpectedly during the smoke test. Here are the logs:
             \`\`\`
             ${LOGS}
