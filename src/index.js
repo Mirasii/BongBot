@@ -5,6 +5,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const token = require(`${__dirname}/config/index.js`).discord?.apikey;
 const ERROR_BUILDER = require(`${__dirname}/helpers/errorBuilder.js`);
+const { generateCard } = require(`${__dirname}/helpers/infoCard.js`);
 
 /** set up logging */
 const sessionId = crypto.randomUUID();
@@ -53,10 +54,27 @@ bot.on('clientReady', async () => {
     try {
         await bot.application.commands.set(commands);
         console.log('Commands Initiated!');
+        postDeploymentMessage();
     } catch (error) {
         LOGGER.log(error);
     }
 });
+
+const postDeploymentMessage = async () => {
+    const channel = await bot.channels.fetch(process.env.DISCORD_CHANNEL_ID);
+    if (!channel || !channel.isTextBased()) return;
+    try {
+        const messages = await channel.messages.fetch({ limit: 100 });
+        const botMessages = messages.filter(msg => msg.author.id === bot.user.id);
+        botMessages?.forEach(message => message.delete());
+    } catch (err) {
+        console.warn(`Warning: Could not delete messages. The bot might be missing 'Manage Messages' permissions. Error: ${err.message}`);
+    }
+
+    // Send the composed embed to the channel.
+    const card = await generateCard(bot);
+    await channel.send({ embeds: [card] });
+};
 
 /** login to bot */
 bot.login(token);
