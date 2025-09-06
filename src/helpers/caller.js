@@ -2,22 +2,24 @@ const LOGGER = require(`${__dirname}/logging.js`);
 
 module.exports = {
     async get(url, path, params, headers) {
-        let fullPath = `${url}${path ? path : ''}${params ? `?${params}` : ''}`;
-        let config = {
+        const config = {
             method: 'GET',
             headers: headers
         };
-        return await makeCallout(fullPath, config);
+        return await makeCallout(constructFullPath(url, path, params), config);
     },
     async post(url, path, headers, body) {
-        let fullPath = `${url}${path ? path : ''}`;
-        let config = {
+        const config = {
             method: 'POST',
             headers: headers,
             body: JSON.stringify(body)
         };
-        return await makeCallout(fullPath, config);
+        return await makeCallout(constructFullPath(url, path, null), config);
     }
+}
+
+function constructFullPath(url, path, params) {
+    return `${url}${path ?? ''}${params ? `?${params}` : ''}`;
 }
 
 async function makeCallout(url, config) {
