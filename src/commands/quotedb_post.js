@@ -8,7 +8,7 @@ module.exports = {
         .setName('quote')
         .setDescription('Quote Someone!')
         .addStringOption(option => option.setName('quote').setDescription('What did he say!?!').setRequired(true))
-        .addUserOption(option => option.setName('user').setDescription('Who said it?').setRequired(true)),
+        .addUserOption(option => option.setName('author').setDescription('Who said it?').setRequired(true)),
     async execute(interaction, client) {
         try {
             const quote = interaction.options.getString('quote');
