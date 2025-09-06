@@ -16,9 +16,15 @@ module.exports = {
 
             const response = await CALLER.post(
                 API.url,
-                '/api/quotes',
+                '/api/v1/add_quote',
                 { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API.apikey}` },
-                { quote: quote, author: author }
+                { 
+                    quote: quote, 
+                    author: author,
+                    user_id: API.user_id,
+                    owner_id: API.owner_id,
+                    date: new Date().toLocaleString()
+                }
             );
             return `Quote Successfully Added:\n*"${response}"*`;
         } catch (error) {
