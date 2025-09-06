@@ -1,4 +1,5 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('@discordjs/builders');
+const { SlashCommandBuilder } = require('@discordjs/builders');
+const { EmbedBuilder, Colors } = require('discord.js');
 const API = require(`${__dirname}/../config/index.js`).apis.quotedb;
 const CALLER = require(`${__dirname}/../helpers/caller.js`);
 const ERROR_BUILDER = require(`${__dirname}/../helpers/errorBuilder.js`);
@@ -20,9 +21,9 @@ module.exports = {
                 { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API.apikey}` }
             );
             if (response.length === 0) return await ERROR_BUILDER.buildError(interaction, new Error("No quotes found."));
-            const embed = new Discord.EmbedBuilder()
+            const embed = new EmbedBuilder()
                     .setTitle(`📜 Quotes from ${interaction.guild.name}`)
-                    .setColor(Discord.Colors.Purple)
+                    .setColor(Colors.Purple)
                     .addFields(response.map((quote) => ({
                         name: `*"${quote.quote}"*`,
                         value: `🪶 - ${quote.author}`,
