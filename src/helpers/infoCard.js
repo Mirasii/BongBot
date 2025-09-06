@@ -57,7 +57,7 @@ const generateCard = async (bot) => {
             { name: '📦 Node.js', value: `${process.versions.node}`, inline: true },
             { name: '📚 Library', value: 'discord.js', inline: true }
         )
-        .setFooter({ text: `BongBot • ${apiResponse.tag}`, iconURL: bot.user.displayAvatarURL() })
+        .setFooter({ text: `BongBot • ${process.env.ENV === 'prod' ? apiResponse.tag : 'dev build' }`, iconURL: bot.user.displayAvatarURL() })
         .setTimestamp();
 }
 
