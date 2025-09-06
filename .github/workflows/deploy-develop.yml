@@ -87,9 +87,9 @@ jobs:
             BODY="**Smoke Test Failed** ❌
 
             The container exited unexpectedly during the smoke test. Here are the logs:
-            ```
+            \`\`\`
             ${LOGS}
-            ```"
+            \`\`\`"
 
             gh pr comment ${{ github.event.pull_request.number }} --body "$BODY"
             exit 1
