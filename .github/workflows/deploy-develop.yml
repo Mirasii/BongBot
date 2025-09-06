@@ -94,6 +94,21 @@ jobs:
             exit 1
           fi
 
+      # Stop any currently running service on the server (if exists)
+      - name: SSH and Stop Current Service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            if systemctl is-active --quiet bongbot-develop; then
+              echo "✅ Service 'bongbot-develop' is running. Stopping it now..."
+              sudo systemctl stop bongbot-develop
+            else
+              echo "ℹ️ Service 'bongbot-develop' is not running. No action needed."
+            fi
+
       # Start service on server for user testing (requires bongbot-develop.service to be set up)
       - name: SSH and Start Service
         uses: appleboy/ssh-action@master
