@@ -13,8 +13,8 @@ const getRepoInfoFromAPI = async (owner, repo) => {
         const releaseResponse = await fetch(`${repoApiUrl}/releases/latest`, { headers });
         if (!releaseResponse.ok) throw new Error (`Release fetch failed: ${releaseResponse.statusText}`);
         const tagsData = await releaseResponse.json();
-        const defaultBranch = tagsData.target_commitish;
         const tag = tagsData.tag_name;
+        const defaultBranch = process.env.BRANCH ?? 'main';
         // 2. Fetch the latest commit from that default branch
         const branchesResponse = await fetch(`${repoApiUrl}/branches/${defaultBranch}`, { headers });
         if (!branchesResponse.ok) throw new Error(`Branches fetch failed: ${branchesResponse.statusText}`);
