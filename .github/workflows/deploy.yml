@@ -25,17 +25,32 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Determine Version Bump Level
+      - name: Determine Version Bump Level (major)
+        id: get_level_major
+        if: contains(github.event.pull_request.labels.*.name, 'major')
+        run: echo "level=major" >> $GITHUB_OUTPUT
+
+      - name: Determine Version Bump Level (minor)
+        id: get_level_minor
+        if: contains(github.event.pull_request.labels.*.name, 'minor')
+        run: echo "level=minor" >> $GITHUB_OUTPUT
+
+      - name: Determine Version Bump Level (bug)
+        id: get_level_bug
+        if: contains(github.event.pull_request.labels.*.name, 'bug')
+        run: echo "level=patch" >> $GITHUB_OUTPUT
+        
+      - name: Set final version bump level
         id: get_level
         run: |
-          if contains(github.event.pull_request.labels.*.name, 'major'); then
-            echo "level=major" >> $GITHUB_OUTPUT
-          elif contains(github.event.pull_request.labels.*.name, 'minor'); then
-            echo "level=minor" >> $GITHUB_OUTPUT
-          elif contains(github.event.pull_request.labels.*.name, 'bug'); then
-            echo "level=patch" >> $GITHUB_OUTPUT
+          if [[ ! -z "${{ steps.get_level_major.outputs.level }}" ]]; then
+            echo "level=${{ steps.get_level_major.outputs.level }}" >> $GITHUB_OUTPUT
+          elif [[ ! -z "${{ steps.get_level_minor.outputs.level }}" ]]; then
+            echo "level=${{ steps.get_level_minor.outputs.level }}" >> $GITHUB_OUTPUT
+          elif [[ ! -z "${{ steps.get_level_bug.outputs.level }}" ]]; then
+            echo "level=${{ steps.get_level_bug.outputs.level }}" >> $GITHUB_OUTPUT
           fi
-        shell: bash
+      # --- CORRECTED SECTION END ---
 
       - name: Get next version (Dry Run)
         id: get_version
@@ -76,7 +91,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.get_version.outputs.new_tag }} # Use the tag calculated at the start
+          tag_name: ${{ steps.get_version.outputs.new_tag }}
           release_name: Release ${{ steps.get_version.outputs.new_tag }}
           body: |
             New release based on PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}
