@@ -84,10 +84,10 @@ jobs:
             echo "❌ Smoke test failed: Container exited unexpectedly."
             docker rm bongbot-test
             BODY="**Smoke Test Failed** ❌
-
+            LOGS=$(docker logs bongbot-test 2>&1)
             The container exited unexpectedly during the smoke test. Here are the logs:
             \`\`\`
-            $(docker logs bongbot-test)
+            ${LOGS}
             \`\`\`"
 
             gh pr comment ${{ github.event.pull_request.number }} --body "$BODY"
