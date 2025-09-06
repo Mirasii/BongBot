@@ -5,7 +5,7 @@ const ERROR_BUILDER = require(`${__dirname}/../helpers/errorBuilder.js`);
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('quote')
+        .setName('create_quote')
         .setDescription('Quote Someone!')
         .addStringOption(option => option.setName('quote').setDescription('What did he say!?!').setRequired(true))
         .addUserOption(option => option.setName('author').setDescription('Who said it?').setRequired(true)),
