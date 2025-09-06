@@ -38,7 +38,7 @@ module.exports = {
 async function executeAI(input, authorId, serverId) {
     if(api.openai.active) return await getChatbotResponse(input, authorId, serverId);
     if(api.googleai.active) return await getGeminiChatbotResponse(input, authorId, serverId);
-    return await new EMBED_BUILDER.constructEmbedWithRandomFile("Hmph! Why are you trying to talk to me when no AI service is active?");
+    return await new EMBED_BUILDER().constructEmbedWithRandomFile("Hmph! Why are you trying to talk to me when no AI service is active?");
 }
 
 async function getChatbotResponse(message, authorId, serverId) {
@@ -53,7 +53,7 @@ async function getChatbotResponse(message, authorId, serverId) {
                      .catch(error => { throw new Error(error.message) });
     history.push({"role":"assistant","content":resp});
     chatHistory[serverId] = history;
-    return await new EMBED_BUILDER.constructEmbedWithRandomFile(resp);
+    return await new EMBED_BUILDER().constructEmbedWithRandomFile(resp);
 }
 
 async function getGeminiChatbotResponse(message, authorId, serverId) {

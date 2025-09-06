@@ -15,7 +15,7 @@ async function buildUnknownError(error) {
 
 async function buildErrorHelper(error, errorMessage) {
     LOGGER.log(error);
-    const returnEmbed = await new EMBED_BUILDER.constructEmbedWithRandomFile(error.message);
+    const returnEmbed = await new EMBED_BUILDER().constructEmbedWithRandomFile(error.message);
     const embed = returnEmbed.embeds[0];
     embed.setTitle(errorMessage)
         .setColor(Colors.Red);

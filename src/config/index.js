@@ -6,7 +6,8 @@ const config = {
     apis: {
         quotedb: {
             url: "https://quotes.elmu.dev",
-            apikey: process.env.QUOTEDB_API_KEY || null
+            apikey: process.env.QUOTEDB_API_KEY || null,
+            owner_id: process.env.QUOTEDB_OWNER_ID || null
         },
         google: {
             url: "https://www.googleapis.com",
