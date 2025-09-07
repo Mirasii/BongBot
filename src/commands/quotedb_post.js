@@ -31,7 +31,7 @@ module.exports = {
                     .addFields([
                         { name:  `*"${response.quote.quote}"*`, value: `🪶 - ${response.quote.author}`, inline: false },
                     ])
-                    .setFooter({ text: `BongBot • Quotes from dev.elmu.db`, iconURL: client.user.displayAvatarURL() })
+                    .setFooter({ text: `BongBot • Quotes from quotes.elmu.dev`, iconURL: client.user.displayAvatarURL() })
                     .setTimestamp();
             return { embeds: [embed] };
         } catch (error) {
@@ -40,6 +40,6 @@ module.exports = {
     },
     fullDesc: {
         options: [],
-        description: "Adds a Quote to dev.elmu.db."
+        description: "Adds a Quote to quotes.elmu.dev."
     }
 }
