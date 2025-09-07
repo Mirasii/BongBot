@@ -1,59 +1,28 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
 
-// Mock the entire you.js module
-jest.mock('../../src/commands/you.js', () => ({
-    data: {
-        name: 'you',
-        description: 'you!',
-    },
-    execute: jest.fn(),
-    fullDesc: {
-        options: [],
-        description: "Posts a you!"
-    }
-}));
-
-const youCommand = require('../../src/commands/you.js');
+const youCommand = require('../../src/commands/you');
+const { SlashCommandBuilder } = require('discord.js');
 
 describe('you command', () => {
-    const mockInteraction = {
-        reply: jest.fn(),
-    };
-
-    const mockClient = {};
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-        // Mock console.error to prevent actual logging during tests
-        jest.spyOn(console, 'error').mockImplementation(() => {});
+    it('should have a data property', () => {
+        expect(youCommand.data).toBeInstanceOf(SlashCommandBuilder);
     });
 
-    afterEach(() => {
-        // Restore console.error after each test
-        jest.restoreAllMocks();
+    it('should have a name of "you"', () => {
+        expect(youCommand.data.name).toBe('you');
     });
 
-    test('should successfully return the file attachment', async () => {
-        const mockFileContent = Buffer.from('mock image content');
-        // Mock the execute function to return the expected structure
-        youCommand.execute.mockResolvedValueOnce({
-            files: [
-                {
-                    attachment: mockFileContent,
-                    name: "you.mp4"
-                }
-            ]
-        });
+    it('should have a description', () => {
+        expect(youCommand.data.description).toBeTruthy();
+    });
 
-        const result = await youCommand.execute(mockInteraction, mockClient);
+    it('should have an execute method', () => {
+        expect(youCommand.execute).toBeInstanceOf(Function);
+    });
 
-        expect(result).toEqual({
-            files: [
-                {
-                    attachment: mockFileContent,
-                    name: "you.mp4"
-                }
-            ]
-        });
+    it('should return an object with you.mp4 as attachment', async () => {
+        const result = await youCommand.execute();
+        expect(result).toHaveProperty('files');
+        expect(result.files[0]).toHaveProperty('attachment');
+        expect(result.files[0].name).toBe('you.mp4');
     });
 });
