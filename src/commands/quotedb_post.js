@@ -21,6 +21,7 @@ module.exports = {
     },
     async executeReply(message, client) {
         try {
+            console.log(JSON.stringify(message));
             if (!message.reference) return "You need to reply to a message to create a quote from it.";
             const repliedToMessage = await message.fetchReference();
             if (!repliedToMessage || !repliedToMessage.content) return "The message you replied to is empty or I can't access it.";
