@@ -1,9 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { server } from '../mocks/server.js';
-import { handlers } from '../mocks/handlers.js';
-import { SlashCommandBuilder } from '@discordjs/builders';
 import { QuoteBuilder } from '../../src/helpers/quoteBuilder.js';
-import { Colors } from 'discord.js';
 
 // Mock the config module to control API keys and URLs
 jest.mock('../../src/config/index.js', () => ({

@@ -1,5 +1,3 @@
-import { SlashCommandBuilder } from '@discordjs/builders';
-
 const polkaCommand = require('../../src/commands/polka.js');
 
 // Mock the googleSearch module

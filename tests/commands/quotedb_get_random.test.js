@@ -1,6 +1,5 @@
 import { http, HttpResponse } from 'msw';
 import { server } from '../mocks/server.js';
-import { SlashCommandBuilder } from '@discordjs/builders';
 import { QuoteBuilder } from '../../src/helpers/quoteBuilder.js';
 
 // Mock the config module to control API keys and URLs
