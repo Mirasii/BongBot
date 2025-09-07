@@ -42,12 +42,13 @@ bot.on('messageCreate', async message => {
     if (message?.author?.bot || !message?.mentions?.users?.has(bot.user.id)) return;
     let reply;
     try {
-        reply = await message.reply('BongBot is thinking...');
+        reply = await message.reply({ content: 'BongBot is thinking...', allowedMentions: { repliedUser: false }});
         const response = await bot.commands.get('chat').executeLegacy(message, bot);
-        await reply.edit(response);
+        await reply.delete();
+        await message.reply(response);
     } catch (error) {
         const errorResp = await ERROR_BUILDER.buildUnknownError(error);
-        if (reply) { await reply.edit(errorResp); return; }
+        if (reply) { await reply.delete(); }
         await message.reply(errorResp);
     }   
 });
