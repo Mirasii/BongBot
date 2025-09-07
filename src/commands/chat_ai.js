@@ -75,7 +75,7 @@ async function getGeminiChatbotResponse(message, authorId, serverId, client) {
     const result = await chat.sendMessage(message);
     const response = await result.response;
     const text = response.text();
-
+    if (!text) throw new Error("No response from AI - potentially malicious prompt?");
     history.push({ "role": "assistant", "content": text });
     chatHistory[serverId] = history;
 
