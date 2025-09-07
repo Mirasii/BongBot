@@ -53,7 +53,7 @@ async function createQuote(quote, author, client) {
         }
     );
     return new QuoteBuilder()
-        .setTitle(`📜 New Quote Created`)
+        .setTitle(`New Quote Created`)
         .addQuotes([response])
         .build(client);
 }

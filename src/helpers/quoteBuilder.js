@@ -8,7 +8,7 @@ class QuoteBuilder {
     }
 
     setTitle(title) {
-        this.embed.setTitle(title);
+        this.embed.setTitle(`📜 ${title}`);
         return this;
     }
 

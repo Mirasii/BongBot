@@ -22,7 +22,7 @@ module.exports = {
             );
             if (response.length === 0) return await ERROR_BUILDER.buildError(interaction, new Error("No quotes found."));
             return new QuoteBuilder()
-                    .setTitle('📜 Random Quotes')
+                    .setTitle('Random Quotes')
                     .addQuotes(response.quotes)
                     .build(client);
         } catch (error) {
