@@ -22,9 +22,9 @@ jobs:
 
       # --- NEW STEP TO VALIDATE LABELS ---
       - name: Check for Version Label
-        if: "! (contains(github.event.pull_request.labels.*.name, 'major') || contains(github.event.pull_request.labels.*.name, 'minor') || contains(github.event.pull_request.labels.*.name, 'bug'))"
+        if: "! (contains(github.event.pull_request.labels.*.name, 'major') || contains(github.event.pull_request.labels.*.name, 'minor') || contains(github.event.pull_request.labels.*.name, 'patch'))"
         run: |
-          echo "❌ Error: Pull Request must have a 'major', 'minor', or 'bugfix' label."
+          echo "❌ Error: Pull Request must have a 'major', 'minor', or 'patch' label."
           exit 1
       # --- END OF NEW STEP ---
 
