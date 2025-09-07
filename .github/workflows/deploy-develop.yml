@@ -47,9 +47,10 @@ jobs:
               comment_id: ${{ steps.find-comment.outputs.comment-id }}
             })
       - name: Run Unit Tests
-        run:
-          npm ci
-          npm test > TEST_RESULTS
+        uses: ArtiomTr/jest-coverage-report-action@v2
+        id: coverage
+        with:
+          output: report-markdown
       # Build and push the development image
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -140,3 +141,11 @@ jobs:
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:pr-${{ github.event.pull_request.number }}
             ```
             [View on Docker Hub](https://hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop/tags)
+
+            <details>
+            <summary>Coverage Report</summary>
+
+            ```
+            ${{ steps.coverage.outputs.report-markdown }}
+            ```
+            </details>
