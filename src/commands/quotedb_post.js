@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('@discordjs/builders');
+const { QuoteBuilder } = require(`${__dirname}/../helpers/quoteBuilder.js`);
 const { Colors } = require('discord.js');
 const API = require(`${__dirname}/../config/index.js`).apis.quotedb;
 const CALLER = require(`${__dirname}/../helpers/caller.js`);
@@ -51,13 +52,8 @@ async function createQuote(quote, author, client) {
             date: new Date().toLocaleString()
         }
     );
-    const embed = new EmbedBuilder()
+    return new QuoteBuilder()
         .setTitle(`📜 New Quote Created`)
-        .setColor(Colors.Purple)
-        .addFields([
-            { name: `*"${response.quote.quote}"*`, value: `🪶 - ${response.quote.author}`, inline: false },
-        ])
-        .setFooter({ text: `BongBot • Quotes from quotes.elmu.dev`, iconURL: client.user.displayAvatarURL() })
-        .setTimestamp();
-    return { embeds: [embed] };
+        .addQuotes([response])
+        .build(client);
 }
