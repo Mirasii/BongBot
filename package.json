@@ -5,7 +5,7 @@
     "main": "index.js",
     "scripts": {
         "start": "node ./src/index.js",
-        "test": "jest"
+        "test": "jest --json --coverage --outputFile=report.json"
     },
     "dependencies": {
         "@google/generative-ai": "^0.24.1",
