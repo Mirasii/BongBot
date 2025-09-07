@@ -91,7 +91,7 @@ async function getGeminiChatbotResponse(message, authorId, serverId, client) {
             const imageBuffer = Buffer.from(imagePart.inlineData.data, 'base64');
             imageAttachment = new AttachmentBuilder(imageBuffer, { name: 'tsundere.png' });
         }
-
+        if (!imageAttachment) throw new Error(`Image generation failed, no attachment created. Response: ${JSON.stringify(imageResponse)}`);
         // Create embed
         return new EMBED_BUILDER(imageAttachment).constructEmbedWithAttachment(`### ${text}`, 'tsundere.png')
                 .addFooter(`Images and text are AI generated. feedback: https://forms.gle/dYBxiw315h47NpNf7`, client.user.displayAvatarURL())
