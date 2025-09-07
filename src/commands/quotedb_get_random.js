@@ -6,8 +6,8 @@ const ERROR_BUILDER = require(`${__dirname}/../helpers/errorBuilder.js`);
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('get_quotes')
-        .setDescription('Get up to 5 recent quotes!')
+        .setName('random_quotes')
+        .setDescription('Get up to 5 random quotes!')
         .addIntegerOption(option => option.setName('number').setDescription('How many quotes do you want?').setRequired(false)),
     async execute(interaction, client) {
         try {
@@ -16,13 +16,13 @@ module.exports = {
 
             const response = await CALLER.get(
                 API.url,
-                `/api/v1/quotes/search/user/${API.user_id}`,
+                `/api/v1/quotes/random/user/${API.user_id}`,
                 `max_quotes=${number}`,
                 { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API.apikey}` }
             );
             if (response.length === 0) return await ERROR_BUILDER.buildError(interaction, new Error("No quotes found."));
             return new QuoteBuilder()
-                    .setTitle('Recent Quotes')
+                    .setTitle('Random Quotes')
                     .addQuotes(response.quotes)
                     .build(client);
         } catch (error) {
