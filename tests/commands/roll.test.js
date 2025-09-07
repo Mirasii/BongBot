@@ -1,21 +1,21 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 
-// Mock the entire poggeth.js module
-jest.mock('../../src/commands/poggeth.js', () => ({
+// Mock the entire roll.js module
+jest.mock('../../src/commands/roll.js', () => ({
     data: {
-        name: 'poggeth',
-        description: 'poggeth!',
+        name: 'roll',
+        description: 'roll!',
     },
     execute: jest.fn(),
     fullDesc: {
         options: [],
-        description: "Posts a poggeth!"
+        description: "Posts a roll!"
     }
 }));
 
-const poggethCommand = require('../../src/commands/poggeth.js');
+const rollCommand = require('../../src/commands/roll.js');
 
-describe('poggeth command', () => {
+describe('roll command', () => {
     const mockInteraction = {
         reply: jest.fn(),
     };
@@ -36,26 +36,24 @@ describe('poggeth command', () => {
     test('should successfully return the file attachment', async () => {
         const mockFileContent = Buffer.from('mock video content');
         // Mock the execute function to return the expected structure
-        poggethCommand.execute.mockResolvedValueOnce({
+        rollCommand.execute.mockResolvedValueOnce({
             files: [
                 {
                     attachment: mockFileContent,
-                    name: "poggeth.mp4"
+                    name: "roll.mp4"
                 }
             ]
         });
 
-        const result = await poggethCommand.execute(mockInteraction, mockClient);
+        const result = await rollCommand.execute(mockInteraction, mockClient);
 
         expect(result).toEqual({
             files: [
                 {
                     attachment: mockFileContent,
-                    name: "poggeth.mp4"
+                    name: "roll.mp4"
                 }
             ]
         });
     });
-
-    
 });
