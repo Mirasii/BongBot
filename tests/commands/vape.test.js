@@ -1,59 +1,28 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
 
-// Mock the entire vape.js module
-jest.mock('../../src/commands/vape.js', () => ({
-    data: {
-        name: 'vape',
-        description: 'Vape Nic',
-    },
-    execute: jest.fn(),
-    fullDesc: {
-        options: [],
-        description: "Vape Nic...\nSuck Dick!"
-    }
-}));
-
-const vapeCommand = require('../../src/commands/vape.js');
+const vapeCommand = require('../../src/commands/vape');
+const { SlashCommandBuilder } = require('discord.js');
 
 describe('vape command', () => {
-    const mockInteraction = {
-        reply: jest.fn(),
-    };
-
-    const mockClient = {};
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-        // Mock console.error to prevent actual logging during tests
-        jest.spyOn(console, 'error').mockImplementation(() => {});
+    it('should have a data property', () => {
+        expect(vapeCommand.data).toBeInstanceOf(SlashCommandBuilder);
     });
 
-    afterEach(() => {
-        // Restore console.error after each test
-        jest.restoreAllMocks();
+    it('should have a name of "vape"', () => {
+        expect(vapeCommand.data.name).toBe('vape');
     });
 
-    test('should successfully return the file attachment', async () => {
-        const mockFileContent = Buffer.from('mock video content');
-        // Mock the execute function to return the expected structure
-        vapeCommand.execute.mockResolvedValueOnce({
-            files: [
-                {
-                    attachment: mockFileContent,
-                    name: "vape.mp4"
-                }
-            ]
-        });
+    it('should have a description', () => {
+        expect(vapeCommand.data.description).toBeTruthy();
+    });
 
-        const result = await vapeCommand.execute(mockInteraction, mockClient);
+    it('should have an execute method', () => {
+        expect(vapeCommand.execute).toBeInstanceOf(Function);
+    });
 
-        expect(result).toEqual({
-            files: [
-                {
-                    attachment: mockFileContent,
-                    name: "vape.mp4"
-                }
-            ]
-        });
+    it('should return an object with vape.mp4 as attachment', async () => {
+        const result = await vapeCommand.execute();
+        expect(result).toHaveProperty('files');
+        expect(result.files[0]).toHaveProperty('attachment');
+        expect(result.files[0].name).toBe('vape.mp4');
     });
 });
