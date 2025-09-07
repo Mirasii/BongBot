@@ -12,7 +12,7 @@ jobs:
       github.event.pull_request.merged == true &&
       (contains(github.event.pull_request.labels.*.name, 'major') ||
        contains(github.event.pull_request.labels.*.name, 'minor') ||
-       contains(github.event.pull_request.labels.*.name, 'bug'))
+       contains(github.event.pull_request.labels.*.name, 'patch'))
     environment: Prod
     runs-on: ubuntu-latest
     permissions:
@@ -35,9 +35,9 @@ jobs:
         if: contains(github.event.pull_request.labels.*.name, 'minor')
         run: echo "level=minor" >> $GITHUB_OUTPUT
 
-      - name: Determine Version Bump Level (bug)
-        id: get_level_bug
-        if: contains(github.event.pull_request.labels.*.name, 'bug')
+      - name: Determine Version Bump Level (patch)
+        id: get_level_patch
+        if: contains(github.event.pull_request.labels.*.name, 'patch')
         run: echo "level=patch" >> $GITHUB_OUTPUT
         
       - name: Set final version bump level
@@ -47,8 +47,8 @@ jobs:
             echo "level=${{ steps.get_level_major.outputs.level }}" >> $GITHUB_OUTPUT
           elif [[ ! -z "${{ steps.get_level_minor.outputs.level }}" ]]; then
             echo "level=${{ steps.get_level_minor.outputs.level }}" >> $GITHUB_OUTPUT
-          elif [[ ! -z "${{ steps.get_level_bug.outputs.level }}" ]]; then
-            echo "level=${{ steps.get_level_bug.outputs.level }}" >> $GITHUB_OUTPUT
+          elif [[ ! -z "${{ steps.get_level_patch.outputs.level }}" ]]; then
+            echo "level=${{ steps.get_level_patch.outputs.level }}" >> $GITHUB_OUTPUT
           fi
       # --- CORRECTED SECTION END ---
 

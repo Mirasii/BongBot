@@ -39,13 +39,17 @@ bot.on('interactionCreate', async interaction => {
 
 /** respond to messages */
 bot.on('messageCreate', async message => {
+    if (message?.author?.bot || !message?.mentions?.users?.has(bot.user.id)) return;
+    let reply;
     try {
-        if (message.author.bot) return; // Ignore messages from other bots
-        if (!message?.mentions?.users?.has(`${bot.user.id}`)) { return; }
+        reply = await message.reply({ content: 'BongBot is thinking...', allowedMentions: { repliedUser: false }});
         const response = await bot.commands.get('chat').executeLegacy(message, bot);
+        await reply.delete();
         await message.reply(response);
     } catch (error) {
-        await message.reply(await ERROR_BUILDER.buildUnknownError(error));
+        const errorResp = await ERROR_BUILDER.buildUnknownError(error);
+        if (reply) { await reply.delete(); }
+        await message.reply(errorResp);
     }   
 });
 
