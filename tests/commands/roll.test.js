@@ -1,59 +1,28 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
 
-// Mock the entire roll.js module
-jest.mock('../../src/commands/roll.js', () => ({
-    data: {
-        name: 'roll',
-        description: 'roll!',
-    },
-    execute: jest.fn(),
-    fullDesc: {
-        options: [],
-        description: "Posts a roll!"
-    }
-}));
-
-const rollCommand = require('../../src/commands/roll.js');
+const rollCommand = require('../../src/commands/roll');
+const { SlashCommandBuilder } = require('discord.js');
 
 describe('roll command', () => {
-    const mockInteraction = {
-        reply: jest.fn(),
-    };
-
-    const mockClient = {};
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-        // Mock console.error to prevent actual logging during tests
-        jest.spyOn(console, 'error').mockImplementation(() => {});
+    it('should have a data property', () => {
+        expect(rollCommand.data).toBeInstanceOf(SlashCommandBuilder);
     });
 
-    afterEach(() => {
-        // Restore console.error after each test
-        jest.restoreAllMocks();
+    it('should have a name of "roll"', () => {
+        expect(rollCommand.data.name).toBe('roll');
     });
 
-    test('should successfully return the file attachment', async () => {
-        const mockFileContent = Buffer.from('mock video content');
-        // Mock the execute function to return the expected structure
-        rollCommand.execute.mockResolvedValueOnce({
-            files: [
-                {
-                    attachment: mockFileContent,
-                    name: "roll.mp4"
-                }
-            ]
-        });
+    it('should have a description', () => {
+        expect(rollCommand.data.description).toBeTruthy();
+    });
 
-        const result = await rollCommand.execute(mockInteraction, mockClient);
+    it('should have an execute method', () => {
+        expect(rollCommand.execute).toBeInstanceOf(Function);
+    });
 
-        expect(result).toEqual({
-            files: [
-                {
-                    attachment: mockFileContent,
-                    name: "roll.mp4"
-                }
-            ]
-        });
+    it('should return an object with roll.mp4 as attachment', async () => {
+        const result = await rollCommand.execute();
+        expect(result).toHaveProperty('files');
+        expect(result.files[0]).toHaveProperty('attachment');
+        expect(result.files[0].name).toBe('roll.mp4');
     });
 });
