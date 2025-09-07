@@ -16,13 +16,15 @@ module.exports = {
         .addStringOption(option => option.setName('input').setDescription('Say something to BongBot!').setRequired(true)),
     async execute(interaction, client) {
         const input = interaction.options.getString('input');
-        const authorId = interaction.user.username;
+        const interactionGuildMember= await interaction.guild.members.fetch(interaction.user.id);
+        const authorId = interactionGuildMember.nickname;
         const serverId = interaction.guild_id;
         return await executeAI(input, authorId, serverId, client);
     },
     async executeLegacy(msg, client) {
         const input = msg.content.replace(/<@!?(\d+)>/g, '').trim();
-        const authorId = msg.author.username;
+        const interactionGuildMember= await interaction.guild.members.fetch(msg.author.id);
+        const authorId = interactionGuildMember.nickname;
         const serverId =  msg.guild.id;
         return await executeAI(input, authorId, serverId, client);
     },
