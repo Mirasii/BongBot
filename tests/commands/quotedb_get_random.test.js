@@ -150,16 +150,18 @@ describe('quotedb_get_random command', () => {
         expect(require('../../src/helpers/caller.js').get).not.toHaveBeenCalled();
     });
 
-    test('should return an error if no quotes are found', async () => {
+    test('should return an empty quote embed if no quotes are found', async () => {
         mockInteraction.options.getInteger.mockReturnValueOnce(1);
         require('../../src/helpers/caller.js').get.mockResolvedValueOnce({ quotes: [] });
 
-        await quotedbGetRandomCommand.execute(mockInteraction, mockClient);
+        const result = await quotedbGetRandomCommand.execute(mockInteraction, mockClient);
 
-        expect(require('../../src/helpers/errorBuilder.js').buildError).toHaveBeenCalledWith(
-            mockInteraction,
-            new Error("No quotes found.")
-        );
+        expect(require('../../src/helpers/errorBuilder.js').buildError).not.toHaveBeenCalled();
+        expect(QuoteBuilder).toHaveBeenCalledTimes(1);
+        expect(QuoteBuilder.mock.results[0].value.setTitle).toHaveBeenCalledWith('Random Quotes');
+        expect(QuoteBuilder.mock.results[0].value.addQuotes).toHaveBeenCalledWith([]);
+        expect(QuoteBuilder.mock.results[0].value.build).toHaveBeenCalledWith(mockClient);
+        expect(result).toBe('Mocked Quote Embed');
     });
 
     test('should handle API errors', async () => {
