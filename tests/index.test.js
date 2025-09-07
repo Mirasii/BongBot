@@ -115,6 +115,24 @@ describe('BongBot', () => {
             handler = mockClient.on.mock.calls.find(c => c[0] === 'interactionCreate')[1];
         });
 
+        it('ignores non-command interactions', async () => {
+            const interaction = {
+                isCommand: () => false
+            };
+            await handler(interaction);
+            expect(mockExecute).not.toHaveBeenCalled();
+        });
+
+        it('ignores unknown commands', async () => {
+            const interaction = {
+                isCommand: () => true,
+                commandName: 'unknown',
+                deferReply: jest.fn(),
+            };
+            await handler(interaction);
+            expect(interaction.deferReply).not.toHaveBeenCalled();
+        });
+
         it('executes a command successfully', async () => {
             const interaction = {
                 isCommand: () => true,
@@ -152,6 +170,15 @@ describe('BongBot', () => {
         let handler;
         beforeAll(() => {
             handler = mockClient.on.mock.calls.find(c => c[0] === 'messageCreate')[1];
+        });
+
+        it('handles undefined message properties gracefully', async () => {
+            await handler({});
+            expect(mockExecuteReply).not.toHaveBeenCalled();
+            await handler({ author: null });
+            expect(mockExecuteReply).not.toHaveBeenCalled();
+            await handler({ author: {}, mentions: null });
+            expect(mockExecuteReply).not.toHaveBeenCalled();
         });
 
         it('ignores bot messages', async () => {
@@ -206,6 +233,21 @@ describe('BongBot', () => {
         let handler;
         beforeAll(() => {
             handler = mockClient.on.mock.calls.find(c => c[0] === 'clientReady')[1];
+        });
+
+        it('handles command registration failure', async () => {
+            const LOGGER = require('../src/helpers/logging');
+            const error = new Error('Failed to register commands');
+            mockClient.application.commands.set.mockRejectedValueOnce(error);
+            await handler();
+            expect(LOGGER.log).toHaveBeenCalledWith(error);
+        });
+
+        it('handles invalid channel configurations', async () => {
+            mockClient.channels.fetch.mockResolvedValueOnce(null);
+            await handler();
+            // Should not throw and continue execution
+            expect(mockClient.user.setPresence).toHaveBeenCalled();
         });
 
         it('sets commands, presence, and sends deployment card', async () => {
