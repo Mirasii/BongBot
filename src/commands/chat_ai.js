@@ -23,7 +23,7 @@ module.exports = {
     },
     async executeLegacy(msg, client) {
         const input = msg.content.replace(/<@!?(\d+)>/g, '').trim();
-        const interactionGuildMember= await interaction.guild.members.fetch(msg.author.id);
+        const interactionGuildMember= await msg.guild.members.fetch(msg.author.id);
         const authorId = interactionGuildMember.nickname;
         const serverId =  msg.guild.id;
         return await executeAI(input, authorId, serverId, client);
