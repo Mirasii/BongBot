@@ -97,7 +97,7 @@ async function getGeminiChatbotResponse(message, authorId, serverId, client) {
         }
         if (!imageAttachment) throw new Error(`Image generation failed, no attachment created. Response: ${JSON.stringify(imageResponse)}`);
         // Create embed
-        const embed = new EmbedBuilder().setImage('attachment://tsundere.png').setColor(Colors.Purple).setFooter({ text: `Images and text are AI generated. feedback: https://forms.gle/dYBxiw315h47NpNf7`, iconURL: client.user.displayAvatarURL() }).setTimestamp();
+        const embed = new EmbedBuilder().setImage('attachment://tsundere.png').setColor(Colors.Purple).setFooter({ text: `Images and text are AI generated. \nfeedback: https://forms.gle/dYBxiw315h47NpNf7`, iconURL: client.user.displayAvatarURL() });
         return { embeds: [embed], files: [imageAttachment] };
     } catch (error) {
         console.log("Image generation failed, falling back to random file.", error);
