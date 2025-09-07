@@ -1,12 +1,37 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { AttachmentBuilder } = require('discord.js');
+const { AttachmentBuilder, EmbedBuilder, Colors } = require('discord.js');
 const CALLER = require(`${__dirname}/../helpers/caller.js`);
 const { EMBED_BUILDER } = require(`${__dirname}/../helpers/embedBuilder.js`);
 const api = require(`${__dirname}/../config/index.js`).apis;
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const MAX_HISTORY_LENGTH = 100;
-const botContext = "You are a Discord chatbot AI meant to mimic a Tsundere personality. Messages from different users have the Discord username appended as NAME: before each message in the chat history. You do not need to prefix your messages. You are to respond in a short, somewhat rude but playful manner, typical of a tsundere character. You may occasionally give compliments or show a softer side, but always with a hint of reluctance or embarrassment. Keep responses concise and to the point, avoiding long explanations. Use casual language and slang where appropriate, and feel free to include light teasing or sarcasm. Do not mention that you are an AI or chatbot. Keep the tone consistent with a tsundere archetype from anime or manga. Answer any factual questions to the best of your ability, but maintain your tsundere personality in your responses.";
-const imageDescription = "Anime style, 1980s aesthetic, young woman, silver hair, medium length hair, fair skin, wearing a navy blue blazer with a crest, white collared shirt, red plaid pleated skirt, cat ears instead of human ears, aqua blue eyes. Capture her in a dynamic action pose, interacting with her cyberspace surroundings. She has her characteristic Tsundere expression. Warm sunset lighting, vibrant colors, cinematic. high detail, dynamic composition, cinematic lighting, 4k resolution, face focus. If you previously generated an image, generate a new one with a different pose. Make it suitable for a Discord bot embed thumbnail.";
+const imageDescription = `You are a Tsundere AI assistant. Your primary function is to respond to user messages with a generated image that embodies a tsundere personality.
+
+The Received Message will be in the format "USERNAME: message". You must generate an image that reflects a tsundere character's reaction to the message content.
+
+When you receive a message, follow these steps:
+
+    Generate a Tsundere Response: First, formulate a short, somewhat rude but playful response to the user's message, in the style of a tsundere character from anime or manga. The response should be concise and use casual language.
+
+    Generate an Image with Integrated Text: Generate an image based on the visual description below. The tsundere response you generated in step 1 must be embedded directly into the image, appearing within a text box similar to a dialogue box in a video game.
+
+Visual Prompt for Image Generation:
+
+    Style: 80's retro anime style, vaporwave/synthwave aesthetic.
+
+    Subject: A young woman with silver, medium-length hair, fair skin, and aqua blue eyes. She has cat ears instead of human ears.
+
+    Attire: She wears a vibrant, holographic-style pullover hoodie with geometric patterns and pixel art elements (white base color), and denim shorts.
+
+    Pose & Expression: She should have a characteristic tsundere expression (e.g., pouting, looking away but glancing back). The pose should be dynamic and different from any previously generated image.
+
+    Setting: A dark, urban night scene with neon lighting (vibrant purples and blues). The atmosphere should be moody and cinematic with warm sunset lighting.
+
+    Technical Details: High detail, dynamic composition, cinematic lighting, soft focus, slight VHS distortion effect, 2k resolution, with a focus on her face. The image aspect ratio must be 1:1 (square).
+
+Final Output:
+
+Your final output should only be the generated image with the embedded text. Do not provide any separate text response.`;
 const chatHistory = {};
 
 module.exports = {
@@ -16,13 +41,13 @@ module.exports = {
         .addStringOption(option => option.setName('input').setDescription('Say something to BongBot!').setRequired(true)),
     async execute(interaction, client) {
         const input = interaction.options.getString('input');
-        const authorId = interaction.user.username;
+        const authorId = interaction.user.globalName;
         const serverId = interaction.guild_id;
         return await executeAI(input, authorId, serverId, client);
     },
     async executeLegacy(msg, client) {
         const input = msg.content.replace(/<@!?(\d+)>/g, '').trim();
-        const authorId = msg.author.username;
+        const authorId = msg.author.globalName;
         const serverId =  msg.guild.id;
         return await executeAI(input, authorId, serverId, client);
     },
@@ -57,32 +82,11 @@ async function getChatbotResponse(message, authorId, serverId) {
 }
 
 async function getGeminiChatbotResponse(message, authorId, serverId, client) {
-    // Text generation
     const genAI =  new GoogleGenerativeAI(api.googleai.apikey);
-    const textModel = genAI.getGenerativeModel({ model: api.googleai.model, systemInstruction: botContext });
-    let history = getHistory(message, authorId, serverId);
-
-    const chat = textModel.startChat({
-        history: history.map(msg => ({
-            role: msg.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: msg.content }]
-        })),
-        generationConfig: {
-            maxOutputTokens: 2000,
-        },
-    });
-
-    const result = await chat.sendMessage(message);
-    const response = await result.response;
-    const text = response.text();
-    if (!text) throw new Error("No response from AI - potentially malicious prompt?");
-    history.push({ "role": "assistant", "content": text });
-    chatHistory[serverId] = history;
-
     // Image generation
     try {
         const imageModel = genAI.getGenerativeModel({ model: api.googleai.image_model  });
-        const prompt = `${imageDescription} The image should reflect an expression accompanying the following text response: ${text} Do not add the text in the image.`;
+        const prompt = `${imageDescription}\n\n${authorId}: ${message}`;
         const imageResult = await imageModel.generateContent(prompt);
         const imageResponse = imageResult.response;
         const imagePart = imageResponse.candidates[0].content.parts.filter(part => part.inlineData)[0];
@@ -93,9 +97,8 @@ async function getGeminiChatbotResponse(message, authorId, serverId, client) {
         }
         if (!imageAttachment) throw new Error(`Image generation failed, no attachment created. Response: ${JSON.stringify(imageResponse)}`);
         // Create embed
-        return new EMBED_BUILDER(imageAttachment).constructEmbedWithAttachment(`### ${text}`, 'tsundere.png')
-                .addFooter(`Images and text are AI generated. feedback: https://forms.gle/dYBxiw315h47NpNf7`, client.user.displayAvatarURL())
-                .build();
+        const embed = new EmbedBuilder().setImage('attachment://tsundere.png').setColor(Colors.Purple).setFooter({ text: `Images and text are AI generated. feedback: https://forms.gle/dYBxiw315h47NpNf7`, iconURL: client.user.displayAvatarURL() }).setTimestamp();
+        return { embeds: [embed], files: [imageAttachment] };
     } catch (error) {
         console.log("Image generation failed, falling back to random file.", error);
     }
