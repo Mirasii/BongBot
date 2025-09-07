@@ -52,7 +52,8 @@ jobs:
         id: coverage
         with:
           output: report-markdown
-          skip-step: all # Skip Head Branch
+          coverage-file: report.json
+          base-coverage-file: report.json
       # Build and push the development image
       - name: Login to Docker Hub
         uses: docker/login-action@v2
