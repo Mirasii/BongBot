@@ -54,6 +54,6 @@ async function createQuote(quote, author, client) {
     );
     return new QuoteBuilder()
         .setTitle(`New Quote Created`)
-        .addQuotes([response])
+        .addQuotes([response.quote])
         .build(client);
 }
