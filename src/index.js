@@ -43,7 +43,8 @@ bot.on('messageCreate', async message => {
     let reply;
     try {
         reply = await message.reply({ content: 'BongBot is thinking...', allowedMentions: { repliedUser: false }});
-        const content = message.content.replace(/<@!?${bot.user.id}>/g, '').trim();
+        const mentionRegex = new RegExp(`<@!?${bot.user.id}>`, 'g');
+        const content = message.content.replace(mentionRegex, '').trim();
         let response;
         console.log(content);
         if (!content) response = await bot.commands.get('create_quote').executeReply(message, bot);
