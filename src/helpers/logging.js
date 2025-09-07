@@ -22,7 +22,7 @@ module.exports = {
             console.error('Log file not initialized');
             return;
         }
-        fs.appendFile(logFile, `${datetime} | ${error}\n\n`, function (err) {
+        fs.appendFile(logFile, `${datetime} | ${error.stack || error}\n\n`, function (err) {
             if (err) throw err;
             console.log(`error saved to logfile ${logFile}`);
         });

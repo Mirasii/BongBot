@@ -14,6 +14,7 @@ class EMBED_BUILDER {
 
     constructEmbedWithAttachment(description, filename) {
         this.embed.setDescription(description);
+        if (!this.attachment) throw new Error("No attachment provided for embed.");
         this.embed.setThumbnail(`attachment://${filename}`);
         return this;
     }
@@ -33,7 +34,7 @@ class EMBED_BUILDER {
     }
 
     build() {
-        return { embeds: [this.embed], files: [this.attachment]};
+        return { embeds: [this.embed], files: [this.attachment].filter(f => f)};
     }
 }
 

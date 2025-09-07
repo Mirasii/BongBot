@@ -75,7 +75,7 @@ async function getGeminiChatbotResponse(message, authorId, serverId, client) {
     const result = await chat.sendMessage(message);
     const response = await result.response;
     const text = response.text();
-
+    if (!text) throw new Error("No response from AI - potentially malicious prompt?");
     history.push({ "role": "assistant", "content": text });
     chatHistory[serverId] = history;
 
@@ -85,13 +85,13 @@ async function getGeminiChatbotResponse(message, authorId, serverId, client) {
         const prompt = `${imageDescription} The image should reflect an expression accompanying the following text response: ${text} Do not add the text in the image.`;
         const imageResult = await imageModel.generateContent(prompt);
         const imageResponse = imageResult.response;
-        const imagePart = imageResponse.candidates[0].content.parts[0];
+        const imagePart = imageResponse.candidates[0].content.parts.filter(part => part.inlineData)[0];
         let imageAttachment;
-        if (imagePart.inlineData) {
+        if (imagePart?.inlineData) {
             const imageBuffer = Buffer.from(imagePart.inlineData.data, 'base64');
             imageAttachment = new AttachmentBuilder(imageBuffer, { name: 'tsundere.png' });
         }
-
+        if (!imageAttachment) throw new Error(`Image generation failed, no attachment created. Response: ${JSON.stringify(imageResponse)}`);
         // Create embed
         return new EMBED_BUILDER(imageAttachment).constructEmbedWithAttachment(`### ${text}`, 'tsundere.png')
                 .addFooter(`Images and text are AI generated. feedback: https://forms.gle/dYBxiw315h47NpNf7`, client.user.displayAvatarURL())
