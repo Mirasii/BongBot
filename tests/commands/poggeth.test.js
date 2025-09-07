@@ -1,61 +1,28 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
 
-// Mock the entire poggeth.js module
-jest.mock('../../src/commands/poggeth.js', () => ({
-    data: {
-        name: 'poggeth',
-        description: 'poggeth!',
-    },
-    execute: jest.fn(),
-    fullDesc: {
-        options: [],
-        description: "Posts a poggeth!"
-    }
-}));
-
-const poggethCommand = require('../../src/commands/poggeth.js');
+const poggethCommand = require('../../src/commands/poggeth');
+const { SlashCommandBuilder } = require('discord.js');
 
 describe('poggeth command', () => {
-    const mockInteraction = {
-        reply: jest.fn(),
-    };
-
-    const mockClient = {};
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-        // Mock console.error to prevent actual logging during tests
-        jest.spyOn(console, 'error').mockImplementation(() => {});
+    it('should have a data property', () => {
+        expect(poggethCommand.data).toBeInstanceOf(SlashCommandBuilder);
     });
 
-    afterEach(() => {
-        // Restore console.error after each test
-        jest.restoreAllMocks();
+    it('should have a name of "poggeth"', () => {
+        expect(poggethCommand.data.name).toBe('poggeth');
     });
 
-    test('should successfully return the file attachment', async () => {
-        const mockFileContent = Buffer.from('mock video content');
-        // Mock the execute function to return the expected structure
-        poggethCommand.execute.mockResolvedValueOnce({
-            files: [
-                {
-                    attachment: mockFileContent,
-                    name: "poggeth.mp4"
-                }
-            ]
-        });
-
-        const result = await poggethCommand.execute(mockInteraction, mockClient);
-
-        expect(result).toEqual({
-            files: [
-                {
-                    attachment: mockFileContent,
-                    name: "poggeth.mp4"
-                }
-            ]
-        });
+    it('should have a description', () => {
+        expect(poggethCommand.data.description).toBeTruthy();
     });
 
-    
+    it('should have an execute method', () => {
+        expect(poggethCommand.execute).toBeInstanceOf(Function);
+    });
+
+    it('should return an object with poggeth.mp4 as attachment', async () => {
+        const result = await poggethCommand.execute();
+        expect(result).toHaveProperty('files');
+        expect(result.files[0]).toHaveProperty('attachment');
+        expect(result.files[0].name).toBe('poggeth.mp4');
+    });
 });
