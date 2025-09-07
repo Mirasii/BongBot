@@ -85,9 +85,9 @@ async function getGeminiChatbotResponse(message, authorId, serverId, client) {
         const prompt = `${imageDescription} The image should reflect an expression accompanying the following text response: ${text} Do not add the text in the image.`;
         const imageResult = await imageModel.generateContent(prompt);
         const imageResponse = imageResult.response;
-        const imagePart = imageResponse.candidates[0].content.parts[0];
+        const imagePart = imageResponse.candidates[0].content.parts.filter(part => part.inlineData)[0];
         let imageAttachment;
-        if (imagePart.inlineData) {
+        if (imagePart?.inlineData) {
             const imageBuffer = Buffer.from(imagePart.inlineData.data, 'base64');
             imageAttachment = new AttachmentBuilder(imageBuffer, { name: 'tsundere.png' });
         }
