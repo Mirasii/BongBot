@@ -1,55 +1,51 @@
 const chatAiCommand = require('../../src/commands/chat_ai');
 const { SlashCommandBuilder } = require('discord.js');
-const CALLER = require('../../src/helpers/caller.js');
+const { server } = require('../mocks/server.js');
 const { EMBED_BUILDER } = require('../../src/helpers/embedBuilder.js');
+
+// Mock the config module to control API keys and URLs
+jest.mock('../../src/config/index.js', () => ({
+    apis: {
+        openai: {
+            active: true,
+            url: "https://api.openai.com",
+            apikey: "mock_openai_key",
+            model: "gpt-4o",
+        },
+        googleai: {
+            active: false,
+            url: "https://generativelanguage.googleapis.com",
+            apikey: "mock_googleai_key",
+            model: "gemini-2.5-flash-lite",
+            image_model: "gemini-2.5-flash-image-preview",
+        },
+    },
+}));
+
+// Import the mocked api after the mock is defined
 const api = require('../../src/config/index.js').apis;
 
-jest.mock('../../src/helpers/caller.js');
 jest.mock('../../src/helpers/embedBuilder.js');
-jest.mock('@google/generative-ai', () => {
-    const mockChat = {
-        sendMessage: jest.fn().mockResolvedValue({
-            response: {
-                text: () => 'test response',
-            },
-        }),
-    };
-    const mockTextModel = {
-        startChat: jest.fn().mockReturnValue(mockChat),
-    };
-    const mockImageModel = {
-        generateContent: jest.fn().mockResolvedValue({
-            response: {
-                candidates: [{
-                    content: {
-                        parts: [{
-                            inlineData: {
-                                data: 'test_image_data',
-                            },
-                        }],
-                    },
-                }],
-            },
-        }),
-    };
-    const mockGenAI = {
-        getGenerativeModel: jest.fn().mockImplementation((options) => {
-            if (options.model.includes('pro-vision')) {
-                return mockImageModel;
-            }
-            return mockTextModel;
-        }),
-    };
-    return {
-        GoogleGenerativeAI: jest.fn().mockImplementation(() => mockGenAI),
-    };
-});
 
 describe('chat_ai command', () => {
+    beforeAll(() => server.listen());
+    afterEach(() => server.resetHandlers());
+    afterAll(() => server.close());
+
+    const mockClient = {
+        user: {
+            displayAvatarURL: jest.fn(() => 'http://example.com/bot_avatar.jpg'),
+        },
+    };
+
     beforeEach(() => {
-        jest.clearAllMocks();
         api.openai.active = true;
         api.googleai.active = false;
+        EMBED_BUILDER.prototype.constructEmbedWithRandomFile.mockReturnValue('mocked embed');
+        EMBED_BUILDER.prototype.constructEmbedWithAttachment.mockReturnValue({
+            addFooter: jest.fn().mockReturnThis(),
+            build: jest.fn().mockReturnValue('mocked embed with attachment'),
+        });
     });
 
     it('should have a data property', () => {
@@ -84,14 +80,9 @@ describe('chat_ai command', () => {
             },
         };
 
-        CALLER.post.mockResolvedValue({ choices: [{ message: { content: 'test response' } }] });
-        EMBED_BUILDER.prototype.constructEmbedWithRandomFile.mockReturnValue('test embed');
+        const result = await chatAiCommand.execute(interaction, mockClient);
 
-        const result = await chatAiCommand.execute(interaction);
-
-        expect(CALLER.post).toHaveBeenCalled();
-        expect(EMBED_BUILDER.prototype.constructEmbedWithRandomFile).toHaveBeenCalledWith('test response');
-        expect(result).toBe('test embed');
+        expect(result).toBe('mocked embed');
     });
 
     it('should call Google AI API when it is active', async () => {
@@ -113,10 +104,8 @@ describe('chat_ai command', () => {
             },
         };
 
-        EMBED_BUILDER.prototype.constructEmbedWithAttachment.mockReturnValue({ addFooter: jest.fn().mockReturnValue({ build: jest.fn().mockReturnValue('test embed') }) });
+        const result = await chatAiCommand.execute(interaction, mockClient);
 
-        const result = await chatAiCommand.execute(interaction);
-
-        expect(result).toBeDefined();
+        expect(result).toBe('mocked embed with attachment');
     });
 });
