@@ -7,7 +7,7 @@ describe('ping command', () => {
         expect(pingCommand.data).toBeInstanceOf(SlashCommandBuilder);
     });
 
-    it('should have a name of "arab"', () => {
+    it('should have a name of "ping"', () => {
         expect(pingCommand.data.name).toBe('ping');
     });
 
