@@ -43,7 +43,10 @@ bot.on('messageCreate', async message => {
     let reply;
     try {
         reply = await message.reply({ content: 'BongBot is thinking...', allowedMentions: { repliedUser: false }});
-        const response = await bot.commands.get('chat').executeLegacy(message, bot);
+        const content = message.content.replace(/<@!?${bot.user.id}>/g, '').trim();
+        let response;
+        if (!content) response = await bot.commands.get('create_quote').executeReply(message, bot);
+        else response = await bot.commands.get('chat').executeLegacy(message, bot);
         await reply.delete();
         await message.reply(response);
     } catch (error) {
