@@ -1,5 +1,5 @@
 const Discord = require('discord.js');
-const bot = new Discord.Client({ intents: [Discord.GatewayIntentBits.Guilds, Discord.GatewayIntentBits.GuildMessages] });
+const bot = new Discord.Client({ intents: [Discord.GatewayIntentBits.Guilds, Discord.GatewayIntentBits.GuildMessages, Discord.GatewayIntentBits.MessageContent] });
 const LOGGER = require('./helpers/logging')
 const fs = require('fs');
 const crypto = require('crypto');
@@ -43,7 +43,11 @@ bot.on('messageCreate', async message => {
     let reply;
     try {
         reply = await message.reply({ content: 'BongBot is thinking...', allowedMentions: { repliedUser: false }});
-        const response = await bot.commands.get('chat').executeLegacy(message, bot);
+        const mentionRegex = new RegExp(`<@!?${bot.user.id}>`, 'g');
+        const content = message.content.replace(mentionRegex, '').trim();
+        let response;
+        if (!content) response = await bot.commands.get('create_quote').executeReply(message, bot);
+        else response = await bot.commands.get('chat').executeLegacy(message, bot);
         await reply.delete();
         await message.reply(response);
     } catch (error) {
