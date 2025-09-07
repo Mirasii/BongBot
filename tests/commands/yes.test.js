@@ -1,59 +1,28 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
 
-// Mock the entire yes.js module
-jest.mock('../../src/commands/yes.js', () => ({
-    data: {
-        name: 'yes',
-        description: 'mmm, yes!',
-    },
-    execute: jest.fn(),
-    fullDesc: {
-        options: [],
-        description: "mmm, yes!"
-    }
-}));
-
-const yesCommand = require('../../src/commands/yes.js');
+const yesCommand = require('../../src/commands/yes');
+const { SlashCommandBuilder } = require('discord.js');
 
 describe('yes command', () => {
-    const mockInteraction = {
-        reply: jest.fn(),
-    };
-
-    const mockClient = {};
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-        // Mock console.error to prevent actual logging during tests
-        jest.spyOn(console, 'error').mockImplementation(() => {});
+    it('should have a data property', () => {
+        expect(yesCommand.data).toBeInstanceOf(SlashCommandBuilder);
     });
 
-    afterEach(() => {
-        // Restore console.error after each test
-        jest.restoreAllMocks();
+    it('should have a name of "yes"', () => {
+        expect(yesCommand.data.name).toBe('yes');
     });
 
-    test('should successfully return the file attachment', async () => {
-        const mockFileContent = Buffer.from('mock video content');
-        // Mock the execute function to return the expected structure
-        yesCommand.execute.mockResolvedValueOnce({
-            files: [
-                {
-                    attachment: mockFileContent,
-                    name: "yes.mp4"
-                }
-            ]
-        });
+    it('should have a description', () => {
+        expect(yesCommand.data.description).toBeTruthy();
+    });
 
-        const result = await yesCommand.execute(mockInteraction, mockClient);
+    it('should have an execute method', () => {
+        expect(yesCommand.execute).toBeInstanceOf(Function);
+    });
 
-        expect(result).toEqual({
-            files: [
-                {
-                    attachment: mockFileContent,
-                    name: "yes.mp4"
-                }
-            ]
-        });
+    it('should return an object with yes.mp4 as attachment', async () => {
+        const result = await yesCommand.execute();
+        expect(result).toHaveProperty('files');
+        expect(result.files[0]).toHaveProperty('attachment');
+        expect(result.files[0].name).toBe('yes.mp4');
     });
 });
