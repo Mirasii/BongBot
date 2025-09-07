@@ -19,7 +19,7 @@ describe('callirap command', () => {
         expect(callirapCommand.execute).toBeInstanceOf(Function);
     });
 
-    it('should return the correct file object', async () => {
+    it('should return an object with callirap.mp4 as attachment', async () => {
         const result = await callirapCommand.execute();
         expect(result).toHaveProperty('files');
         expect(result.files[0]).toHaveProperty('attachment');

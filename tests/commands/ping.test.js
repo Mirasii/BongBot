@@ -19,7 +19,7 @@ describe('ping command', () => {
         expect(pingCommand.execute).toBeInstanceOf(Function);
     });
 
-    it('should return the correct file object', async () => {
+    it('should return "Pong" when executed', async () => {
         const result = await pingCommand.execute();
         expect(result).toBe('Pong');
     });

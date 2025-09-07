@@ -33,7 +33,9 @@ describe('caller helper', () => {
         const mockResponseData = { message: 'GET success' };
 
         server.use(
-            http.get(`${mockUrl}${mockPath}?${mockParams}`, ({ request }) => {
+            http.get(`${mockUrl}${mockPath}`, ({ request }) => {
+                const url = new URL(request.url);
+                expect(url.searchParams.get('id')).toBe('123');
                 expect(request.headers.get('authorization')).toBe('Bearer token');
                 return HttpResponse.json(mockResponseData);
             })

@@ -19,7 +19,7 @@ describe('arab command', () => {
         expect(arabCommand.execute).toBeInstanceOf(Function);
     });
 
-    it('should return the correct file object', async () => {
+    it('should return an object with arab.mp4 as attachment', async () => {
         const result = await arabCommand.execute();
         expect(result).toHaveProperty('files');
         expect(result.files[0]).toHaveProperty('attachment');

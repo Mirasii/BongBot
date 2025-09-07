@@ -19,7 +19,7 @@ describe('cherry command', () => {
         expect(cherryCommand.execute).toBeInstanceOf(Function);
     });
 
-    it('should return the correct file object', async () => {
+    it('should return an object with cherry.mp4 as attachment', async () => {
         const result = await cherryCommand.execute();
         expect(result).toHaveProperty('files');
         expect(result.files[0]).toHaveProperty('attachment');

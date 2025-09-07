@@ -1,6 +1,7 @@
 const chatAiCommand = require('../../src/commands/chat_ai');
 const { server } = require('../mocks/server.js');
 const { EMBED_BUILDER } = require('../../src/helpers/embedBuilder.js');
+const { SlashCommandBuilder } = require('discord.js');
 
 // Mock the config module to control API keys and URLs
 jest.mock('../../src/config/index.js', () => ({
@@ -37,6 +38,8 @@ describe('chat_ai command', () => {
         },
     };
 
+    let mockInteraction;
+
     beforeEach(() => {
         api.openai.active = true;
         api.googleai.active = false;
@@ -45,13 +48,25 @@ describe('chat_ai command', () => {
             addFooter: jest.fn().mockReturnThis(),
             build: jest.fn().mockReturnValue('mocked embed with attachment'),
         });
+
+        mockInteraction = {
+            options: {
+                getString: jest.fn().mockReturnValue('test input'),
+            },
+            guild: {
+                members: {
+                    fetch: jest.fn().mockResolvedValue({ nickname: 'test_user' }),
+                },
+                id: 'test_server',
+            },
+            user: {
+                id: 'test_user_id',
+            },
+        };
     });
 
     it('should have a data property', () => {
-        // Since SlashCommandBuilder is not imported, we can't check instance type directly.
-        // Instead, we can check for expected properties of the data object.
-        expect(chatAiCommand.data).toHaveProperty('name', 'chat');
-        expect(chatAiCommand.data).toHaveProperty('description');
+        expect(chatAiCommand.data).toBeInstanceOf(SlashCommandBuilder);
     });
 
     it('should have a name of "chat"', () => {
@@ -67,22 +82,7 @@ describe('chat_ai command', () => {
     });
 
     it('should call OpenAI API when it is active', async () => {
-        const interaction = {
-            options: {
-                getString: jest.fn().mockReturnValue('test input'),
-            },
-            guild: {
-                members: {
-                    fetch: jest.fn().mockResolvedValue({ nickname: 'test_user' }),
-                },
-                id: 'test_server',
-            },
-            user: {
-                id: 'test_user_id',
-            },
-        };
-
-        const result = await chatAiCommand.execute(interaction, mockClient);
+        const result = await chatAiCommand.execute(mockInteraction, mockClient);
 
         expect(result).toBe('mocked embed');
     });
@@ -91,22 +91,7 @@ describe('chat_ai command', () => {
         api.openai.active = false;
         api.googleai.active = true;
 
-        const interaction = {
-            options: {
-                getString: jest.fn().mockReturnValue('test input'),
-            },
-            guild: {
-                members: {
-                    fetch: jest.fn().mockResolvedValue({ nickname: 'test_user' }),
-                },
-                id: 'test_server',
-            },
-            user: {
-                id: 'test_user_id',
-            },
-        };
-
-        const result = await chatAiCommand.execute(interaction, mockClient);
+        const result = await chatAiCommand.execute(mockInteraction, mockClient);
 
         expect(result).toBe('mocked embed with attachment');
     });
