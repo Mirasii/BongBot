@@ -2,26 +2,62 @@ import { http, HttpResponse } from 'msw';
 import { server } from '../mocks/server.js';
 
 // Mock discord.js EmbedBuilder and Colors
-jest.mock('discord.js', () => ({
-    EmbedBuilder: jest.fn().mockImplementation(() => ({
-        setTitle: jest.fn().mockReturnThis(),
-        setColor: jest.fn().mockReturnThis(),
-        setThumbnail: jest.fn().mockReturnThis(),
-        setDescription: jest.fn().mockReturnThis(),
-        addFields: jest.fn().mockReturnThis(),
-        setFooter: jest.fn().mockReturnThis(),
-        setTimestamp: jest.fn().mockReturnThis(),
-        toJSON: jest.fn().mockReturnValue({ mockEmbed: true }),
-    })),
-    Colors: {
-        Purple: '#800080',
-    },
-}));
+jest.mock('discord.js', () => {
+    const MockEmbed = function() {
+        this.data = {
+            title: null,
+            color: null,
+            thumbnail: null,
+            description: null,
+            fields: [],
+            footer: null,
+            timestamp: null
+        };        this.setTitle = function(title) {
+            this.data.title = title;
+            return this;
+        };
+        
+        this.setColor = function(color) {
+            this.data.color = color;
+            return this;
+        };
+        
+        this.setThumbnail = function(url) {
+            this.data.thumbnail = { url };
+            return this;
+        };
+        
+        this.setDescription = function(desc) {
+            this.data.description = desc;
+            return this;
+        };
+        
+        this.addFields = function(...fields) {
+            this.data.fields.push(...fields);
+            return this;
+        };
+        
+        this.setFooter = function(footer) {
+            this.data.footer = footer;
+            return this;
+        };
+        
+        this.setTimestamp = function() {
+            this.data.timestamp = new Date().toISOString();
+            return this;
+        };
+    };
 
-// Mock the entire infoCard.js module
-jest.mock('../../src/helpers/infoCard.js', () => ({
-    generateCard: jest.fn(),
-}));
+    return {
+        EmbedBuilder: jest.fn().mockImplementation(() => new MockEmbed()),
+        Colors: {
+            Purple: '#800080'
+        }
+    };
+});
+
+// Do not mock the entire module to test actual implementation
+const infoCard = require('../../src/helpers/infoCard.js');
 
 const { generateCard } = require('../../src/helpers/infoCard.js');
 
@@ -43,63 +79,128 @@ describe('infoCard helper', () => {
     afterAll(() => server.close());
 
     test('generateCard should return a well-formed info card on successful API calls', async () => {
-        // Mock process.env
         process.env.BRANCH = 'main';
         process.env.ENV = 'prod';
 
-        // Mock the generateCard function to return the expected embed structure
-        generateCard.mockResolvedValueOnce({
-            embeds: [{ mockEmbed: true }],
-        });
+        // Mock all required GitHub API endpoints
+        server.use(
+            http.get('https://api.github.com/repos/Mirasii/BongBot/releases/latest', () => {
+                return HttpResponse.json({
+                    tag_name: 'v1.0.0'
+                });
+            }),
+            http.get('https://api.github.com/repos/Mirasii/BongBot/branches/main', () => {
+                return HttpResponse.json({
+                    commit: {
+                        sha: 'abc123',
+                        commit: {
+                            message: 'Test commit',
+                            author: {
+                                name: 'Test Author',
+                                date: new Date().toISOString()
+                            }
+                        },
+                        author: {
+                            avatar_url: 'http://example.com/avatar.jpg'
+                        }
+                    }
+                });
+            }),
+            http.get('https://api.github.com/repos/Mirasii/BongBot/commits', () => {
+                return HttpResponse.json([
+                    {
+                        sha: 'abc123',
+                        commit: {
+                            message: 'Test commit',
+                            author: {
+                                name: 'Test Author',
+                                date: new Date().toISOString()
+                            }
+                        },
+                        author: {
+                            avatar_url: 'http://example.com/avatar.jpg'
+                        }
+                    }
+                ]);
+            })
+        );
 
-        const card = await generateCard(mockBot);
+        const card = await infoCard.generateCard(mockBot);
 
-        expect(card).toEqual({
-            embeds: [{ mockEmbed: true }],
-        });
-
-        // Since we are mocking generateCard, we can't directly test its internal calls to EmbedBuilder
-        // We would need to test the actual implementation of generateCard if it were not mocked.
-        // However, the prompt states to not change the current implementation for any non-test code.
-        // So, we test that generateCard returns what we expect it to return.
+        expect(card).toBeDefined();
+        expect(card.data.title).toBeDefined();
+        expect(card.data.color).toBeDefined();
+        expect(card.data.fields).toBeInstanceOf(Array);
     });
 
-    test('generateCard should return default values on GitHub API failure', async () => {
-        // Mock process.env
+    test('generateCard should handle GitHub API failure gracefully', async () => {
         process.env.BRANCH = 'dev';
         process.env.ENV = 'dev';
 
-        // Mock the generateCard function to return the expected error embed structure
-        generateCard.mockResolvedValueOnce({
-            embeds: [{ mockEmbed: true }],
-        });
+        // Mock failed GitHub API response
+        server.use(
+            http.get('https://api.github.com/repos/Mirasii/BongBot/commits', () => {
+                return new HttpResponse(null, { status: 500 });
+            })
+        );
 
-        const card = await generateCard(mockBot);
+        const card = await infoCard.generateCard(mockBot);
 
-        expect(card).toEqual({
-            embeds: [{ mockEmbed: true }],
-        });
-
-        // Similar to the success case, we are testing the mocked generateCard's return value.
+        expect(card).toBeDefined();
+        expect(card.data.title).toBeDefined();
+        expect(card.data.color).toBeDefined();
+        // Should still have basic fields even on API failure
+        expect(card.data.fields).toBeInstanceOf(Array);
     });
 
-    test('generateCard should cache API response and not call API again', async () => {
-        // Mock process.env
+    test('generateCard should handle different environments correctly', async () => {
         process.env.BRANCH = 'main';
         process.env.ENV = 'prod';
 
-        // Mock the generateCard function to return the expected embed structure
-        generateCard.mockResolvedValueOnce({
-            embeds: [{ mockEmbed: true }],
-        });
+        // Mock GitHub API response
+        server.use(
+            http.get('https://api.github.com/repos/Mirasii/BongBot/branches/main', () => {
+                return HttpResponse.json({
+                    commit: {
+                        sha: 'abc123',
+                        html_url: 'https://github.com/Mirasii/BongBot/commit/abc123',
+                        commit: {
+                            message: 'Test commit'
+                        }
+                    }
+                });
+            }),
+            http.get('https://api.github.com/repos/Mirasii/BongBot/releases/latest', () => {
+                return HttpResponse.json({
+                    tag_name: 'v1.0.0'
+                });
+            })
+        );
 
-        // First call
-        await generateCard(mockBot);
+        const card = await infoCard.generateCard(mockBot);
+        expect(card.data.color).toBe('#800080');
+        expect(card.data.description).toContain('main');
+    });
 
-        // Second call - should use cache (but since generateCard is mocked, it will just return the same mocked value)
-        await generateCard(mockBot);
+    test('generateCard should handle missing bot avatar gracefully', async () => {
+        const mockBotNoAvatar = {
+            user: {
+                displayAvatarURL: jest.fn(() => null),
+                avatarURL: null
+            }
+        };
 
-        // We can't directly test the internal caching mechanism of infoCard.js if generateCard is mocked.
-        // This test primarily ensures that calling generateCard multiple times still works.
+        const card = await infoCard.generateCard(mockBotNoAvatar);
+        expect(card).toBeDefined();
+        expect(card.data.thumbnail).toEqual({ url: null });
+    });
+
+    test('generateCard should include all required fields', async () => {
+        const card = await infoCard.generateCard(mockBot);
+        
+        const requiredFields = ['Repository', 'Last Started', 'Node.js', 'Library'];
+        for (const fieldName of requiredFields) {
+            expect(card.data.fields.some(f => f.name.includes(fieldName))).toBe(true);
+        }
     });
 });

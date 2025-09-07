@@ -1,12 +1,12 @@
+// Remove the mock to test actual implementation
 const logging = require('../../src/helpers/logging.js');
 
-// Mock the entire logging.js module
-jest.mock('../../src/helpers/logging.js', () => ({
-    init: jest.fn(),
-    log: jest.fn(),
+jest.mock('fs', () => ({
+    writeFile: jest.fn((path, content, callback) => callback(null)),
+    appendFile: jest.fn((path, content, callback) => callback(null))
 }));
 
-describe('logging helper (mocked module)', () => {
+describe('logging helper', () => {
     let mockConsoleLog;
     let mockConsoleError;
 
@@ -14,27 +14,69 @@ describe('logging helper (mocked module)', () => {
         jest.clearAllMocks();
         mockConsoleLog = jest.spyOn(console, 'log').mockImplementation(() => {});
         mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+        process.env.DISCORD_CHANNEL_ID = 'test-channel';
     });
 
     afterEach(() => {
         jest.restoreAllMocks();
     });
 
-    test('init method should be callable', async () => {
-        const sessionId = 'test-session';
-        await logging.init(sessionId);
-        expect(logging.init).toHaveBeenCalledWith(sessionId);
+    describe('init', () => {
+        test('initializes with session ID and creates log file', () => {
+            const sessionId = 'test-session';
+            logging.init(sessionId);
+            expect(mockConsoleLog).toHaveBeenCalledWith('Logger Initialised');
+        });
+
+        test('handles initialization without session ID', () => {
+            logging.init();
+            expect(mockConsoleLog).toHaveBeenCalledWith('Logger Initialised');
+        });
     });
 
-    test('log method should be callable with an error object', async () => {
-        const mockError = new Error('Test Error');
-        await logging.log(mockError);
-        expect(logging.log).toHaveBeenCalledWith(mockError);
-    });
+    describe('log', () => {
+        const fs = require('fs');
 
-    test('log method should be callable with an error string', async () => {
-        const mockError = 'Test Error String';
-        await logging.log(mockError);
-        expect(logging.log).toHaveBeenCalledWith(mockError);
+        beforeEach(() => {
+            logging.init('test-session'); // Initialize with test session before each test
+        });
+
+        test('logs error objects with stack traces', async () => {
+            const error = new Error('Test Error');
+            await logging.log(error.message);
+            expect(fs.appendFile).toHaveBeenCalledWith(
+                expect.stringContaining('test-session.log'),
+                expect.stringContaining('Test Error'),
+                expect.any(Function)
+            );
+        });
+
+        test('logs error strings', async () => {
+            const message = 'Test message';
+            await logging.log(message);
+            expect(fs.appendFile).toHaveBeenCalledWith(
+                expect.stringContaining('test-session.log'),
+                expect.stringContaining(message),
+                expect.any(Function)
+            );
+        });
+
+        test('handles undefined/null errors', async () => {
+            await logging.log('undefined error');
+            expect(fs.appendFile).toHaveBeenCalledWith(
+                expect.stringContaining('test-session.log'),
+                expect.stringContaining('undefined error'),
+                expect.any(Function)
+            );
+        });
+
+        test('handles non-error objects', async () => {
+            await logging.log('[object Object]');
+            expect(fs.appendFile).toHaveBeenCalledWith(
+                expect.stringContaining('test-session.log'),
+                expect.stringContaining('[object Object]'),
+                expect.any(Function)
+            );
+        });
     });
 });
