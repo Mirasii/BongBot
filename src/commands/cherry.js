@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const fs = require('fs');
+const { buildError } = require(`${__dirname}/../helpers/errorBuilder.js`);
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -9,7 +10,7 @@ module.exports = {
         try {
             return { files: [{ attachment: fs.readFileSync('./src/files/cherry.mp4'), name: "cherry.mp4" }] };
         } catch (error) {
-            return await ERROR_BUILDER.buildError(interaction, error);
+            return await buildError(interaction, error);
         }
     },
     fullDesc: {
