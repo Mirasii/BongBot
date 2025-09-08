@@ -64,30 +64,7 @@ BongBot is a Discord Bot made for fun with various different commands. BongBot l
    # Release Build
    docker run --env-file BongBot.env mirasi/bongbot:latest
    ```
-## Development Setup
-
-### Local Development
-
-1. **Install Node.js** (version 22 or higher)
-
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**:
-   Create a `BongBot.env` file with your configuration (see example above)
-
-4. **Run the bot**:
-   ```bash
-   npm start
-   ```
-
-5. **Run tests**:
-   ```bash
-   npm test
-   ```
-
+   
 ## Environment Configuration
 
 | Variable | Required | Description |
