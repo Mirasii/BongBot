@@ -3,9 +3,11 @@ const logging = require('../../src/helpers/logging.js');
 const { setupMockCleanup } = require('../utils/testSetup.js');
 
 jest.mock('fs', () => ({
-    writeFile: jest.fn((path, content, callback) => callback(null)),
-    appendFile: jest.fn((path, content, callback) => callback(null)),
-    mkdir: jest.fn((path, options, callback) => callback(null))
+    promises: {
+        writeFile: jest.fn().mockResolvedValue(),
+        appendFile: jest.fn().mockResolvedValue(),
+        mkdir: jest.fn().mockResolvedValue()
+    }
 }));
 
 // Setup standard mock cleanup
@@ -22,60 +24,65 @@ describe('logging helper', () => {
     });
 
     describe('init', () => {
-        test('initializes with session ID and creates log file', () => {
+        test('initializes with session ID and creates log file', async () => {
             const sessionId = 'test-session';
-            logging.init(sessionId);
+            await logging.init(sessionId);
             expect(mockConsoleLog).toHaveBeenCalledWith('Logger Initialised');
         });
 
-        test('handles initialization without session ID', () => {
-            logging.init();
+        test('handles initialization without session ID', async () => {
+            await logging.init();
             expect(mockConsoleLog).toHaveBeenCalledWith('Logger Initialised');
+        });
+
+        test('throws error when writeFile fails', async () => {
+            const fsp = require('fs').promises;
+            const mockError = new Error('writeFile failed');
+            fsp.writeFile.mockRejectedValueOnce(mockError);
+
+            const sessionId = 'test-session';
+            await expect(logging.init(sessionId)).rejects.toThrow('writeFile failed');
         });
     });
 
     describe('log', () => {
-        const fs = require('fs');
+        const fsp = require('fs').promises;
 
-        beforeEach(() => {
-            logging.init('test-session'); // Initialize with test session before each test
+        beforeEach(async () => {
+            await logging.init('test-session'); // Initialize with test session before each test
         });
 
         test('logs error objects with stack traces', async () => {
             const error = new Error('Test Error');
             await logging.log(error);
-            expect(fs.appendFile).toHaveBeenCalledWith(
+            expect(fsp.appendFile).toHaveBeenCalledWith(
                 expect.stringContaining('test-session.log'),
-                expect.stringContaining(error.stack),
-                expect.any(Function)
+                expect.stringContaining(error.stack)
             );
         });
 
         test('logs error strings', async () => {
             const message = 'Test message';
             await logging.log(message);
-            expect(fs.appendFile).toHaveBeenCalledWith(
+            expect(fsp.appendFile).toHaveBeenCalledWith(
                 expect.stringContaining('test-session.log'),
-                expect.stringContaining(message),
-                expect.any(Function)
+                expect.stringContaining(message)
             );
         });
 
         test('handles undefined/null errors', async () => {
             await logging.log('undefined error');
-            expect(fs.appendFile).toHaveBeenCalledWith(
+            expect(fsp.appendFile).toHaveBeenCalledWith(
                 expect.stringContaining('test-session.log'),
-                expect.stringContaining('undefined error'),
-                expect.any(Function)
+                expect.stringContaining('undefined error')
             );
         });
 
         test('handles non-error objects', async () => {
             await logging.log('[object Object]');
-            expect(fs.appendFile).toHaveBeenCalledWith(
+            expect(fsp.appendFile).toHaveBeenCalledWith(
                 expect.stringContaining('test-session.log'),
-                expect.stringContaining('[object Object]'),
-                expect.any(Function)
+                expect.stringContaining('[object Object]')
             );
         });
 
@@ -88,17 +95,16 @@ describe('logging helper', () => {
             await freshLogging.log(message);
             
             expect(mockConsoleError).toHaveBeenCalledWith('Log file not initialized');
-            expect(fs.appendFile).not.toHaveBeenCalled();
+            expect(fsp.appendFile).not.toHaveBeenCalled();
         });
 
-        test('throws error when appendFile fails', async () => {
+        test('logs error to console when appendFile fails', async () => {
             const mockError = new Error('appendFile failed');
-            fs.appendFile.mockImplementation((path, data, callback) => {
-                callback(mockError);
-            });
+            fsp.appendFile.mockRejectedValueOnce(mockError);
 
             const message = 'Test error';
-            await expect(logging.log(message)).rejects.toThrow('appendFile failed');
+            await logging.log(message);
+            expect(mockConsoleError).toHaveBeenCalledWith('Failed to append to log file:', mockError);
         });
     });
 });

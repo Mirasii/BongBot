@@ -1,14 +1,15 @@
-const fs = require('fs');
+const fsp = require('fs').promises;
 var logFile;
 
 module.exports = {
     async init(sessionId) {
         logFile = `./logs/${sessionId}.log`
-        fs.writeFile(logFile, 'Logger Initialised\n\n', function (err) {
-            if (err) throw err;
-            console.log('Logger Initialised')
-            return;
-        });
+        try {
+            await fsp.writeFile(logFile, 'Logger Initialised\n\n');
+            console.log('Logger Initialised');
+        } catch (err) {
+            throw err;
+        }
     },
     async log(error) {
         var currentdate = new Date(); 
@@ -22,9 +23,11 @@ module.exports = {
             console.error('Log file not initialized');
             return;
         }
-        fs.appendFile(logFile, `${datetime} | ${error.stack || error}\n\n`, function (err) {
-            if (err) throw err;
+        try {
+            await fsp.appendFile(logFile, `${datetime} | ${error.stack || error}\n\n`);
             console.log(`error saved to logfile ${logFile}`);
-        });
+        } catch (err) {
+            console.error('Failed to append to log file:', err);
+        }
     }
 }

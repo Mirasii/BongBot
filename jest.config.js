@@ -12,6 +12,7 @@ module.exports = {
         "/babel.config.js",
         "/jest.config.js",
         "/tests/utils/*",
-        "/tests/mocks/*"
+        "/tests/mocks/*",
+        "/coverage/*"
     ]
 };
