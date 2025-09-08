@@ -79,6 +79,8 @@ describe('quotedb_get_random command', () => {
     afterEach(() => {
         server.resetHandlers();
         jest.clearAllMocks();
+        // Set up buildError mock to return expected value
+        require('../../src/helpers/errorBuilder.js').buildError.mockResolvedValue('Mocked Error Embed');
     });
 
     afterAll(() => server.close());
@@ -155,12 +157,11 @@ describe('quotedb_get_random command', () => {
 
         const result = await quotedbGetRandomCommand.execute(mockInteraction, mockClient);
 
-        expect(require('../../src/helpers/errorBuilder.js').buildError).not.toHaveBeenCalled();
-        expect(QuoteBuilder).toHaveBeenCalledTimes(1);
-        expect(QuoteBuilder.mock.results[0].value.setTitle).toHaveBeenCalledWith('Random Quotes');
-        expect(QuoteBuilder.mock.results[0].value.addQuotes).toHaveBeenCalledWith([]);
-        expect(QuoteBuilder.mock.results[0].value.build).toHaveBeenCalledWith(mockClient);
-        expect(result).toBe('Mocked Quote Embed');
+        expect(require('../../src/helpers/errorBuilder.js').buildError).toHaveBeenCalledWith(
+            mockInteraction,
+            expect.objectContaining({ message: "No quotes found." })
+        );
+        expect(result).toBe('Mocked Error Embed');
     });
 
     test('should handle API errors', async () => {
