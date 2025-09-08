@@ -146,8 +146,5 @@ jobs:
 
             <details>
             <summary>Coverage Report</summary>
-
-            ```
             ${{ steps.coverage.outputs.report-markdown }}
-            ```
             </details>
