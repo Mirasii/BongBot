@@ -9,10 +9,8 @@
     },
     "dependencies": {
         "@google/generative-ai": "^0.24.1",
-        "crypto": "^1.0.1",
         "discord.js": "^14.22.1",
-        "dotenv": "16.4.5",
-        "querystring": "^0.2.1",
+        "dotenv": "17.2.2",
         "select-random-file": "^1.2.4"
     },
     "devDependencies": {
