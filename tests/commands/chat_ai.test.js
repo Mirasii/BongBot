@@ -1,11 +1,8 @@
 const chatAiCommand = require('../../src/commands/chat_ai');
 const { SlashCommandBuilder } = require('discord.js');
 const { http, HttpResponse } = require('msw');
-const { setupStandardTestEnvironment, server } = require('../utils/testSetup');
+const { server } = require('../mocks/server.js');
 const { EMBED_BUILDER } = require('../../src/helpers/embedBuilder.js');
-
-// Setup MSW server for API mocking
-setupStandardTestEnvironment();
 
 // Mock the config module to control API keys and URLs
 jest.mock('../../src/config/index.js', () => ({
@@ -32,6 +29,10 @@ const api = require('../../src/config/index.js').apis;
 jest.mock('../../src/helpers/embedBuilder.js');
 
 describe('chat_ai command', () => {
+    beforeAll(() => server.listen());
+    afterEach(() => server.resetHandlers());
+    afterAll(() => server.close());
+
     const mockClient = {
         user: {
             displayAvatarURL: jest.fn(() => 'http://example.com/bot_avatar.jpg'),

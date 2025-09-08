@@ -1,5 +1,5 @@
-import { http, HttpResponse } from 'msw';
-import { setupStandardTestEnvironment, server } from '../utils/testSetup.js';
+const { http, HttpResponse } = require('msw');
+const { setupStandardTestEnvironment, server } = require('../utils/testSetup.js');
 
 const caller = require('../../src/helpers/caller.js');
 

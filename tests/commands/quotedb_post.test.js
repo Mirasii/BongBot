@@ -1,6 +1,10 @@
-import { http, HttpResponse } from 'msw';
-import { server } from '../mocks/server.js';
-import { QuoteBuilder } from '../../src/helpers/quoteBuilder.js';
+const { http, HttpResponse } = require('msw');
+const { server } = require('../mocks/server.js');
+const { QuoteBuilder } = require('../../src/helpers/quoteBuilder.js');
+const { setupMockCleanup } = require('../utils/testSetup.js');
+
+// Setup standard mock cleanup only (MSW setup is custom in this file)
+setupMockCleanup();
 
 // Mock the config module to control API keys and URLs
 jest.mock('../../src/config/index.js', () => ({
@@ -76,7 +80,6 @@ describe('quotedb_post command', () => {
 
     afterEach(() => {
         server.resetHandlers();
-        jest.clearAllMocks();
     });
 
     afterAll(() => server.close());

@@ -1,5 +1,8 @@
-import { http, HttpResponse } from 'msw';
-import { server } from '../mocks/server.js';
+const { http, HttpResponse } = require('msw');
+const { setupStandardTestEnvironment, server } = require('../utils/testSetup.js');
+
+// Setup MSW server and standard test cleanup
+setupStandardTestEnvironment();
 
 // Mock discord.js EmbedBuilder and Colors
 jest.mock('discord.js', () => {
@@ -69,14 +72,6 @@ describe('infoCard helper', () => {
     };
 
     // No need to mock Date.now or Math.floor if mocking the entire module
-
-    beforeAll(() => server.listen());
-    afterEach(() => {
-        server.resetHandlers();
-        jest.clearAllMocks();
-        jest.spyOn(console, 'warn').mockImplementation(() => {}); // Mock console.warn
-    });
-    afterAll(() => server.close());
 
     test('generateCard should return a well-formed info card on successful API calls', async () => {
         process.env.BRANCH = 'main';

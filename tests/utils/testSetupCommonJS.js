@@ -1,5 +1,5 @@
 /**
- * @fileoverview MSW server setup utilities to eliminate duplication
+ * @fileoverview MSW server setup utilities for CommonJS modules
  */
 const { server } = require('../mocks/server.js');
 

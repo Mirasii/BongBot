@@ -1,5 +1,5 @@
 
-import { server } from './mocks/server.js';
+const { server } = require('./mocks/server.js');
 
 beforeAll(() => server.listen());
 afterEach(() => server.resetHandlers());

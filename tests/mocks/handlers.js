@@ -1,7 +1,7 @@
 
-import { http, HttpResponse } from 'msw';
+const { http, HttpResponse } = require('msw');
 
-export const handlers = [
+const handlers = [
     http.post('https://api.openai.com/v1/chat/completions', () => {
         return HttpResponse.json({
             choices: [
@@ -46,3 +46,5 @@ export const handlers = [
         });
     }),
 ];
+
+module.exports = { handlers };
