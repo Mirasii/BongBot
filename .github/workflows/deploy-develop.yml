@@ -28,6 +28,25 @@ jobs:
           echo "❌ Error: Pull Request must have a 'major', 'minor', or 'patch' label."
           exit 1
 
+      - name: Find Previous Comment
+        id: find-comment
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: ''
+
+      - name: Delete Previous Comment
+        if: steps.find-comment.outputs.comment-id != ''
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.deleteComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: ${{ steps.find-comment.outputs.comment-id }}
+            })
+
       # --- Run tests with coverage ---
       - name: Run Unit Tests with Coverage
         run: |
