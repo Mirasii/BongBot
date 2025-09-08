@@ -137,20 +137,57 @@ describe('infoCard helper', () => {
         process.env.BRANCH = 'dev';
         process.env.ENV = 'dev';
 
-        // Mock failed GitHub API response
+        // Reset the cached apiResponse to force a new API call
+        const infoCardModule = require('../../src/helpers/infoCard.js');
+        jest.resetModules();
+        const freshInfoCard = require('../../src/helpers/infoCard.js');
+
+        // Mock failed GitHub API responses for both releases and branches
         server.use(
-            http.get('https://api.github.com/repos/Mirasii/BongBot/commits', () => {
+            http.get('https://api.github.com/repos/Mirasii/BongBot/releases/latest', () => {
+                return new HttpResponse(null, { status: 500 });
+            }),
+            http.get('https://api.github.com/repos/Mirasii/BongBot/branches/dev', () => {
                 return new HttpResponse(null, { status: 500 });
             })
         );
 
-        const card = await infoCard.generateCard(mockBot);
+        const card = await freshInfoCard.generateCard(mockBot);
 
         expect(card).toBeDefined();
         expect(card.data.title).toBeDefined();
         expect(card.data.color).toBeDefined();
-        // Should still have basic fields even on API failure
+        // Should show fallback values when API fails
+        expect(card.data.description).toContain('N/A');
+        expect(card.data.description).toContain('Could not fetch from API.');
         expect(card.data.fields).toBeInstanceOf(Array);
+    });
+
+    test('generateCard should handle branches API failure specifically', async () => {
+        process.env.BRANCH = 'main';
+        process.env.ENV = 'dev';
+
+        // Reset modules to clear cache
+        jest.resetModules();
+        const freshInfoCard = require('../../src/helpers/infoCard.js');
+
+        // Mock successful releases but failed branches
+        server.use(
+            http.get('https://api.github.com/repos/Mirasii/BongBot/releases/latest', () => {
+                return HttpResponse.json({
+                    tag_name: 'v1.0.0'
+                });
+            }),
+            http.get('https://api.github.com/repos/Mirasii/BongBot/branches/main', () => {
+                return new HttpResponse(null, { status: 404 });
+            })
+        );
+
+        const card = await freshInfoCard.generateCard(mockBot);
+
+        expect(card).toBeDefined();
+        expect(card.data.description).toContain('N/A');
+        expect(card.data.description).toContain('Could not fetch from API.');
     });
 
     test('generateCard should handle different environments correctly', async () => {

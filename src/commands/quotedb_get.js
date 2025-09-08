@@ -20,7 +20,7 @@ module.exports = {
                 `max_quotes=${number}`,
                 { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API.apikey}` }
             );
-            if (response.length === 0) return await buildError(interaction, new Error("No quotes found."));
+            if (response?.quotes?.length === 0) return await buildError(interaction, new Error("No quotes found."));
             return new QuoteBuilder()
                     .setTitle('Recent Quotes')
                     .addQuotes(response.quotes)
