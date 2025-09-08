@@ -6,7 +6,8 @@ module.exports = {
     },
     collectCoverage: true,
     collectCoverageFrom: ["**/*.{js,vue}", "!**/node_modules/**"],
-    coverageReporters: ["text", "text-summary"],
+    coverageReporters: ["text", "text-summary", "json", "json-summary", "lcov"],
+    coverageDirectory: "coverage",
     coveragePathIgnorePatterns: [
         "/babel.config.js",
         "/jest.config.js",

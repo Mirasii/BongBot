@@ -32,10 +32,25 @@ jobs:
       - name: Run Unit Tests with Coverage
         run: |
           npm ci
-          npm run test -- --coverage \
-            --coverageReporters=json \
-            --coverageReporters=lcov \
-            --coverageReporters=text-summary
+          npm run test
+
+      # --- Debug coverage files ---
+      - name: Debug Coverage Files
+        run: |
+          echo "Checking for coverage files..."
+          ls -la coverage/ || echo "Coverage directory not found"
+          if [ -f coverage/coverage-summary.json ]; then
+            echo "✅ coverage-summary.json found"
+            cat coverage/coverage-summary.json
+          else
+            echo "❌ coverage-summary.json not found"
+          fi
+          if [ -f coverage/coverage-final.json ]; then
+            echo "✅ coverage-final.json found"
+            echo "File size: $(wc -c < coverage/coverage-final.json) bytes"
+          else
+            echo "❌ coverage-final.json not found"
+          fi
 
       # --- Generate full coverage markdown (per-file breakdown) ---
       - name: Generate Coverage Markdown
@@ -143,6 +158,6 @@ jobs:
             <details>
             <summary>Coverage Report (click to expand)</summary>
 
-            ${{ steps.coverage.outputs.report }}
+            ${{ steps.coverage.outputs.report || steps.fallback_coverage.outputs.report || '❌ Coverage report not available' }}
 
             </details>
