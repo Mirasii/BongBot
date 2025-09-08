@@ -55,7 +55,7 @@ const testCommandStructure = (command, expectedName, expectedAttachment = null) 
  * @param {string} expectedAttachment - Expected attachment filename
  */
 const testMediaCommand = (command, expectedAttachment) => {
-    describe('media command functionality', () => {
+    describe(`${command.data.name} command execution`, () => {
         it(`should return an object with ${expectedAttachment} as attachment`, async () => {
             const result = await command.execute();
             expect(result).toHaveProperty('files');
@@ -96,10 +96,58 @@ const setupMediaCommandTest = (commandName, filename, moduleName = commandName) 
     });
 };
 
+/**
+ * Create a standardized mock interaction for testing
+ * @param {Object} options - Configuration for the mock interaction
+ * @returns {Object} Mock interaction object
+ */
+const createMockInteraction = (options = {}) => {
+    const defaults = {
+        options: {
+            getString: jest.fn(),
+            getInteger: jest.fn(),
+            getUser: jest.fn(),
+        },
+        guild: {
+            id: 'test_guild_id',
+            members: {
+                cache: new Map(),
+                fetch: jest.fn(),
+            },
+        },
+        user: {
+            id: 'test_user_id',
+            username: 'testuser',
+        },
+        reply: jest.fn(),
+        commandName: options.commandName || 'test',
+    };
+
+    return { ...defaults, ...options };
+};
+
+/**
+ * Create a standardized mock client for testing
+ * @param {Object} options - Configuration for the mock client
+ * @returns {Object} Mock client object
+ */
+const createMockClient = (options = {}) => {
+    const defaults = {
+        user: {
+            displayAvatarURL: jest.fn(() => 'http://example.com/bot_avatar.jpg'),
+        },
+        commands: new Map(),
+    };
+
+    return { ...defaults, ...options };
+};
+
 module.exports = {
     mockFs,
     mockErrorBuilder,
     testCommandStructure,
     testMediaCommand,
-    setupMediaCommandTest
+    setupMediaCommandTest,
+    createMockInteraction,
+    createMockClient
 };

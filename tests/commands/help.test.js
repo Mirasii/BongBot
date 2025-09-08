@@ -1,6 +1,6 @@
 
 const { setupMockCleanup } = require('../utils/testSetup.js');
-const { testCommandStructure } = require('../utils/commandStructureTestUtils.js');
+const { testCommandStructure, createMockInteraction, createMockClient } = require('../utils/commandTestUtils.js');
 
 const helpCommand = require('../../src/commands/help');
 
@@ -16,15 +16,15 @@ describe('help command execution', () => {
         mockCommands.set('command1', { data: { name: 'command1' } });
         mockCommands.set('command2', { data: { name: 'command2' } });
 
-        const mockClient = {
+        const mockClient = createMockClient({
             commands: mockCommands,
-        };
+        });
 
-        const interaction = {
+        const interaction = createMockInteraction({
             options: {
                 getString: jest.fn().mockReturnValue(null),
             },
-        };
+        });
 
         const result = await helpCommand.execute(interaction, mockClient);
 
@@ -45,15 +45,15 @@ describe('help command execution', () => {
             },
         });
 
-        const mockClient = {
+        const mockClient = createMockClient({
             commands: mockCommands,
-        };
+        });
 
-        const interaction = {
+        const interaction = createMockInteraction({
             options: {
                 getString: jest.fn().mockReturnValue('testcommand'),
             },
-        };
+        });
 
         const result = await helpCommand.execute(interaction, mockClient);
 
@@ -69,15 +69,15 @@ describe('help command execution', () => {
             data: { name: 'testcommand' },
         });
 
-        const mockClient = {
+        const mockClient = createMockClient({
             commands: mockCommands,
-        };
+        });
 
-        const interaction = {
+        const interaction = createMockInteraction({
             options: {
                 getString: jest.fn().mockReturnValue('testcommand'),
             },
-        };
+        });
 
         const result = await helpCommand.execute(interaction, mockClient);
 
@@ -95,15 +95,15 @@ describe('help command execution', () => {
             },
         });
 
-        const mockClient = {
+        const mockClient = createMockClient({
             commands: mockCommands,
-        };
+        });
 
-        const interaction = {
+        const interaction = createMockInteraction({
             options: {
                 getString: jest.fn().mockReturnValue('simplecommand'),
             },
-        };
+        });
 
         const result = await helpCommand.execute(interaction, mockClient);
 

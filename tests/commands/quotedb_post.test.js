@@ -2,7 +2,7 @@ const { http, HttpResponse } = require('msw');
 const { server } = require('../mocks/server.js');
 const { QuoteBuilder } = require('../../src/helpers/quoteBuilder.js');
 const { setupMockCleanup } = require('../utils/testSetup.js');
-const { testCommandStructure } = require('../utils/commandStructureTestUtils.js');
+const { testCommandStructure, createMockInteraction, createMockClient } = require('../utils/commandTestUtils.js');
 
 // Setup standard mock cleanup only (MSW setup is custom in this file)
 setupMockCleanup();
@@ -47,39 +47,28 @@ jest.mock('../../src/helpers/errorBuilder.js', () => ({
     buildUnknownError: jest.fn(),
 }));
 
-describe('quotedb_post command', () => {
-    const mockInteraction = {
-        options: {
-            getString: jest.fn((optionName) => {
-                if (optionName === 'quote') return 'Test Quote';
-                if (optionName === 'author') return 'Test Author';
-                return null;
-            }),
-        },
-        reply: jest.fn(),
+describe('quotedb_post command execution', () => {
+    const createQuoteInteraction = (quote = 'Test Quote', author = 'Test Author') => {
+        return createMockInteraction({
+            options: {
+                getString: jest.fn((optionName) => {
+                    if (optionName === 'quote') return quote;
+                    if (optionName === 'author') return author;
+                    return null;
+                }),
+            },
+            reply: jest.fn(),
+        });
     };
 
-    const mockClient = {};
+    const mockClient = createMockClient();
 
     beforeAll(() => {
-        // Add the quotedb handler to the existing handlers
-        server.use(
-            http.post('https://quotes.elmu.dev/api/v1/quotes', async ({ request }) => {
-                const data = await request.json();
-                if (data.quote === 'Test Quote' && data.author === 'Test Author') {
-                    return HttpResponse.json({
-                        quote: {
-                            quote: 'Test Quote',
-                            author: 'Test Author',
-                            user_id: 'mock_user_id',
-                            date: 'mock_date',
-                        },
-                    }, { status: 200 });
-                }
-                return HttpResponse.json({ error: 'Invalid request' }, { status: 400 });
-            })
-        );
         server.listen();
+    });
+
+    beforeEach(() => {
+        jest.clearAllMocks();
     });
 
     afterEach(() => {
@@ -97,6 +86,8 @@ describe('quotedb_post command', () => {
                 date: 'mock_date',
             },
         });
+
+        const mockInteraction = createQuoteInteraction();
 
         const result = await quotedbPostCommand.execute(mockInteraction, mockClient);
 
@@ -126,6 +117,7 @@ describe('quotedb_post command', () => {
         const mockError = new Error('API Error');
         require('../../src/helpers/caller.js').post.mockRejectedValueOnce(mockError);
 
+        const mockInteraction = createQuoteInteraction();
         await quotedbPostCommand.execute(mockInteraction, mockClient);
 
         expect(require('../../src/helpers/errorBuilder.js').buildError).toHaveBeenCalledWith(mockInteraction, mockError);

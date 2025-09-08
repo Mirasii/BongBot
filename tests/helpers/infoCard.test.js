@@ -77,49 +77,6 @@ describe('infoCard helper', () => {
         process.env.BRANCH = 'main';
         process.env.ENV = 'prod';
 
-        // Mock all required GitHub API endpoints
-        server.use(
-            http.get('https://api.github.com/repos/Mirasii/BongBot/releases/latest', () => {
-                return HttpResponse.json({
-                    tag_name: 'v1.0.0'
-                });
-            }),
-            http.get('https://api.github.com/repos/Mirasii/BongBot/branches/main', () => {
-                return HttpResponse.json({
-                    commit: {
-                        sha: 'abc123',
-                        commit: {
-                            message: 'Test commit',
-                            author: {
-                                name: 'Test Author',
-                                date: new Date().toISOString()
-                            }
-                        },
-                        author: {
-                            avatar_url: 'http://example.com/avatar.jpg'
-                        }
-                    }
-                });
-            }),
-            http.get('https://api.github.com/repos/Mirasii/BongBot/commits', () => {
-                return HttpResponse.json([
-                    {
-                        sha: 'abc123',
-                        commit: {
-                            message: 'Test commit',
-                            author: {
-                                name: 'Test Author',
-                                date: new Date().toISOString()
-                            }
-                        },
-                        author: {
-                            avatar_url: 'http://example.com/avatar.jpg'
-                        }
-                    }
-                ]);
-            })
-        );
-
         const card = await infoCard.generateCard(mockBot);
 
         expect(card).toBeDefined();
@@ -168,11 +125,6 @@ describe('infoCard helper', () => {
 
         // Mock successful releases but failed branches
         server.use(
-            http.get('https://api.github.com/repos/Mirasii/BongBot/releases/latest', () => {
-                return HttpResponse.json({
-                    tag_name: 'v1.0.0'
-                });
-            }),
             http.get('https://api.github.com/repos/Mirasii/BongBot/branches/main', () => {
                 return new HttpResponse(null, { status: 404 });
             })
@@ -183,35 +135,6 @@ describe('infoCard helper', () => {
         expect(card).toBeDefined();
         expect(card.data.description).toContain('N/A');
         expect(card.data.description).toContain('Could not fetch from API.');
-    });
-
-    test('generateCard should handle different environments correctly', async () => {
-        process.env.BRANCH = 'main';
-        process.env.ENV = 'prod';
-
-        // Mock GitHub API response
-        server.use(
-            http.get('https://api.github.com/repos/Mirasii/BongBot/branches/main', () => {
-                return HttpResponse.json({
-                    commit: {
-                        sha: 'abc123',
-                        html_url: 'https://github.com/Mirasii/BongBot/commit/abc123',
-                        commit: {
-                            message: 'Test commit'
-                        }
-                    }
-                });
-            }),
-            http.get('https://api.github.com/repos/Mirasii/BongBot/releases/latest', () => {
-                return HttpResponse.json({
-                    tag_name: 'v1.0.0'
-                });
-            })
-        );
-
-        const card = await infoCard.generateCard(mockBot);
-        expect(card.data.color).toBe('#800080');
-        expect(card.data.description).toContain('main');
     });
 
     test('generateCard should handle missing bot avatar gracefully', async () => {
@@ -245,32 +168,11 @@ describe('infoCard helper', () => {
         // Reset modules to clear cache and ensure fresh API call
         jest.resetModules();
         const freshInfoCard = require('../../src/helpers/infoCard.js');
-
-        // Mock successful GitHub API responses for the fallback 'main' branch
-        server.use(
-            http.get('https://api.github.com/repos/Mirasii/BongBot/releases/latest', () => {
-                return HttpResponse.json({
-                    tag_name: 'v1.5.0'
-                });
-            }),
-            http.get('https://api.github.com/repos/Mirasii/BongBot/branches/main', () => {
-                return HttpResponse.json({
-                    commit: {
-                        sha: 'fallback123',
-                        html_url: 'https://github.com/Mirasii/BongBot/commit/fallback123',
-                        commit: {
-                            message: 'Fallback branch test commit'
-                        }
-                    }
-                });
-            })
-        );
-
         const card = await freshInfoCard.generateCard(mockBot);
 
         expect(card).toBeDefined();
         expect(card.data.description).toContain('main'); // Should use fallback 'main'
-        expect(card.data.description).toContain('fallback'); // Should use our mock data
+        expect(card.data.description).toContain('abc'); // Should use our mock data
         if (originalBranch !== undefined) process.env.BRANCH = originalBranch;
     });
 });

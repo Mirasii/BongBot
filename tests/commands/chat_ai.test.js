@@ -1,6 +1,6 @@
 const chatAiCommand = require('../../src/commands/chat_ai');
 const { setupStandardTestEnvironment, server } = require('../utils/testSetup.js');
-const { testCommandStructure } = require('../utils/commandStructureTestUtils.js');
+const { testCommandStructure, createMockInteraction, createMockClient } = require('../utils/commandTestUtils.js');
 const { http, HttpResponse } = require('msw');
 const { EMBED_BUILDER } = require('../../src/helpers/embedBuilder.js');
 
@@ -36,11 +36,7 @@ testCommandStructure(chatAiCommand, 'chat');
 
 describe('chat_ai command execution', () => {
 
-    const mockClient = {
-        user: {
-            displayAvatarURL: jest.fn(() => 'http://example.com/bot_avatar.jpg'),
-        },
-    };
+    const mockClient = createMockClient();
 
     let mockInteraction;
 
@@ -53,7 +49,7 @@ describe('chat_ai command execution', () => {
             build: jest.fn().mockReturnValue('mocked embed with attachment'),
         });
 
-        mockInteraction = {
+        mockInteraction = createMockInteraction({
             options: {
                 getString: jest.fn().mockReturnValue('test input'),
             },
@@ -66,7 +62,7 @@ describe('chat_ai command execution', () => {
             user: {
                 id: 'test_user_id',
             },
-        };
+        });
     });
 
     it('should call OpenAI API when it is active', async () => {
@@ -130,17 +126,7 @@ describe('chat_ai command execution', () => {
         server.use(
             http.post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent', () => {
                 return HttpResponse.json({
-                    candidates: [
-                        {
-                            content: {
-                                parts: [
-                                    {
-                                        text: 'no image data',
-                                    },
-                                ],
-                            },
-                        },
-                    ],
+                    candidates: [ { content: { parts: [{ text: 'no image data' }] } },],
                 });
             })
         );
@@ -219,17 +205,7 @@ describe('chat_ai command execution', () => {
         server.use(
             http.post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent', () => {
                 return HttpResponse.json({
-                    candidates: [
-                        {
-                            content: {
-                                parts: [
-                                    {
-                                        text: '',
-                                    },
-                                ],
-                            },
-                        },
-                    ],
+                    candidates: [ { content: { parts: [ { text: '', }, ], }, }, ],
                 });
             })
         );

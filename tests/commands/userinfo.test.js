@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const { setupMockCleanup } = require('../utils/testSetup.js');
-const { testCommandStructure } = require('../utils/commandStructureTestUtils.js');
+const { testCommandStructure, createMockInteraction } = require('../utils/commandTestUtils.js');
 
 const userinfoCommand = require('../../src/commands/userinfo.js');
 
@@ -25,7 +25,7 @@ setupMockCleanup();
 // Test standard command structure
 testCommandStructure(userinfoCommand, 'usercard');
 
-describe('userinfo command', () => {
+describe('userinfo command execution', () => {
     const mockDate = new Date('2023-01-01T00:00:00.000Z');
 
     // Common mock user factory
@@ -47,26 +47,28 @@ describe('userinfo command', () => {
     const mockMember = createMockMember();
     const mockTargetMember = createMockMember();
 
-    const createMockInteraction = (targetUser = null) => ({
-        guild: {
-            members: {
-                cache: {
-                    get: jest.fn((id) => {
-                        if (id === mockUser.id) return mockMember;
-                        if (id === mockTargetUser.id) return mockTargetMember;
-                        return null;
-                    }),
+    const createUserInfoMockInteraction = (targetUser = null) => {
+        return createMockInteraction({
+            guild: {
+                members: {
+                    cache: {
+                        get: jest.fn((id) => {
+                            if (id === mockUser.id) return mockMember;
+                            if (id === mockTargetUser.id) return mockTargetMember;
+                            return null;
+                        }),
+                    },
                 },
             },
-        },
-        user: mockUser,
-        options: {
-            getUser: jest.fn(() => targetUser),
-        },
-    });
+            user: mockUser,
+            options: {
+                getUser: jest.fn(() => targetUser),
+            },
+        });
+    };
 
     test('should return info card for the interaction user if no target is provided', async () => {
-        const mockInteraction = createMockInteraction();
+        const mockInteraction = createUserInfoMockInteraction();
 
         const result = await userinfoCommand.execute(mockInteraction);
 
@@ -89,7 +91,7 @@ describe('userinfo command', () => {
     });
 
     test('should return info card for the target user if provided', async () => {
-        const mockInteraction = createMockInteraction(mockTargetUser);
+        const mockInteraction = createUserInfoMockInteraction(mockTargetUser);
 
         const result = await userinfoCommand.execute(mockInteraction);
 

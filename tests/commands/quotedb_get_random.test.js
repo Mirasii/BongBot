@@ -46,7 +46,7 @@ jest.mock('../../src/helpers/errorBuilder.js', () => ({
     buildError: jest.fn(),
 }));
 
-describe('quotedb_get_random command', () => {
+describe('quotedb_get_random command execution', () => {
     const mockInteraction = {
         options: {
             getInteger: jest.fn(),
@@ -57,30 +57,6 @@ describe('quotedb_get_random command', () => {
     const mockClient = {};
 
     beforeAll(() => {
-        server.use(
-            http.get('https://quotes.elmu.dev/api/v1/quotes/random/user/:userId', ({ request, params }) => {
-                const url = new URL(request.url);
-                const maxQuotes = url.searchParams.get('max_quotes');
-                const userId = params.userId;
-
-                if (userId !== 'mock_user_id') {
-                    return HttpResponse.json({ error: 'Unauthorized' }, { status: 401 });
-                }
-
-                if (maxQuotes === '0') {
-                    return HttpResponse.json({ quotes: [] }, { status: 200 });
-                }
-
-                const quotes = [];
-                for (let i = 0; i < parseInt(maxQuotes || 1); i++) {
-                    quotes.push({
-                        quote: `Random Quote ${i + 1}`,
-                        author: `Author ${i + 1}`,
-                    });
-                }
-                return HttpResponse.json({ quotes: quotes }, { status: 200 });
-            })
-        );
         server.listen();
     });
 
