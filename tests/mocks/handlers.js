@@ -45,37 +45,4 @@ export const handlers = [
             ],
         });
     }),
-    // New handlers for gemini-2.5-flash-lite and gemini-2.5-flash-image-preview
-    http.post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent', () => {
-        return HttpResponse.json({
-            candidates: [
-                {
-                    content: {
-                        parts: [
-                            {
-                                text: 'mocked gemini flash lite response',
-                            },
-                        ],
-                    },
-                },
-            ],
-        });
-    }),
-    http.post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent', () => {
-        return HttpResponse.json({
-            candidates: [
-                {
-                    content: {
-                        parts: [
-                            {
-                                inlineData: {
-                                    data: 'mocked_gemini_flash_image_data',
-                                },
-                            },
-                        ],
-                    },
-                },
-            ],
-        });
-    }),
 ];
