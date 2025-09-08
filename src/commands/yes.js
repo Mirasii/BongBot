@@ -1,6 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const fs = require('fs');
-const file = fs.readFileSync('./src/files/yes.mp4');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -11,7 +10,7 @@ module.exports = {
             return {
                 files: [
                     {
-                        attachment: file,
+                        attachment: fs.readFileSync('./src/files/yes.mp4'),
                         name: "yes.mp4"
                     }
                 ]

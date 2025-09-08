@@ -1,6 +1,11 @@
 
-const yesCommand = require('../../src/commands/yes');
 const { SlashCommandBuilder } = require('discord.js');
+const fs = require('fs');
+
+jest.mock('fs', () => ({
+    readFileSync: jest.fn()
+}));
+const yesCommand = require('../../src/commands/yes');
 
 describe('yes command', () => {
     it('should have a data property', () => {
@@ -24,5 +29,16 @@ describe('yes command', () => {
         expect(result).toHaveProperty('files');
         expect(result.files[0]).toHaveProperty('attachment');
         expect(result.files[0].name).toBe('yes.mp4');
+    });
+
+    it('should handle error scenarios', async () => {
+        fs.readFileSync.mockImplementationOnce(() => {
+            throw new Error('File read error');
+        });
+
+        const result = await yesCommand.execute();
+        expect(result).toHaveProperty('data');
+        expect(result.data).toHaveProperty('content');
+        expect(result.data.content).toBe('There was an error while executing this command.');
     });
 });
