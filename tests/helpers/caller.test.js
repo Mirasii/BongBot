@@ -1,6 +1,6 @@
 const { http, HttpResponse } = require('msw');
 const { setupStandardTestEnvironment, server } = require('../utils/testSetup.js');
-
+const { mockBody } = require(`../mocks/handlers.js`)
 const caller = require('../../src/helpers/caller.js');
 
 // Mock the LOGGER module
@@ -17,87 +17,55 @@ describe('caller helper', () => {
         const mockPath = '/api/data';
         const mockParams = 'id=123';
         const mockHeaders = { 'Authorization': 'Bearer token' };
-        const mockResponseData = { message: 'GET success' };
 
+        // Override default handler to verify headers
         server.use(
             http.get(`http://test.com/api/data`, ({ request }) => {
                 const url = new URL(request.url);
                 expect(url.searchParams.get('id')).toBe('123');
                 expect(request.headers.get('authorization')).toBe('Bearer token');
-                return HttpResponse.json(mockResponseData);
+                return HttpResponse.json({ message: 'GET success' });
             })
         );
 
         const result = await caller.get(mockUrl, mockPath, mockParams, mockHeaders);
-        expect(result).toEqual(mockResponseData);
+        expect(result).toEqual({ message: 'GET success' });
     });
 
     test('get method should make a successful GET request without params', async () => {
         const mockUrl = 'http://test.com';
         const mockPath = '/api/data';
         const mockHeaders = { 'Content-Type': 'application/json' };
-        const mockResponseData = { message: 'GET success no params' };
-
-        server.use(
-            http.get(`${mockUrl}${mockPath}`, ({ request }) => {
-                expect(request.headers.get('content-type')).toBe('application/json');
-                return HttpResponse.json(mockResponseData);
-            })
-        );
-
         const result = await caller.get(mockUrl, mockPath, null, mockHeaders);
-        expect(result).toEqual(mockResponseData);
+        expect(result).toEqual({ message: 'GET success default' });
     });
 
     test('get method should make a successful GET request with null path', async () => {
         const mockUrl = 'http://test.com';
         const mockPath = null;
         const mockHeaders = { 'Content-Type': 'application/json' };
-        const mockResponseData = { message: 'GET success null path' };
-
-        server.use(
-            http.get(mockUrl, ({ request }) => {
-                expect(request.headers.get('content-type')).toBe('application/json');
-                return HttpResponse.json(mockResponseData);
-            })
-        );
-
         const result = await caller.get(mockUrl, mockPath, null, mockHeaders);
-        expect(result).toEqual(mockResponseData);
+        expect(result).toEqual({ message: 'GET success null path' });
     });
 
     test('get method should make a successful GET request with undefined params', async () => {
         const mockUrl = 'http://test.com';
         const mockPath = '/api/data';
         const mockHeaders = { 'Content-Type': 'application/json' };
-        const mockResponseData = { message: 'GET success undefined params' };
 
-        server.use(
-            http.get(`${mockUrl}${mockPath}`, ({ request }) => {
-                expect(request.headers.get('content-type')).toBe('application/json');
-                return HttpResponse.json(mockResponseData);
-            })
-        );
-
+        // Uses default handler from handlers.js
         const result = await caller.get(mockUrl, mockPath, undefined, mockHeaders);
-        expect(result).toEqual(mockResponseData);
+        expect(result).toEqual({ message: 'GET success default' });
     });
 
     test('get method should make a successful GET request with empty string params', async () => {
         const mockUrl = 'http://test.com';
         const mockPath = '/api/data';
         const mockHeaders = { 'Content-Type': 'application/json' };
-        const mockResponseData = { message: 'GET success empty params' };
 
-        server.use(
-            http.get(`${mockUrl}${mockPath}`, ({ request }) => {
-                expect(request.headers.get('content-type')).toBe('application/json');
-                return HttpResponse.json(mockResponseData);
-            })
-        );
-
+        // Uses default handler from handlers.js
         const result = await caller.get(mockUrl, mockPath, '', mockHeaders);
-        expect(result).toEqual(mockResponseData);
+        expect(result).toEqual({ message: 'GET success default' });
     });
 
     test('get method should handle non-ok responses', async () => {
@@ -105,12 +73,7 @@ describe('caller helper', () => {
         const mockPath = '/api/error';
         const mockHeaders = {};
 
-        server.use(
-            http.get(`${mockUrl}${mockPath}`, () => {
-                return new HttpResponse('Not Found', { status: 404, statusText: 'Not Found' });
-            })
-        );
-
+        // Uses default error handler from handlers.js
         await expect(caller.get(mockUrl, mockPath, null, mockHeaders)).rejects.toThrow(
             'Network response was not ok: 404 Not Found Not Found'
         );
@@ -121,20 +84,8 @@ describe('caller helper', () => {
         const mockUrl = 'http://test.com';
         const mockPath = '/api/create';
         const mockHeaders = { 'Content-Type': 'application/json' };
-        const mockBody = { name: 'test', value: 123 };
-        const mockResponseData = { message: 'POST success' };
-
-        server.use(
-            http.post(`${mockUrl}${mockPath}`, async ({ request }) => {
-                const body = await request.json();
-                expect(body).toEqual(mockBody);
-                expect(request.headers.get('content-type')).toBe('application/json');
-                return HttpResponse.json(mockResponseData);
-            })
-        );
-
         const result = await caller.post(mockUrl, mockPath, mockHeaders, mockBody);
-        expect(result).toEqual(mockResponseData);
+        expect(result).toEqual({ message: 'POST success' });
     });
 
     test('post method should handle non-ok responses', async () => {
@@ -143,12 +94,7 @@ describe('caller helper', () => {
         const mockHeaders = {};
         const mockBody = { name: 'test' };
 
-        server.use(
-            http.post(`${mockUrl}${mockPath}`, () => {
-                return new HttpResponse('Internal Server Error', { status: 500, statusText: 'Internal Server Error' });
-            })
-        );
-
+        // Uses default error handler from handlers.js
         await expect(caller.post(mockUrl, mockPath, mockHeaders, mockBody)).rejects.toThrow(
             'Network response was not ok: 500 Internal Server Error Internal Server Error'
         );
