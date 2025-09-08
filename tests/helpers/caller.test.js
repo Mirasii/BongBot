@@ -62,6 +62,40 @@ describe('caller helper', () => {
         expect(result).toEqual(mockResponseData);
     });
 
+    test('get method should make a successful GET request with undefined params', async () => {
+        const mockUrl = 'http://test.com';
+        const mockPath = '/api/data';
+        const mockHeaders = { 'Content-Type': 'application/json' };
+        const mockResponseData = { message: 'GET success undefined params' };
+
+        server.use(
+            http.get(`${mockUrl}${mockPath}`, ({ request }) => {
+                expect(request.headers.get('content-type')).toBe('application/json');
+                return HttpResponse.json(mockResponseData);
+            })
+        );
+
+        const result = await caller.get(mockUrl, mockPath, undefined, mockHeaders);
+        expect(result).toEqual(mockResponseData);
+    });
+
+    test('get method should make a successful GET request with empty string params', async () => {
+        const mockUrl = 'http://test.com';
+        const mockPath = '/api/data';
+        const mockHeaders = { 'Content-Type': 'application/json' };
+        const mockResponseData = { message: 'GET success empty params' };
+
+        server.use(
+            http.get(`${mockUrl}${mockPath}`, ({ request }) => {
+                expect(request.headers.get('content-type')).toBe('application/json');
+                return HttpResponse.json(mockResponseData);
+            })
+        );
+
+        const result = await caller.get(mockUrl, mockPath, '', mockHeaders);
+        expect(result).toEqual(mockResponseData);
+    });
+
     test('get method should handle non-ok responses', async () => {
         const mockUrl = 'http://test.com';
         const mockPath = '/api/error';
