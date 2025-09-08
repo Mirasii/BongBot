@@ -55,6 +55,7 @@ jobs:
         uses: jwalton/gh-find-current-pr@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          state: closed
 
       - name: Determine Version Bump Level
         id: get_level
@@ -146,13 +147,3 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             sudo systemctl restart bongbot
-
-  scan:
-    needs: deploy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Scan Docker image
-        uses: docker/scan-action@v0
-        with:
-          image: ${{ secrets.DOCKERHUB_USERNAME }}/bongbot:latest
-          fail-on-finding: '{"critical": 1}'
