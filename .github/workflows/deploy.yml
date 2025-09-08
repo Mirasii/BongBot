@@ -2,17 +2,11 @@
 name: Create Release and Deploy BongBot
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches: [ main ]
 
 jobs:
   deploy:
-    if: |
-      github.event.pull_request.merged == true &&
-      (contains(github.event.pull_request.labels.*.name, 'major') ||
-       contains(github.event.pull_request.labels.*.name, 'minor') ||
-       contains(github.event.pull_request.labels.*.name, 'patch'))
     environment: Prod
     runs-on: ubuntu-latest
     permissions:
@@ -21,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -44,7 +38,7 @@ jobs:
           name: production-coverage
           fail_ci_if_error: false
           override_branch: main
-          override_commit: ${{ github.event.pull_request.merge_commit_sha }}
+          override_commit: ${{ github.sha }}
 
       # --- Upload test results to Codecov for test analytics ---
       - name: Upload test results to Codecov
@@ -56,32 +50,46 @@ jobs:
           flags: production,tests
           fail_ci_if_error: false
 
-      - name: Determine Version Bump Level (major)
-        id: get_level_major
-        if: contains(github.event.pull_request.labels.*.name, 'major')
-        run: echo "level=major" >> $GITHUB_OUTPUT
+      - name: Find Pull Request
+        id: find_pr
+        uses: jwalton/gh-find-current-pr@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Determine Version Bump Level (minor)
-        id: get_level_minor
-        if: contains(github.event.pull_request.labels.*.name, 'minor')
-        run: echo "level=minor" >> $GITHUB_OUTPUT
-
-      - name: Determine Version Bump Level (patch)
-        id: get_level_patch
-        if: contains(github.event.pull_request.labels.*.name, 'patch')
-        run: echo "level=patch" >> $GITHUB_OUTPUT
-        
-      - name: Set final version bump level
+      - name: Determine Version Bump Level
         id: get_level
+        env:
+          PR_LABELS: ${{ toJson(steps.find_pr.outputs.labels) }}
         run: |
-          if [[ ! -z "${{ steps.get_level_major.outputs.level }}" ]]; then
-            echo "level=${{ steps.get_level_major.outputs.level }}" >> $GITHUB_OUTPUT
-          elif [[ ! -z "${{ steps.get_level_minor.outputs.level }}" ]]; then
-            echo "level=${{ steps.get_level_minor.outputs.level }}" >> $GITHUB_OUTPUT
-          elif [[ ! -z "${{ steps.get_level_patch.outputs.level }}" ]]; then
-            echo "level=${{ steps.get_level_patch.outputs.level }}" >> $GITHUB_OUTPUT
+          level=""
+          # Check PR labels first
+          if [[ -n "${{ steps.find_pr.outputs.number }}" ]]; then
+            echo "Found PR #${{ steps.find_pr.outputs.number }}. Checking labels."
+            if echo "$PR_LABELS" | grep -q "major"; then
+              level="major"
+            elif echo "$PR_LABELS" | grep -q "minor"; then
+              level="minor"
+            elif echo "$PR_LABELS" | grep -q "patch"; then
+              level="patch"
+            fi
           fi
-      # --- CORRECTED SECTION END ---
+
+          # If no level from labels, check commit message as a fallback
+          if [[ -z "$level" ]]; then
+            echo "No version label found on PR, or no PR found. Checking commit message."
+            commit_message=$(git log -1 --pretty=%B)
+            if [[ "$commit_message" == *"[major]"* || "$commit_message" == *"major:"* ]]; then
+              level="major"
+            elif [[ "$commit_message" == *"[minor]"* || "$commit_message" == *"minor:"* ]]; then
+              level="minor"
+            else
+              # Default to patch if no other indicator is found
+              level="patch"
+            fi
+          fi
+          
+          echo "Version bump determined as: $level"
+          echo "level=$level" >> $GITHUB_OUTPUT
 
       - name: Get next version (Dry Run)
         id: get_version
@@ -93,13 +101,14 @@ jobs:
           DRY_RUN: true
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and Push Docker Image
-        uses: docker/build-push-action@v4
+        id: build_and_push
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
@@ -125,8 +134,7 @@ jobs:
           tag_name: ${{ steps.get_version.outputs.new_tag }}
           release_name: Release ${{ steps.get_version.outputs.new_tag }}
           body: |
-            New release based on PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}
-            This version has been successfully deployed to production.
+            ${{ github.event.head_commit.message }}
           draft: false
           prerelease: false
 
@@ -138,3 +146,13 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             sudo systemctl restart bongbot
+
+  scan:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scan Docker image
+        uses: docker/scan-action@v0
+        with:
+          image: ${{ secrets.DOCKERHUB_USERNAME }}/bongbot:latest
+          fail-on-finding: '{"critical": 1}'
