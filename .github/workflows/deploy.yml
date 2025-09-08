@@ -30,8 +30,11 @@ jobs:
         run: |
           npm ci
           npm run test
+        env:
+          JEST_JUNIT_OUTPUT_DIR: ./test-results
+          JEST_JUNIT_OUTPUT_NAME: junit.xml
 
-      # --- Upload coverage to Codecov ---
+      # --- Upload coverage and test analytics to Codecov ---
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -39,6 +42,18 @@ jobs:
           file: ./coverage/lcov.info
           flags: production
           name: production-coverage
+          fail_ci_if_error: false
+          override_branch: main
+          override_commit: ${{ github.event.pull_request.merge_commit_sha }}
+
+      # --- Upload test results to Codecov for test analytics ---
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          name: production-test-results
+          flags: production,tests
           fail_ci_if_error: false
 
       - name: Determine Version Bump Level (major)
