@@ -5,3 +5,4 @@ BongBot.env
 node_modules
 commands.old
 coverage/*
+.env
