@@ -43,10 +43,10 @@ describe('logging helper', () => {
 
         test('logs error objects with stack traces', async () => {
             const error = new Error('Test Error');
-            await logging.log(error.message);
+            await logging.log(error);
             expect(fs.appendFile).toHaveBeenCalledWith(
                 expect.stringContaining('test-session.log'),
-                expect.stringContaining('Test Error'),
+                expect.stringContaining(error.stack),
                 expect.any(Function)
             );
         });
@@ -77,6 +77,18 @@ describe('logging helper', () => {
                 expect.stringContaining('[object Object]'),
                 expect.any(Function)
             );
+        });
+
+        test('handles logging when logFile not initialized', async () => {
+            // Reset the module to clear the logFile variable
+            jest.resetModules();
+            const freshLogging = require('../../src/helpers/logging.js');
+            
+            const message = 'Test without init';
+            await freshLogging.log(message);
+            
+            expect(mockConsoleError).toHaveBeenCalledWith('Log file not initialized');
+            expect(fs.appendFile).not.toHaveBeenCalled();
         });
     });
 });
