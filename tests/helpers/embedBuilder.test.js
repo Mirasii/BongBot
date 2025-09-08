@@ -8,13 +8,16 @@ jest.mock('discord.js', () => ({
         this.description = null;
         this.thumbnail = null;
         this.footer = null;
+        this.image = null;
         this.setDescription = jest.fn(function(desc) { this.description = desc; return this; });
         this.setThumbnail = jest.fn(function(thumb) { this.thumbnail = thumb; return this; });
+        this.setImage = jest.fn(function(img) { this.image = img; return this; });
         this.setFooter = jest.fn(function(footer) { this.footer = footer; return this; });
         this.toJSON = jest.fn(function() {
             return {
                 description: this.description,
                 thumbnail: this.thumbnail,
+                image: this.image,
                 footer: this.footer,
                 mockEmbed: true,
             };
@@ -70,6 +73,20 @@ describe('EMBED_BUILDER class', () => {
             expect(() => builder.constructEmbedWithAttachment(description, filename)).toThrow(
                 'No attachment provided for embed.'
             );
+        });
+    });
+
+    describe('constructEmbedWithImage', () => {
+        test('should create attachment and set image', () => {
+            const builder = new EMBED_BUILDER();
+            const fileName = 'test-image.png';
+
+            const result = builder.constructEmbedWithImage(fileName);
+
+            expect(AttachmentBuilder).toHaveBeenCalledWith(`./src/files/${fileName}`);
+            expect(builder.embed.setImage).toHaveBeenCalledWith(`attachment://${fileName}`);
+            expect(builder.attachment).toBeInstanceOf(AttachmentBuilder);
+            expect(result).toBe(builder); // Should return this for chaining
         });
     });
 
