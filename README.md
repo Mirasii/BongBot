@@ -58,19 +58,20 @@ BongBot is a Discord Bot made for fun with various different commands. BongBot l
    Or use the pre-built image:
    ```bash
    # Dev Build
-   docker run --env-file BongBot.env mirasi/bongbot-develop:latest
+   docker run --env-file .env mirasi/bongbot-develop:latest
    ```
    ```bash
    # Release Build
-   docker run --env-file BongBot.env mirasi/bongbot:latest
+   docker run --env-file .env mirasi/bongbot:latest
    ```
-   
+   **It is recommended you use docker for local development.**
+
 ## Environment Configuration
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DISCORD_API_KEY` | ✅ | Your Discord bot token |
-| `DISCORD_CHANNEL_ID` | ✅ | Default channel ID for bot operations |
+| `DISCORD_CHANNEL_ID` | ✅ | Default channel ID for info card on bot launch |
 | `GOOGLE_API_KEY` | ❌ | Google API key for search functionality |
 | `GOOGLE_CX` | ❌ | Google Custom Search Engine ID |
 | `OPENAI_API_KEY` | ❌ | OpenAI API key for GPT models |
@@ -86,14 +87,18 @@ BongBot is a Discord Bot made for fun with various different commands. BongBot l
 
 - `/help` - Display available commands
 - `/ping` - Check bot responsiveness
-- `/chat_ai <message>` - Chat with AI (Google AI or OpenAI)
+- `/chat <message>` - Chat with AI (Google AI or OpenAI)*
 - `/userinfo [@user]` - Get user information
 - `/info` - Get bot and server information
-- `/quotedb_post <quote>` - Add a new quote
-- `/quotedb_get <id>` - Get a specific quote
-- `/quotedb_get_random` - Get a random quote
+- `/create_quote <quote> <author>` - Add a new quote**
+- `/get_quotes <amount>` - Get the most recent quotes
+- `/get_random_quotes <amount>` - Get random quotes
 - Various media commands: `/arab`, `/cherry`, `/classic`, `/creeper`, `/dance`, etc.
+  
+\* This command can be invoked by pinging the bot with a message instead of using the slash command.
 
+** This command can be invoked by replying to the message and pinging the bot with no message. This will pull the author from the user's display name and the quote from the replied to message. Adding a message will trigger the /chat feature instead.
+  
 ## Contributing
 
 1. Fork the repository
