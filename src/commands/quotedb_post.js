@@ -1,9 +1,9 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('@discordjs/builders');
+const { SlashCommandBuilder } = require('@discordjs/builders');
 const { QuoteBuilder } = require(`${__dirname}/../helpers/quoteBuilder.js`);
 const { Colors } = require('discord.js');
 const API = require(`${__dirname}/../config/index.js`).apis.quotedb;
 const CALLER = require(`${__dirname}/../helpers/caller.js`);
-const ERROR_BUILDER = require(`${__dirname}/../helpers/errorBuilder.js`);
+const { buildError, buildUnknownError } = require(`${__dirname}/../helpers/errorBuilder.js`);
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -17,7 +17,7 @@ module.exports = {
             const author = interaction.options.getString('author');
             return await createQuote(quote, author, client);
         } catch (error) {
-            return await ERROR_BUILDER.buildError(interaction, error);
+            return await buildError(interaction, error);
         }
     },
     async executeReply(message, client) {
@@ -31,7 +31,7 @@ module.exports = {
             const authorDisplayName = quoteAuthor.displayName;
             return await createQuote(quoteText, authorDisplayName, client);
         } catch (error) {
-            return await ERROR_BUILDER.buildUnknownError(error);
+            return await buildUnknownError(error);
         }
     },
     fullDesc: {

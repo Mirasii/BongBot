@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     # Add permissions for the GITHUB_TOKEN
     permissions:
+      checks: write
       pull-requests: write
 
     steps:
@@ -26,7 +27,6 @@ jobs:
         run: |
           echo "❌ Error: Pull Request must have a 'major', 'minor', or 'patch' label."
           exit 1
-      # --- END OF NEW STEP ---
 
       - name: Find Previous Comment
         id: find-comment
@@ -47,7 +47,170 @@ jobs:
               comment_id: ${{ steps.find-comment.outputs.comment-id }}
             })
 
-      # Build and push the development image
+      # --- Run tests with coverage ---
+      - name: Run Unit Tests with Coverage
+        run: |
+          npm ci
+          npm run test
+
+      # --- Debug coverage files ---
+      - name: Debug Coverage Files
+        run: |
+          echo "Checking for coverage files..."
+          ls -la coverage/ || echo "Coverage directory not found"
+          if [ -f coverage/coverage-summary.json ]; then
+            echo "✅ coverage-summary.json found"
+            cat coverage/coverage-summary.json
+          else
+            echo "❌ coverage-summary.json not found"
+          fi
+          if [ -f coverage/lcov.info ]; then
+            echo "✅ lcov.info found"
+            echo "File size: $(wc -c < coverage/lcov.info) bytes"
+            echo "First 10 lines:"
+            head -10 coverage/lcov.info
+          else
+            echo "❌ lcov.info not found"
+          fi
+
+      # --- Generate coverage report manually ---
+      - name: Generate Coverage Report
+        id: coverage
+        run: |
+          # Install bc for numerical comparisons
+          sudo apt-get update && sudo apt-get install -y bc
+          
+          if [ -f coverage/coverage-summary.json ]; then
+            echo "Generating detailed coverage report from coverage-summary.json..."
+            
+            # Function to get coverage emoji and color
+            get_coverage_indicator() {
+              local percentage=$1
+              if (( $(echo "$percentage >= 90" | bc -l) )); then
+                echo "🟢 **$percentage%**"
+              elif (( $(echo "$percentage >= 80" | bc -l) )); then
+                echo "🟡 **$percentage%**"
+              elif (( $(echo "$percentage >= 60" | bc -l) )); then
+                echo "🟠 **$percentage%**"
+              else
+                echo "🔴 **$percentage%**"
+              fi
+            }
+            
+            # Parse total coverage data
+            TOTAL_LINES=$(jq -r '.total.lines.pct // "0"' coverage/coverage-summary.json)
+            TOTAL_STATEMENTS=$(jq -r '.total.statements.pct // "0"' coverage/coverage-summary.json)
+            TOTAL_FUNCTIONS=$(jq -r '.total.functions.pct // "0"' coverage/coverage-summary.json)
+            TOTAL_BRANCHES=$(jq -r '.total.branches.pct // "0"' coverage/coverage-summary.json)
+            
+            # Get indicators for totals
+            TOTAL_STMT_IND=$(get_coverage_indicator "$TOTAL_STATEMENTS")
+            TOTAL_BRANCH_IND=$(get_coverage_indicator "$TOTAL_BRANCHES")
+            TOTAL_FUNC_IND=$(get_coverage_indicator "$TOTAL_FUNCTIONS")
+            TOTAL_LINE_IND=$(get_coverage_indicator "$TOTAL_LINES")
+            
+            # Start building the coverage report
+            COVERAGE_REPORT="## 📊 Test Coverage Report
+
+            ### 📈 Coverage Table
+
+            | File | Statements | Branches | Functions | Lines | Issues |
+            |------|------------|----------|-----------|-------|--------|
+            | **🌍 All files** | $TOTAL_STMT_IND | $TOTAL_BRANCH_IND | $TOTAL_FUNC_IND | $TOTAL_LINE_IND | |"
+            
+            # Process files by directory
+            declare -A dir_files
+            declare -A dir_stats
+            
+            # Collect all source files and organize by directory
+            for file_path in $(jq -r 'keys[]' coverage/coverage-summary.json | grep -v "^total$" | grep "^/.*\.js$" | grep -v "node_modules" | grep -v "coverage/" | sort); do
+              # Extract directory and filename relative to project root
+              rel_path=$(echo "$file_path" | sed "s|^.*/BongBot/||")
+              dir_name=$(dirname "$rel_path")
+              file_name=$(basename "$rel_path")
+              
+              # Get coverage stats
+              statements=$(jq -r ".[\"$file_path\"].statements.pct // 0" coverage/coverage-summary.json)
+              branches=$(jq -r ".[\"$file_path\"].branches.pct // 0" coverage/coverage-summary.json)
+              functions=$(jq -r ".[\"$file_path\"].functions.pct // 0" coverage/coverage-summary.json)
+              lines=$(jq -r ".[\"$file_path\"].lines.pct // 0" coverage/coverage-summary.json)
+              
+              # Get indicators
+              stmt_ind=$(get_coverage_indicator "$statements")
+              branch_ind=$(get_coverage_indicator "$branches")
+              func_ind=$(get_coverage_indicator "$functions")
+              line_ind=$(get_coverage_indicator "$lines")
+              
+              # Identify issues
+              issues=""
+              if (( $(echo "$statements < 80" | bc -l) )); then
+                issues="$issues Statements"
+              fi
+              if (( $(echo "$branches < 80" | bc -l) )); then
+                issues="$issues Branches"
+              fi
+              if (( $(echo "$functions < 80" | bc -l) )); then
+                issues="$issues Functions"
+              fi
+              if (( $(echo "$lines < 80" | bc -l) )); then
+                issues="$issues Lines"
+              fi
+              
+              if [ -n "$issues" ]; then
+                issues="⚠️ Low:$issues"
+              else
+                issues="✅ Good"
+              fi
+              
+              # Store file data
+              file_row="| \`$file_name\` | $stmt_ind | $branch_ind | $func_ind | $line_ind | $issues |"
+              
+              if [[ ! "${dir_files[$dir_name]}" ]]; then
+                dir_files["$dir_name"]=""
+              fi
+              dir_files["$dir_name"]="${dir_files[$dir_name]}$file_row\n"
+            done
+            
+            # Add directory sections to report
+            for dir in $(printf '%s\n' "${!dir_files[@]}" | sort); do
+              if [ "$dir" != "." ]; then
+                # Add directory header
+                COVERAGE_REPORT="$COVERAGE_REPORT
+            | **📁 $dir** | | | | | |"
+              fi
+              
+              # Add files in this directory
+              COVERAGE_REPORT="$COVERAGE_REPORT
+            $(echo -e "${dir_files[$dir]}" | sed '/^$/d')"
+            done
+            
+            # Add legend and summary
+            COVERAGE_REPORT="$COVERAGE_REPORT
+
+            ### 📋 Legend
+            - 🟢 **Excellent** (≥90%) - Great coverage!
+            - 🟡 **Good** (≥80%) - Acceptable coverage
+            - 🟠 **Fair** (≥60%) - Needs improvement
+            - 🔴 **Poor** (<60%) - Requires attention
+
+            ### 📊 Overall Summary
+            - **Total Statements:** $TOTAL_STATEMENTS% 
+            - **Total Branches:** $TOTAL_BRANCHES%
+            - **Total Functions:** $TOTAL_FUNCTIONS%
+            - **Total Lines:** $TOTAL_LINES%"
+            
+            # Output the report using proper multiline format
+            {
+              echo "report<<EOF"
+              echo "$COVERAGE_REPORT"
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
+            
+          else
+            echo "report=❌ Coverage files not found" >> $GITHUB_OUTPUT
+          fi
+
+      # --- Docker build & push ---
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -137,3 +300,10 @@ jobs:
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:pr-${{ github.event.pull_request.number }}
             ```
             [View on Docker Hub](https://hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop/tags)
+
+            <details>
+            <summary>Coverage Report (click to expand)</summary>
+
+            ${{ steps.coverage.outputs.report || '❌ Coverage report not available' }}
+
+            </details>

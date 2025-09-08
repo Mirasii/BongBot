@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const fs = require('fs');
-const file = fs.readFileSync('./src/files/yes.mp4');
+const { buildError } = require(`${__dirname}/../helpers/errorBuilder.js`);
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -8,23 +8,9 @@ module.exports = {
         .setDescription('mmm, yes!'),
     async execute(interaction, client) {
         try {
-            return {
-                files: [
-                    {
-                        attachment: file,
-                        name: "yes.mp4"
-                    }
-                ]
-            }
+            return { files: [{ attachment: fs.readFileSync('./src/files/yes.mp4'), name: "yes.mp4" }] };
         } catch (error) {
-            console.error('Sea command failed', error);
-            return {
-                type: 4,
-                data: {
-                    content: 'There was an error while executing this command.',
-                    flags: 1 << 6 // set the EPHEMERAL flag
-                }
-            };
+            return await buildError(interaction, error);
         }
     },
     fullDesc: {

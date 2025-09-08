@@ -19,6 +19,13 @@ class EMBED_BUILDER {
         return this;
     }
 
+    constructEmbedWithImage(fileName) {
+        let attach = new AttachmentBuilder(`./src/files/${fileName}`);
+        this.embed.setImage(`attachment://${fileName}`);
+        this.attachment = attach;
+        return this;
+    }
+
     async constructEmbedWithRandomFile(description) {
         this.embed.setDescription(description);
         const file = await selectRandomFile(dir);
@@ -26,6 +33,12 @@ class EMBED_BUILDER {
         this.embed.setThumbnail(`attachment://${file}`);
         this.attachment = attach;
         return this.build();
+    }
+
+    addDefaultFooter(client) {
+        this.embed.setFooter({ text: `BongBot • ${client?.version ?? 'dev build'}`, iconURL: client.user.displayAvatarURL() });
+        this.embed.setTimestamp();
+        return this;
     }
 
     addFooter(text, iconURL) {

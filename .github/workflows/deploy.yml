@@ -25,6 +25,21 @@ jobs:
         with:
           fetch-depth: 0
 
+      # --- Run tests with coverage for production ---
+      - name: Run Unit Tests with Coverage
+        run: |
+          npm ci
+          npm run test
+
+      # --- Upload coverage to Codecov ---
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: production
+          name: codecov-production
+          fail_ci_if_error: false
+
       - name: Determine Version Bump Level (major)
         id: get_level_major
         if: contains(github.event.pull_request.labels.*.name, 'major')
