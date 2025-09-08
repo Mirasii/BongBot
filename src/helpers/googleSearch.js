@@ -19,17 +19,12 @@ async function searchImage(query) {
         if (!urls.length) {
             throw new Error('No images found');
         }
-        if (urls.length === 0) {
-            await interaction.reply('No images found');
-        } else {
-            const url = urls[Math.floor(Math.random() * urls.length)]
-            const embed = new EmbedBuilder().setImage(url).setDescription(url);
-            const response = {
-                embeds: [embed.toJSON()]
-            };
-
-            return response;
-        }
+        const url = urls[Math.floor(Math.random() * urls.length)]
+        const embed = new EmbedBuilder().setImage(url).setDescription(url);
+        const response = {
+            embeds: [embed.toJSON()]
+        };
+        return response;
     } catch (error) {
         console.error(error);
         throw error;
