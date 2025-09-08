@@ -9,6 +9,8 @@ module.exports = {
     coverageReporters: ["text", "text-summary"],
     coveragePathIgnorePatterns: [
         "/babel.config.js",
-        "/jest.config.js"    
+        "/jest.config.js",
+        "/tests/utils/*",
+        "/tests/mocks/*"
     ]
 };

@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import { server } from '../mocks/server.js';
+import { setupStandardTestEnvironment, server } from '../utils/testSetup.js';
 
 const caller = require('../../src/helpers/caller.js');
 
@@ -9,21 +9,8 @@ jest.mock('../../src/helpers/logging.js', () => ({
 }));
 
 describe('caller helper', () => {
-    beforeAll(() => server.listen());
-    afterEach(() => {
-        server.resetHandlers();
-        jest.clearAllMocks();
-    });
-    afterAll(() => server.close());
-
-    // Mock console.error to prevent actual logging during tests
-    beforeEach(() => {
-        jest.spyOn(console, 'error').mockImplementation(() => {});
-    });
-
-    afterEach(() => {
-        jest.restoreAllMocks();
-    });
+    // Use shared setup utility instead of duplicating MSW setup
+    setupStandardTestEnvironment();
 
     test('get method should make a successful GET request with params and headers', async () => {
         const mockUrl = 'http://test.com';
