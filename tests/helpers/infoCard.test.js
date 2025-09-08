@@ -15,7 +15,8 @@ jest.mock('discord.js', () => {
             fields: [],
             footer: null,
             timestamp: null
-        };        this.setTitle = function(title) {
+        };
+        this.setTitle = function(title) {
             this.data.title = title;
             return this;
         };
