@@ -36,7 +36,7 @@ class EMBED_BUILDER {
     }
 
     addDefaultFooter(client) {
-        this.embed.setFooter({ text: `BongBot • ${client.version ?? 'dev build'}`, iconURL: client.user.displayAvatarURL() });
+        this.embed.setFooter({ text: `BongBot • ${client?.version ?? 'dev build'}`, iconURL: client.user.displayAvatarURL() });
         this.embed.setTimestamp();
         return this;
     }
