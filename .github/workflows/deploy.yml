@@ -61,7 +61,7 @@ jobs:
           if [[ -n "$pr_number" ]]; then
             echo "Found merged PR #$pr_number"
             # Get PR labels
-            labels=$(gh pr view $pr_number --json labels --jq '[.labels[].name] | join(",")')
+            labels=$(gh pr view $pr_number --json labels --jq '(.labels // []) | map(.name) | join(",")')
             echo "PR labels: $labels"
             echo "number=$pr_number" >> $GITHUB_OUTPUT
             echo "labels=$labels" >> $GITHUB_OUTPUT
