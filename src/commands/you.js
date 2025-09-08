@@ -1,6 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const fs = require('fs');
-const file = fs.readFileSync('./src/files/clown.jpg');
+const { buildError } = require(`${__dirname}/../helpers/errorBuilder.js`);
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -8,23 +7,9 @@ module.exports = {
         .setDescription('you!'),
     async execute(interaction, client) {
         try {
-            return {
-                files: [
-                    {
-                        attachment: file,
-                        name: "you.mp4"
-                    }
-                ]
-            }
+            return await new EMBED_BUILDER().constructEmbedWithImage('clown.jpg').build();
         } catch (error) {
-            console.error('you command failed', error);
-            return {
-                type: 4,
-                data: {
-                    content: 'There was an error while executing this command.',
-                    flags: 1 << 6 // set the EPHEMERAL flag
-                }
-            };
+            return await buildError(interaction, error);
         }
     },
     fullDesc: {

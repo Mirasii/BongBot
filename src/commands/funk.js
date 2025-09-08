@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const fs = require('fs');
-const file = fs.readFileSync('./src/files/funk.mp4');
+const { buildError } = require(`${__dirname}/../helpers/errorBuilder.js`);
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -8,23 +8,9 @@ module.exports = {
         .setDescription('funk!'),
     async execute(interaction, client) {
         try {
-            return {
-                files: [
-                    {
-                        attachment: file,
-                        name: "funk.mp4"
-                    }
-                ]
-            }
+            return { files: [{ attachment: fs.readFileSync('./src/files/funk.mp4'), name: "funk.mp4" }] };
         } catch (error) {
-            console.error('funk command failed', error);
-            return {
-                type: 4,
-                data: {
-                    content: 'There was an error while executing this command.',
-                    flags: 1 << 6 // set the EPHEMERAL flag
-                }
-            };
+            return await buildError(interaction, error);
         }
     },
     fullDesc: {
