@@ -50,27 +50,41 @@ jobs:
           flags: production,tests
           fail_ci_if_error: false
 
-      - name: Find Pull Request
+      - name: Find Pull Request and Get Labels
         id: find_pr
-        uses: jwalton/gh-find-current-pr@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          state: closed
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Find PR associated with current commit
+          pr_number=$(gh pr list --state merged --search "${{ github.sha }}" --json number --jq '.[0].number // empty')
+          
+          if [[ -n "$pr_number" ]]; then
+            echo "Found merged PR #$pr_number"
+            # Get PR labels
+            labels=$(gh pr view $pr_number --json labels --jq '[.labels[].name] | join(",")')
+            echo "PR labels: $labels"
+            echo "number=$pr_number" >> $GITHUB_OUTPUT
+            echo "labels=$labels" >> $GITHUB_OUTPUT
+          else
+            echo "No merged PR found for this commit"
+            echo "number=" >> $GITHUB_OUTPUT
+            echo "labels=" >> $GITHUB_OUTPUT
+          fi
 
       - name: Determine Version Bump Level
         id: get_level
         env:
-          PR_LABELS: ${{ toJson(steps.find_pr.outputs.labels) }}
+          PR_LABELS: ${{ steps.find_pr.outputs.labels }}
         run: |
           level=""
           # Check PR labels first
           if [[ -n "${{ steps.find_pr.outputs.number }}" ]]; then
-            echo "Found PR #${{ steps.find_pr.outputs.number }}. Checking labels."
-            if echo "$PR_LABELS" | grep -q "major"; then
+            echo "Found PR #${{ steps.find_pr.outputs.number }}. Checking labels: $PR_LABELS"
+            if [[ "$PR_LABELS" == *"major"* ]]; then
               level="major"
-            elif echo "$PR_LABELS" | grep -q "minor"; then
+            elif [[ "$PR_LABELS" == *"minor"* ]]; then
               level="minor"
-            elif echo "$PR_LABELS" | grep -q "patch"; then
+            elif [[ "$PR_LABELS" == *"patch"* ]]; then
               level="patch"
             fi
           fi
