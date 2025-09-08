@@ -56,7 +56,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Find PR associated with current commit
-          pr_number=$(gh pr list --state merged --search "${{ github.sha }}" --json number --jq '.[0].number // empty')
+          pr_number=$(gh pr list --state merged --json number,mergeCommit --jq ".[] | select(.mergeCommit.oid == \"${{ github.sha }}\") | .number")
           
           if [[ -n "$pr_number" ]]; then
             echo "Found merged PR #$pr_number"
