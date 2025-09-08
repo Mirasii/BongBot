@@ -1,4 +1,5 @@
 const { MessageFlags, Colors } = require('discord.js');
+const { setupMockCleanup } = require('../utils/testSetup.js');
 
 const errorBuilder = require('../../src/helpers/errorBuilder.js');
 
@@ -38,15 +39,13 @@ jest.mock('discord.js', () => ({
     },
 }));
 
+// Setup standard mock cleanup
+setupMockCleanup();
+
 describe('errorBuilder helper', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
         // Mock console.error to prevent actual logging during tests
         jest.spyOn(console, 'error').mockImplementation(() => {});
-    });
-
-    afterEach(() => {
-        jest.restoreAllMocks();
     });
 
     test('buildError should correctly build an error embed with command name', async () => {

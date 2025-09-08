@@ -1,4 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
+const { setupMockCleanup } = require('../utils/testSetup.js');
 
 const userinfoCommand = require('../../src/commands/userinfo.js');
 
@@ -12,6 +13,9 @@ jest.mock('discord.js', () => ({
         toJSON: jest.fn().mockReturnValue({ mockEmbed: true }), // Simplified return for toJSON
     })),
 }));
+
+// Setup standard mock cleanup
+setupMockCleanup();
 
 describe('userinfo command', () => {
     const mockDate = new Date('2023-01-01T00:00:00.000Z');
@@ -53,10 +57,6 @@ describe('userinfo command', () => {
             },
         },
     };
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
 
     test('should return info card for the interaction user if no target is provided', async () => {
         const mockInteraction = {

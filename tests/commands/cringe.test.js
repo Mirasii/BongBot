@@ -1,6 +1,9 @@
 
+const { setupMockCleanup } = require('../utils/testSetup.js');
+const { testEmbedCommand } = require('../utils/commandStructureTestUtils.js');
+
 const cringeCommand = require('../../src/commands/cringe');
-const { SlashCommandBuilder } = require('discord.js');
+
 // Mock embedBuilder
 const mockBuild = jest.fn().mockResolvedValue({ files: [{ attachment: 'mock-attachment', name: 'cringe.png' }] });
 const mockConstructEmbedWithImage = jest.fn().mockReturnValue({ build: mockBuild });
@@ -20,23 +23,13 @@ jest.mock('../../src/helpers/errorBuilder', () => ({
     })
 }));
 
-describe('cringe command', () => {
-    it('should have a data property', () => {
-        expect(cringeCommand.data).toBeInstanceOf(SlashCommandBuilder);
-    });
+// Setup standard mock cleanup
+setupMockCleanup();
 
-    it('should have a name of "cringe"', () => {
-        expect(cringeCommand.data.name).toBe('cringe');
-    });
+// Test standard Embed command structure
+testEmbedCommand(cringeCommand, 'cringe');
 
-    it('should have a description', () => {
-        expect(cringeCommand.data.description).toBeTruthy();
-    });
-
-    it('should have an execute method', () => {
-        expect(cringeCommand.execute).toBeInstanceOf(Function);
-    });
-
+describe('cringe command execution', () => {
     it('should return the correct file object', async () => {
         const mockInteraction = {};
         const result = await cringeCommand.execute(mockInteraction);

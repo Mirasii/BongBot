@@ -1,28 +1,16 @@
 
+const { setupMockCleanup } = require('../utils/testSetup.js');
+const { testCommandStructure } = require('../utils/commandStructureTestUtils.js');
+
 const helpCommand = require('../../src/commands/help');
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
-describe('help command', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
+// Setup standard mock cleanup
+setupMockCleanup();
 
-    it('should have a data property', () => {
-        expect(helpCommand.data).toBeInstanceOf(SlashCommandBuilder);
-    });
+// Test standard command structure
+testCommandStructure(helpCommand, 'help');
 
-    it('should have a name of "help"', () => {
-        expect(helpCommand.data.name).toBe('help');
-    });
-
-    it('should have a description', () => {
-        expect(helpCommand.data.description).toBeTruthy();
-    });
-
-    it('should have an execute method', () => {
-        expect(helpCommand.execute).toBeInstanceOf(Function);
-    });
-
+describe('help command execution', () => {
     it('should return a list of commands when no command is specified', async () => {
         const mockCommands = new Map();
         mockCommands.set('command1', { data: { name: 'command1' } });

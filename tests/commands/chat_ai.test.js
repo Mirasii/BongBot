@@ -1,7 +1,7 @@
 const chatAiCommand = require('../../src/commands/chat_ai');
-const { SlashCommandBuilder } = require('discord.js');
+const { setupStandardTestEnvironment, server } = require('../utils/testSetup.js');
+const { testCommandStructure } = require('../utils/commandStructureTestUtils.js');
 const { http, HttpResponse } = require('msw');
-const { server } = require('../mocks/server.js');
 const { EMBED_BUILDER } = require('../../src/helpers/embedBuilder.js');
 
 // Mock the config module to control API keys and URLs
@@ -28,10 +28,13 @@ const api = require('../../src/config/index.js').apis;
 
 jest.mock('../../src/helpers/embedBuilder.js');
 
-describe('chat_ai command', () => {
-    beforeAll(() => server.listen());
-    afterEach(() => server.resetHandlers());
-    afterAll(() => server.close());
+// Setup MSW server and standard mock cleanup
+setupStandardTestEnvironment();
+
+// Test standard command structure
+testCommandStructure(chatAiCommand, 'chat');
+
+describe('chat_ai command execution', () => {
 
     const mockClient = {
         user: {
@@ -64,22 +67,6 @@ describe('chat_ai command', () => {
                 id: 'test_user_id',
             },
         };
-    });
-
-    it('should have a data property', () => {
-        expect(chatAiCommand.data).toBeInstanceOf(SlashCommandBuilder);
-    });
-
-    it('should have a name of "chat"', () => {
-        expect(chatAiCommand.data.name).toBe('chat');
-    });
-
-    it('should have a description', () => {
-        expect(chatAiCommand.data.description).toBeTruthy();
-    });
-
-    it('should have an execute method', () => {
-        expect(chatAiCommand.execute).toBeInstanceOf(Function);
     });
 
     it('should call OpenAI API when it is active', async () => {

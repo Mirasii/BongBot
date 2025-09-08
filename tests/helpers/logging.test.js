@@ -1,5 +1,6 @@
 // Remove the mock to test actual implementation
 const logging = require('../../src/helpers/logging.js');
+const { setupMockCleanup } = require('../utils/testSetup.js');
 
 jest.mock('fs', () => ({
     writeFile: jest.fn((path, content, callback) => callback(null)),
@@ -7,19 +8,17 @@ jest.mock('fs', () => ({
     mkdir: jest.fn((path, options, callback) => callback(null))
 }));
 
+// Setup standard mock cleanup
+setupMockCleanup();
+
 describe('logging helper', () => {
     let mockConsoleLog;
     let mockConsoleError;
 
     beforeEach(() => {
-        jest.clearAllMocks();
         mockConsoleLog = jest.spyOn(console, 'log').mockImplementation(() => {});
         mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
         process.env.DISCORD_CHANNEL_ID = 'test-channel';
-    });
-
-    afterEach(() => {
-        jest.restoreAllMocks();
     });
 
     describe('init', () => {

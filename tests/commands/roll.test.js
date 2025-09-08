@@ -1,5 +1,7 @@
 
-const { SlashCommandBuilder } = require('discord.js');
+const { setupMockCleanup } = require('../utils/testSetup.js');
+const { testCommandStructure } = require('../utils/commandStructureTestUtils.js');
+
 const fs = require('fs');
 
 jest.mock('fs', () => ({
@@ -16,24 +18,15 @@ jest.mock('../../src/helpers/errorBuilder', () => ({
     })
 }));
 
+// Setup standard mock cleanup
+setupMockCleanup();
+
 const rollCommand = require('../../src/commands/roll');
-describe('roll command', () => {
-    it('should have a data property', () => {
-        expect(rollCommand.data).toBeInstanceOf(SlashCommandBuilder);
-    });
 
-    it('should have a name of "roll"', () => {
-        expect(rollCommand.data.name).toBe('roll');
-    });
+// Test standard command structure
+testCommandStructure(rollCommand, 'roll');
 
-    it('should have a description', () => {
-        expect(rollCommand.data.description).toBeTruthy();
-    });
-
-    it('should have an execute method', () => {
-        expect(rollCommand.execute).toBeInstanceOf(Function);
-    });
-
+describe('roll command execution', () => {
     it('should return an object with roll.mp4 as attachment', async () => {
         const result = await rollCommand.execute();
         expect(result).toHaveProperty('files');

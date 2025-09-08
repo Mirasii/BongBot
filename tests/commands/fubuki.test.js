@@ -1,33 +1,21 @@
 
+const { setupMockCleanup } = require('../utils/testSetup.js');
+const { testGoogleSearchCommand } = require('../utils/commandStructureTestUtils.js');
+
 const fubukiCommand = require('../../src/commands/fubuki');
-const { SlashCommandBuilder } = require('discord.js');
 const google = require('../../src/helpers/googleSearch.js');
 const ERROR_BUILDER = require('../../src/helpers/errorBuilder.js');
 
 jest.mock('../../src/helpers/googleSearch.js');
 jest.mock('../../src/helpers/errorBuilder.js');
 
-describe('fubuki command', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
+// Setup standard mock cleanup
+setupMockCleanup();
 
-    it('should have a data property', () => {
-        expect(fubukiCommand.data).toBeInstanceOf(SlashCommandBuilder);
-    });
+// Test standard Google Search command structure
+testGoogleSearchCommand(fubukiCommand, 'fox', 'Shirakami Fubuki');
 
-    it('should have a name of "fox"', () => {
-        expect(fubukiCommand.data.name).toBe('fox');
-    });
-
-    it('should have a description', () => {
-        expect(fubukiCommand.data.description).toBeTruthy();
-    });
-
-    it('should have an execute method', () => {
-        expect(fubukiCommand.execute).toBeInstanceOf(Function);
-    });
-
+describe('fubuki command execution', () => {
     it('should return an image URL on success', async () => {
         google.searchImage.mockResolvedValue('http://example.com/fubuki.jpg');
         const result = await fubukiCommand.execute();

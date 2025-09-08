@@ -1,4 +1,5 @@
 const { EmbedBuilder, Colors } = require('discord.js');
+const { setupMockCleanup } = require('../utils/testSetup.js');
 
 const { QuoteBuilder } = require('../../src/helpers/quoteBuilder.js');
 
@@ -31,10 +32,10 @@ jest.mock('discord.js', () => ({
     },
 }));
 
+// Setup standard mock cleanup
+setupMockCleanup();
+
 describe('QuoteBuilder class', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
 
     test('constructor should initialize embed', () => {
         const builder = new QuoteBuilder();

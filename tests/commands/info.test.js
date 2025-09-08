@@ -1,33 +1,21 @@
 
+const { setupMockCleanup } = require('../utils/testSetup.js');
+const { testInfoCardCommand } = require('../utils/commandStructureTestUtils.js');
+
 const infoCommand = require('../../src/commands/info');
-const { SlashCommandBuilder } = require('discord.js');
 const { generateCard } = require('../../src/helpers/infoCard.js');
 const ERROR_BUILDER = require('../../src/helpers/errorBuilder.js');
 
 jest.mock('../../src/helpers/infoCard.js');
 jest.mock('../../src/helpers/errorBuilder.js');
 
-describe('info command', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
+// Setup standard mock cleanup
+setupMockCleanup();
 
-    it('should have a data property', () => {
-        expect(infoCommand.data).toBeInstanceOf(SlashCommandBuilder);
-    });
+// Test standard Info Card command structure
+testInfoCardCommand(infoCommand, 'info');
 
-    it('should have a name of "info"', () => {
-        expect(infoCommand.data.name).toBe('info');
-    });
-
-    it('should have a description', () => {
-        expect(infoCommand.data.description).toBeTruthy();
-    });
-
-    it('should have an execute method', () => {
-        expect(infoCommand.execute).toBeInstanceOf(Function);
-    });
-
+describe('info command execution', () => {
     it('should return an embed on success', async () => {
         const mockEmbed = { title: 'Test Embed' };
         generateCard.mockResolvedValue(mockEmbed);

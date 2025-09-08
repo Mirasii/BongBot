@@ -1,3 +1,4 @@
+const { setupMockCleanup } = require('../utils/testSetup.js');
 const polkaCommand = require('../../src/commands/polka.js');
 
 // Mock the googleSearch module
@@ -10,16 +11,15 @@ jest.mock('../../src/helpers/errorBuilder.js', () => ({
     buildError: jest.fn(),
 }));
 
+// Setup standard mock cleanup
+setupMockCleanup();
+
 describe('polka command', () => {
     const mockInteraction = {
         reply: jest.fn(),
     };
 
     const mockClient = {};
-
-    afterEach(() => {
-        jest.clearAllMocks();
-    });
 
     test('should successfully return an image URL', async () => {
         require('../../src/helpers/googleSearch.js').searchImage.mockResolvedValueOnce('http://example.com/polka_image.jpg');

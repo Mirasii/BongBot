@@ -1,4 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
+const { setupMockCleanup } = require('../utils/testSetup.js');
 
 const googleSearch = require('../../src/helpers/googleSearch.js');
 
@@ -27,17 +28,15 @@ jest.mock('discord.js', () => ({
     })),
 }));
 
+// Setup standard mock cleanup
+setupMockCleanup();
+
 describe('googleSearch helper', () => {
     const mockMathRandom = jest.spyOn(Math, 'random').mockReturnValue(0.1);
 
     beforeEach(() => {
-        jest.clearAllMocks();
         mockMathRandom.mockClear(); // Clear mock calls for Math.random
         jest.spyOn(console, 'error').mockImplementation(() => {});
-    });
-
-    afterEach(() => {
-        jest.restoreAllMocks();
     });
 
     test('searchImage should return an embed with a random image URL', async () => {

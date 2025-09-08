@@ -1,4 +1,5 @@
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const { setupMockCleanup } = require('../utils/testSetup.js');
 
 const { EMBED_BUILDER } = require('../../src/helpers/embedBuilder.js');
 
@@ -39,10 +40,10 @@ jest.mock('discord.js', () => ({
 // Mock select-random-file
 jest.mock('select-random-file', () => jest.fn());
 
+// Setup standard mock cleanup
+setupMockCleanup();
+
 describe('EMBED_BUILDER class', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
 
     test('constructor should initialize embed and attachment', () => {
         const mockAttachment = 'mockAttachment';

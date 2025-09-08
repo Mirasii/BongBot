@@ -1,6 +1,9 @@
 
+const { setupMockCleanup } = require('../utils/testSetup.js');
+const { testEmbedCommand } = require('../utils/commandStructureTestUtils.js');
+
 const youCommand = require('../../src/commands/you');
-const { SlashCommandBuilder } = require('discord.js');
+
 // Mock embedBuilder
 const mockBuild = jest.fn().mockResolvedValue({ files: [{ attachment: 'mock-attachment', name: 'you.png' }] });
 const mockConstructEmbedWithImage = jest.fn().mockReturnValue({ build: mockBuild });
@@ -20,23 +23,13 @@ jest.mock('../../src/helpers/errorBuilder', () => ({
     })
 }));
 
-describe('you command', () => {
-    it('should have a data property', () => {
-        expect(youCommand.data).toBeInstanceOf(SlashCommandBuilder);
-    });
+// Setup standard mock cleanup
+setupMockCleanup();
 
-    it('should have a name of "you"', () => {
-        expect(youCommand.data.name).toBe('you');
-    });
+// Test standard Embed command structure
+testEmbedCommand(youCommand, 'you');
 
-    it('should have a description', () => {
-        expect(youCommand.data.description).toBeTruthy();
-    });
-
-    it('should have an execute method', () => {
-        expect(youCommand.execute).toBeInstanceOf(Function);
-    });
-
+describe('you command execution', () => {
     it('should return the correct file object', async () => {
         const mockInteraction = {};
         const result = await youCommand.execute(mockInteraction);
