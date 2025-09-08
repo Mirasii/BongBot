@@ -1,5 +1,12 @@
 # BongBot
 
+![Build Status](https://img.shields.io/github/actions/workflow/status/Mirasii/BongBot/deploy.yml?branch=main&label=Production%20Deploy&logo=github)
+![Dev Build Status](https://img.shields.io/github/actions/workflow/status/Mirasii/BongBot/deploy-develop.yml?branch=main&label=Dev%20Build&logo=github)
+![Coverage](https://codecov.io/gh/Mirasii/BongBot/branch/main/graph/badge.svg)
+![Docker Pulls](https://img.shields.io/docker/pulls/mirasi/bongbot?logo=docker)
+![License](https://img.shields.io/github/license/Mirasii/BongBot)
+![Node Version](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen?logo=node.js)
+
 Welcome to BongBot! 🤖
 
 BongBot is a Discord Bot made for fun with various different commands. BongBot leverages slash commands, and features tagging functionality to create quotes if replying and has a chatbot feature with a spicy personality!
