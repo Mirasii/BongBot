@@ -1,7 +1,7 @@
 
-const { setupMockCleanup } = require('../utils/testSetup.js');
-const { testCommandStructure } = require('../utils/commandStructureTestUtils.js');
+const { setupMediaCommandTest } = require('../utils/commandTestUtils');
 
+// Note: roll command has a special filename different from command name
 const fs = require('fs');
 
 jest.mock('fs', () => ({
@@ -18,36 +18,39 @@ jest.mock('../../src/helpers/errorBuilder', () => ({
     })
 }));
 
-// Setup standard mock cleanup
-setupMockCleanup();
-
 const rollCommand = require('../../src/commands/roll');
 
-// Test standard command structure
-testCommandStructure(rollCommand, 'roll');
+describe('roll command', () => {
+    const { testCommandStructure, testMediaCommand } = require('../utils/commandTestUtils');
 
-describe('roll command execution', () => {
-    it('should return an object with roll.mp4 as attachment', async () => {
-        const result = await rollCommand.execute();
-        expect(result).toHaveProperty('files');
-        expect(result.files[0]).toHaveProperty('attachment');
-        expect(result.files[0].name).toBe('koroneroll.mp4');
-    });
+    // Test command structure
+    testCommandStructure(rollCommand, 'roll', 'koroneroll.mp4');
 
-    it('should handle error scenarios', async () => {
-        fs.readFileSync.mockImplementationOnce(() => {
-            throw new Error('File read error');
+    // Test media functionality with custom filename
+    describe('media command functionality', () => {
+        it('should return an object with koroneroll.mp4 as attachment', async () => {
+            const result = await rollCommand.execute();
+            expect(result).toHaveProperty('files');
+            expect(result.files[0]).toHaveProperty('attachment');
+            expect(result.files[0]).toHaveProperty('name');
+            expect(result.files[0].name).toBe('koroneroll.mp4');
         });
 
-        const mockInteraction = {
-            commandName: 'roll'
-        };
+        it('should handle error scenarios', async () => {
+            fs.readFileSync.mockImplementationOnce(() => {
+                throw new Error('File read error');
+            });
 
-        const result = await rollCommand.execute(mockInteraction);
-        expect(result).toHaveProperty('isError', true);
-        expect(result).toHaveProperty('embeds');
-        expect(result).toHaveProperty('files');
-        expect(result).toHaveProperty('flags', 64); // MessageFlags.Ephemeral
+            const mockInteraction = {
+                commandName: 'roll'
+            };
+
+            const result = await rollCommand.execute(mockInteraction);
+            expect(result).toHaveProperty('isError', true);
+            expect(result).toHaveProperty('embeds');
+            expect(result).toHaveProperty('files');
+            expect(result).toHaveProperty('flags', 64); // MessageFlags.Ephemeral
+        });
     });
 });
 

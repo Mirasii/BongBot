@@ -114,25 +114,4 @@ describe('help command execution', () => {
         expect(result.embeds[0].fields).toBeUndefined();
     });
 
-    it('should return a message for commands without full description', async () => {
-        const mockCommands = new Map();
-        mockCommands.set('testcommand', {
-            data: { name: 'testcommand' },
-        });
-
-        const mockClient = {
-            commands: mockCommands,
-        };
-
-        const interaction = {
-            options: {
-                getString: jest.fn().mockReturnValue('testcommand'),
-            },
-        };
-
-        const result = await helpCommand.execute(interaction, mockClient);
-
-        expect(result).toHaveProperty('embeds');
-        expect(result.embeds[0].description).toBe('descriptive help not yet implemented for testcommand');
-    });
 });

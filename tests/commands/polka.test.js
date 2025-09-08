@@ -1,4 +1,5 @@
 const { setupMockCleanup } = require('../utils/testSetup.js');
+const { testGoogleSearchCommand } = require('../utils/commandStructureTestUtils.js');
 const polkaCommand = require('../../src/commands/polka.js');
 
 // Mock the googleSearch module
@@ -13,6 +14,9 @@ jest.mock('../../src/helpers/errorBuilder.js', () => ({
 
 // Setup standard mock cleanup
 setupMockCleanup();
+
+// Test standard Google Search command structure
+testGoogleSearchCommand(polkaCommand, 'clown', 'Omaru Polka');
 
 describe('polka command', () => {
     const mockInteraction = {

@@ -2,6 +2,7 @@ const { http, HttpResponse } = require('msw');
 const { server } = require('../mocks/server.js');
 const { QuoteBuilder } = require('../../src/helpers/quoteBuilder.js');
 const { setupMockCleanup } = require('../utils/testSetup.js');
+const { testCommandStructure } = require('../utils/commandStructureTestUtils.js');
 
 // Setup standard mock cleanup only (MSW setup is custom in this file)
 setupMockCleanup();
@@ -18,6 +19,9 @@ jest.mock('../../src/config/index.js', () => ({
 }));
 
 const quotedbPostCommand = require('../../src/commands/quotedb_post.js');
+
+// Test standard command structure
+testCommandStructure(quotedbPostCommand, 'create_quote');
 
 // Mock the QuoteBuilder to simplify assertions
 jest.mock('../../src/helpers/quoteBuilder.js', () => {

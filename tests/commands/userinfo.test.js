@@ -1,50 +1,53 @@
 const { EmbedBuilder } = require('discord.js');
 const { setupMockCleanup } = require('../utils/testSetup.js');
+const { testCommandStructure } = require('../utils/commandStructureTestUtils.js');
 
 const userinfoCommand = require('../../src/commands/userinfo.js');
 
 // Mock EmbedBuilder
-jest.mock('discord.js', () => ({
-    EmbedBuilder: jest.fn().mockImplementation(() => ({
-        setTitle: jest.fn().mockReturnThis(),
-        setColor: jest.fn().mockReturnThis(),
-        setThumbnail: jest.fn().mockReturnThis(),
-        addFields: jest.fn().mockReturnThis(),
-        toJSON: jest.fn().mockReturnValue({ mockEmbed: true }), // Simplified return for toJSON
-    })),
-}));
+jest.mock('discord.js', () => {
+    const OriginalSlashCommandBuilder = jest.requireActual('discord.js').SlashCommandBuilder;
+    return {
+        EmbedBuilder: jest.fn().mockImplementation(() => ({
+            setTitle: jest.fn().mockReturnThis(),
+            setColor: jest.fn().mockReturnThis(),
+            setThumbnail: jest.fn().mockReturnThis(),
+            addFields: jest.fn().mockReturnThis(),
+            toJSON: jest.fn().mockReturnValue({ mockEmbed: true }), // Simplified return for toJSON
+        })),
+        SlashCommandBuilder: OriginalSlashCommandBuilder,
+    };
+});
 
 // Setup standard mock cleanup
 setupMockCleanup();
 
+// Test standard command structure
+testCommandStructure(userinfoCommand, 'usercard');
+
 describe('userinfo command', () => {
     const mockDate = new Date('2023-01-01T00:00:00.000Z');
 
-    const mockUser = {
-        username: 'testuser',
-        discriminator: '1234',
-        id: '1234567890',
+    // Common mock user factory
+    const createMockUser = (username, discriminator, id) => ({
+        username,
+        discriminator,
+        id,
         createdAt: mockDate,
-        avatarURL: jest.fn(() => 'http://example.com/avatar.jpg'),
-    };
+        avatarURL: jest.fn(() => `http://example.com/${username}_avatar.jpg`),
+    });
 
-    const mockTargetUser = {
-        username: 'targetuser',
-        discriminator: '5678',
-        id: '0987654321',
-        createdAt: mockDate,
-        avatarURL: jest.fn(() => 'http://example.com/target_avatar.jpg'),
-    };
-
-    const mockMember = {
+    // Common mock member factory
+    const createMockMember = () => ({
         joinedAt: mockDate,
-    };
+    });
 
-    const mockTargetMember = {
-        joinedAt: mockDate,
-    };
+    const mockUser = createMockUser('testuser', '1234', '1234567890');
+    const mockTargetUser = createMockUser('targetuser', '5678', '0987654321');
+    const mockMember = createMockMember();
+    const mockTargetMember = createMockMember();
 
-    const mockInteractionBase = {
+    const createMockInteraction = (targetUser = null) => ({
         guild: {
             members: {
                 cache: {
@@ -56,16 +59,14 @@ describe('userinfo command', () => {
                 },
             },
         },
-    };
+        user: mockUser,
+        options: {
+            getUser: jest.fn(() => targetUser),
+        },
+    });
 
     test('should return info card for the interaction user if no target is provided', async () => {
-        const mockInteraction = {
-            ...mockInteractionBase,
-            user: mockUser,
-            options: {
-                getUser: jest.fn(() => null), // No target user provided
-            },
-        };
+        const mockInteraction = createMockInteraction();
 
         const result = await userinfoCommand.execute(mockInteraction);
 
@@ -88,13 +89,7 @@ describe('userinfo command', () => {
     });
 
     test('should return info card for the target user if provided', async () => {
-        const mockInteraction = {
-            ...mockInteractionBase,
-            user: mockUser, // Interaction user is still present
-            options: {
-                getUser: jest.fn(() => mockTargetUser), // Target user provided
-            },
-        };
+        const mockInteraction = createMockInteraction(mockTargetUser);
 
         const result = await userinfoCommand.execute(mockInteraction);
 
