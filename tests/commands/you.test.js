@@ -6,7 +6,8 @@ const youCommand = require('../../src/commands/you');
 
 // Mock embedBuilder
 const mockBuild = jest.fn().mockResolvedValue({ files: [{ attachment: 'mock-attachment', name: 'you.png' }] });
-const mockConstructEmbedWithImage = jest.fn().mockReturnValue({ build: mockBuild });
+const mockAddDefaultFooter = jest.fn().mockReturnValue({ build: mockBuild });
+const mockConstructEmbedWithImage = jest.fn().mockReturnValue({ addDefaultFooter: mockAddDefaultFooter });
 
 jest.mock('../../src/helpers/embedBuilder.js', () => ({
     EMBED_BUILDER: jest.fn().mockImplementation(() => ({
@@ -32,7 +33,13 @@ testEmbedCommand(youCommand, 'you');
 describe('you command execution', () => {
     it('should return the correct file object', async () => {
         const mockInteraction = {};
-        const result = await youCommand.execute(mockInteraction);
+        const mockClient = { version: '1.0.0', user: { displayAvatarURL: jest.fn().mockReturnValue('http://example.com/avatar.png') } };
+        
+        const result = await youCommand.execute(mockInteraction, mockClient);
+        
+        expect(mockConstructEmbedWithImage).toHaveBeenCalledWith('clown.jpg');
+        expect(mockAddDefaultFooter).toHaveBeenCalledWith(mockClient);
+        expect(mockBuild).toHaveBeenCalled();
         expect(result).toHaveProperty('files');
         expect(result.files[0]).toHaveProperty('attachment');
         expect(result.files[0].name).toBe('you.png');
@@ -45,8 +52,9 @@ describe('you command execution', () => {
         const mockInteraction = {
             commandName: 'you'
         };
+        const mockClient = { version: '1.0.0', user: { displayAvatarURL: jest.fn().mockReturnValue('http://example.com/avatar.png') } };
 
-        const result = await youCommand.execute(mockInteraction);
+        const result = await youCommand.execute(mockInteraction, mockClient);
         expect(result).toHaveProperty('isError', true);
         expect(result).toHaveProperty('embeds');
         expect(result).toHaveProperty('files');

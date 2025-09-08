@@ -10,16 +10,19 @@ jest.mock('discord.js', () => ({
         this.thumbnail = null;
         this.footer = null;
         this.image = null;
+        this.timestamp = null;
         this.setDescription = jest.fn(function(desc) { this.description = desc; return this; });
         this.setThumbnail = jest.fn(function(thumb) { this.thumbnail = thumb; return this; });
         this.setImage = jest.fn(function(img) { this.image = img; return this; });
         this.setFooter = jest.fn(function(footer) { this.footer = footer; return this; });
+        this.setTimestamp = jest.fn(function(timestamp) { this.timestamp = timestamp || new Date(); return this; });
         this.toJSON = jest.fn(function() {
             return {
                 description: this.description,
                 thumbnail: this.thumbnail,
                 image: this.image,
                 footer: this.footer,
+                timestamp: this.timestamp,
                 mockEmbed: true,
             };
         });
@@ -121,6 +124,62 @@ describe('EMBED_BUILDER class', () => {
             await expect(builder.constructEmbedWithRandomFile(description)).rejects.toThrow(
                 'File selection error'
             );
+        });
+    });
+
+    describe('addDefaultFooter', () => {
+        test('should set default footer with client version and avatar', () => {
+            const builder = new EMBED_BUILDER();
+            const mockClient = {
+                version: '1.2.3',
+                user: {
+                    displayAvatarURL: jest.fn().mockReturnValue('http://example.com/avatar.png')
+                }
+            };
+
+            const result = builder.addDefaultFooter(mockClient);
+
+            expect(builder.embed.setFooter).toHaveBeenCalledWith({
+                text: 'BongBot • 1.2.3',
+                iconURL: 'http://example.com/avatar.png'
+            });
+            expect(builder.embed.setTimestamp).toHaveBeenCalledTimes(1);
+            expect(result).toBe(builder); // Should return this for chaining
+        });
+
+        test('should handle client without version (dev build)', () => {
+            const builder = new EMBED_BUILDER();
+            const mockClient = {
+                version: null,
+                user: {
+                    displayAvatarURL: jest.fn().mockReturnValue('http://example.com/avatar.png')
+                }
+            };
+
+            builder.addDefaultFooter(mockClient);
+
+            expect(builder.embed.setFooter).toHaveBeenCalledWith({
+                text: 'BongBot • dev build',
+                iconURL: 'http://example.com/avatar.png'
+            });
+            expect(builder.embed.setTimestamp).toHaveBeenCalledTimes(1);
+        });
+
+        test('should handle client without user avatar', () => {
+            const builder = new EMBED_BUILDER();
+            const mockClient = {
+                version: '1.0.0',
+                user: {
+                    displayAvatarURL: jest.fn().mockReturnValue(null)
+                }
+            };
+
+            builder.addDefaultFooter(mockClient);
+
+            expect(builder.embed.setFooter).toHaveBeenCalledWith({
+                text: 'BongBot • 1.0.0',
+                iconURL: null
+            });
         });
     });
 
