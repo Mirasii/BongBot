@@ -164,6 +164,22 @@ describe('BongBot', () => {
                 await ERROR_BUILDER.buildUnknownError(new Error('boom')) // Fixed: Use new Error('boom')
             );
         });
+
+        it('handles command response with isError flag and deletes reply', async () => {
+            mockExecute.mockImplementationOnce(() => ({ isError: true, content: 'Error response' }));
+
+            const interaction = {
+                isCommand: () => true,
+                commandName: 'ping',
+                deferReply: jest.fn(),
+                followUp: jest.fn(),
+                deleteReply: jest.fn()
+            };
+            await handler(interaction);
+            expect(interaction.deferReply).toHaveBeenCalled();
+            expect(interaction.deleteReply).toHaveBeenCalled();
+            expect(interaction.followUp).toHaveBeenCalledWith({ isError: true, content: 'Error response' });
+        });
     });
 
     describe('messageCreate handler', () => {
@@ -226,6 +242,21 @@ describe('BongBot', () => {
             };
             await handler(message);
             expect(ERROR_BUILDER.buildUnknownError).toHaveBeenCalled();
+        });
+
+        it('handles errors when reply fails during initialization', async () => {
+            const ERROR_BUILDER = require('../src/helpers/errorBuilder');
+            mockExecuteLegacy.mockImplementationOnce(() => { throw new Error('legacy fail'); });
+
+            const message = {
+                author: { bot: false },
+                mentions: { users: new Map([['bot123', {}]]) },
+                content: `<@bot123> hey`,
+                reply: jest.fn().mockRejectedValueOnce(new Error('reply failed'))
+            };
+            await handler(message);
+            expect(ERROR_BUILDER.buildUnknownError).toHaveBeenCalled();
+            expect(message.reply).toHaveBeenCalledTimes(2); // Once for initial reply (failed), once for error reply
         });
     });
 

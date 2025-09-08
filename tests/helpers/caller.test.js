@@ -49,6 +49,23 @@ describe('caller helper', () => {
         expect(result).toEqual(mockResponseData);
     });
 
+    test('get method should make a successful GET request with null path', async () => {
+        const mockUrl = 'http://test.com';
+        const mockPath = null;
+        const mockHeaders = { 'Content-Type': 'application/json' };
+        const mockResponseData = { message: 'GET success null path' };
+
+        server.use(
+            http.get(mockUrl, ({ request }) => {
+                expect(request.headers.get('content-type')).toBe('application/json');
+                return HttpResponse.json(mockResponseData);
+            })
+        );
+
+        const result = await caller.get(mockUrl, mockPath, null, mockHeaders);
+        expect(result).toEqual(mockResponseData);
+    });
+
     test('get method should make a successful GET request with undefined params', async () => {
         const mockUrl = 'http://test.com';
         const mockPath = '/api/data';

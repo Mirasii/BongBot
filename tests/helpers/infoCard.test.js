@@ -235,4 +235,42 @@ describe('infoCard helper', () => {
             expect(card.data.fields.some(f => f.name.includes(fieldName))).toBe(true);
         }
     });
+
+    test('uses fallback value when no Branch env var provided', async () => {
+        // Store original value and unset BRANCH to test null coalescing fallback
+        const originalBranch = process.env.BRANCH;
+        delete process.env.BRANCH;
+        process.env.ENV = 'dev';
+
+        // Reset modules to clear cache and ensure fresh API call
+        jest.resetModules();
+        const freshInfoCard = require('../../src/helpers/infoCard.js');
+
+        // Mock successful GitHub API responses for the fallback 'main' branch
+        server.use(
+            http.get('https://api.github.com/repos/Mirasii/BongBot/releases/latest', () => {
+                return HttpResponse.json({
+                    tag_name: 'v1.5.0'
+                });
+            }),
+            http.get('https://api.github.com/repos/Mirasii/BongBot/branches/main', () => {
+                return HttpResponse.json({
+                    commit: {
+                        sha: 'fallback123',
+                        html_url: 'https://github.com/Mirasii/BongBot/commit/fallback123',
+                        commit: {
+                            message: 'Fallback branch test commit'
+                        }
+                    }
+                });
+            })
+        );
+
+        const card = await freshInfoCard.generateCard(mockBot);
+
+        expect(card).toBeDefined();
+        expect(card.data.description).toContain('main'); // Should use fallback 'main'
+        expect(card.data.description).toContain('fallback'); // Should use our mock data
+        if (originalBranch !== undefined) process.env.BRANCH = originalBranch;
+    });
 });
