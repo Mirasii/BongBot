@@ -13,7 +13,7 @@ export const handlers = [
             ],
         });
     }),
-    http.post('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', () => {
+    http.post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent', () => {
         return HttpResponse.json({
             candidates: [
                 {
@@ -28,7 +28,7 @@ export const handlers = [
             ],
         });
     }),
-    http.post('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent', () => {
+    http.post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent', () => {
         return HttpResponse.json({
             candidates: [
                 {

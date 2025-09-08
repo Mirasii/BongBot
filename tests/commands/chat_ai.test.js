@@ -2,6 +2,7 @@ const chatAiCommand = require('../../src/commands/chat_ai');
 const { server } = require('../mocks/server.js');
 const { EMBED_BUILDER } = require('../../src/helpers/embedBuilder.js');
 const { SlashCommandBuilder } = require('discord.js');
+const { http, HttpResponse } = require('msw');
 
 // Mock the config module to control API keys and URLs
 jest.mock('../../src/config/index.js', () => ({
@@ -94,5 +95,43 @@ describe('chat_ai command', () => {
         const result = await chatAiCommand.execute(mockInteraction, mockClient);
 
         expect(result).toBe('mocked embed with attachment');
+    });
+
+    it('should return a message when no AI is active', async () => {
+        api.openai.active = false;
+        api.googleai.active = false;
+
+        const result = await chatAiCommand.execute(mockInteraction, mockClient);
+
+        expect(EMBED_BUILDER.prototype.constructEmbedWithRandomFile).toHaveBeenCalledWith('Hmph! Why are you trying to talk to me when no AI service is active?');
+        expect(result).toBe('mocked embed');
+    });
+
+    it('should handle legacy commands', async () => {
+        const mockMsg = {
+            content: '<@123456789> test input',
+            guild: {
+                members: {
+                    fetch: jest.fn().mockResolvedValue({ nickname: 'test_user' }),
+                },
+                id: 'test_server',
+            },
+            author: {
+                id: 'test_user_id',
+            },
+        };
+
+        const result = await chatAiCommand.executeLegacy(mockMsg, mockClient);
+        expect(result).toBe('mocked embed');
+    });
+
+    it('should throw an error when OpenAI API call fails', async () => {
+        server.use(
+            http.post('https://api.openai.com/v1/chat/completions', () => {
+                return new HttpResponse(null, { status: 500 });
+            })
+        );
+
+        await expect(chatAiCommand.execute(mockInteraction, mockClient)).rejects.toThrow();
     });
 });
