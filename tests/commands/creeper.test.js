@@ -23,6 +23,6 @@ describe('creeper command', () => {
         const result = await creeperCommand.execute();
         expect(result).toHaveProperty('files');
         expect(result.files[0]).toHaveProperty('attachment');
-        expect(result.files[0].name).toBe('creeper.mp4');
+        expect(result.files[0].name).toBe('creeper.webm');
     });
 });

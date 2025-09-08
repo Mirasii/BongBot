@@ -4,7 +4,7 @@ const LOGGER = require('./helpers/logging')
 const fs = require('fs');
 const crypto = require('crypto');
 const token = require(`${__dirname}/config/index.js`).discord?.apikey;
-const ERROR_BUILDER = require(`${__dirname}/helpers/errorBuilder.js`);
+const { buildUnknownError } = require(`${__dirname}/helpers/errorBuilder.js`);
 const { generateCard } = require(`${__dirname}/helpers/infoCard.js`);
 
 /** set up logging */
@@ -33,7 +33,7 @@ bot.on('interactionCreate', async interaction => {
         await interaction.followUp(response);
     } catch (error) {
         await interaction.deleteReply();
-        await interaction.followUp(await ERROR_BUILDER.buildUnknownError(error));
+        await interaction.followUp(await buildUnknownError(error));
     }
 });
 
@@ -51,7 +51,7 @@ bot.on('messageCreate', async message => {
         await reply.delete();
         await message.reply(response);
     } catch (error) {
-        const errorResp = await ERROR_BUILDER.buildUnknownError(error);
+        const errorResp = await buildUnknownError(error);
         if (reply) { await reply.delete(); }
         await message.reply(errorResp);
     }   

@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const fs = require('fs');
-const file = fs.readFileSync('./src/files/cringe.png');
+const { EMBED_BUILDER } = require(`${__dirname}/../helpers/embedBuilder.js`);
+const { buildError } = require(`${__dirname}/../helpers/errorBuilder.js`);
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -8,23 +8,9 @@ module.exports = {
         .setDescription('cringe!'),
     async execute(interaction, client) {
         try {
-            return {
-                files: [
-                    {
-                        attachment: file,
-                        name: "cringe.mp4"
-                    }
-                ]
-            }
+            return await new EMBED_BUILDER().constructEmbedWithImage('cringe.png').build();
         } catch (error) {
-            console.error('cringe command failed', error);
-            return {
-                type: 4,
-                data: {
-                    content: 'There was an error while executing this command.',
-                    flags: 1 << 6 // set the EPHEMERAL flag
-                }
-            };
+            return await buildError(interaction, error);
         }
     },
     fullDesc: {

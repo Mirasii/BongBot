@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { generateCard } = require(`${__dirname}/../helpers/infoCard.js`);
-const ERROR_BUILDER = require(`${__dirname}/../helpers/errorBuilder.js`);
+const { buildError } = require(`${__dirname}/../helpers/errorBuilder.js`);
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -11,7 +11,7 @@ module.exports = {
             const embed = await generateCard(client);
             return { embeds: [embed] };
         } catch (error) {
-            return await ERROR_BUILDER.buildError(interaction, error);
+            return await buildError(interaction, error);
         }
     },
     fullDesc: {

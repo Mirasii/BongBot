@@ -19,6 +19,13 @@ class EMBED_BUILDER {
         return this;
     }
 
+    constructEmbedWithImage(fileName) {
+        let attach = new AttachmentBuilder(`./src/files/${fileName}`);
+        this.embed.setImage(`attachment://${fileName}`);
+        this.attachment = attach;
+        return this;
+    }
+
     async constructEmbedWithRandomFile(description) {
         this.embed.setDescription(description);
         const file = await selectRandomFile(dir);

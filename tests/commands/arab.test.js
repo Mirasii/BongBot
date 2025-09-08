@@ -5,6 +5,17 @@ const fs = require('fs');
 jest.mock('fs', () => ({
     readFileSync: jest.fn()
 }));
+
+// Mock the error builder to avoid deep dependencies
+jest.mock('../../src/helpers/errorBuilder', () => ({
+    buildError: jest.fn().mockResolvedValue({
+        embeds: [],
+        files: [],
+        flags: 64,
+        isError: true
+    })
+}));
+
 const arabCommand = require('../../src/commands/arab');
 describe('arab command', () => {
     it('should have a data property', () => {
@@ -35,10 +46,15 @@ describe('arab command', () => {
             throw new Error('File read error');
         });
 
-        const result = await arabCommand.execute();
-        expect(result).toHaveProperty('data');
-        expect(result.data).toHaveProperty('content');
-        expect(result.data.content).toBe('There was an error while executing this command.');
+        const mockInteraction = {
+            commandName: 'arab'
+        };
+
+        const result = await arabCommand.execute(mockInteraction);
+        expect(result).toHaveProperty('isError', true);
+        expect(result).toHaveProperty('embeds');
+        expect(result).toHaveProperty('files');
+        expect(result).toHaveProperty('flags', 64); // MessageFlags.Ephemeral
     });
 });
 
