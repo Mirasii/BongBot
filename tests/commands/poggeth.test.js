@@ -1,7 +1,22 @@
 
-const poggethCommand = require('../../src/commands/poggeth');
 const { SlashCommandBuilder } = require('discord.js');
+const fs = require('fs');
 
+jest.mock('fs', () => ({
+    readFileSync: jest.fn()
+}));
+
+// Mock the error builder to avoid deep dependencies
+jest.mock('../../src/helpers/errorBuilder', () => ({
+    buildError: jest.fn().mockResolvedValue({
+        embeds: [],
+        files: [],
+        flags: 64,
+        isError: true
+    })
+}));
+
+const poggethCommand = require('../../src/commands/poggeth');
 describe('poggeth command', () => {
     it('should have a data property', () => {
         expect(poggethCommand.data).toBeInstanceOf(SlashCommandBuilder);
@@ -23,6 +38,23 @@ describe('poggeth command', () => {
         const result = await poggethCommand.execute();
         expect(result).toHaveProperty('files');
         expect(result.files[0]).toHaveProperty('attachment');
-        expect(result.files[0].name).toBe('poggeth.mp4');
+        expect(result.files[0].name).toBe('mine_pogethchampion1.mp4');
+    });
+
+    it('should handle error scenarios', async () => {
+        fs.readFileSync.mockImplementationOnce(() => {
+            throw new Error('File read error');
+        });
+
+        const mockInteraction = {
+            commandName: 'poggeth'
+        };
+
+        const result = await poggethCommand.execute(mockInteraction);
+        expect(result).toHaveProperty('isError', true);
+        expect(result).toHaveProperty('embeds');
+        expect(result).toHaveProperty('files');
+        expect(result).toHaveProperty('flags', 64); // MessageFlags.Ephemeral
     });
 });
+

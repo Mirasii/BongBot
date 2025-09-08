@@ -1,4 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
+const { EMBED_BUILDER } = require(`${__dirname}/../helpers/embedBuilder.js`);
 const { buildError } = require(`${__dirname}/../helpers/errorBuilder.js`);
 
 module.exports = {

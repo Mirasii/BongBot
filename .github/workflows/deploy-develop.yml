@@ -52,7 +52,6 @@ jobs:
         id: coverage
         with:
           output: report-markdown
-          coverage-file: report.json
           base-coverage-file: report.json
       # Build and push the development image
       - name: Login to Docker Hub
