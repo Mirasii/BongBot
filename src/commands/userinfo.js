@@ -10,7 +10,7 @@ module.exports = {
     async execute(interaction) {
         const user = interaction.options.getUser('target') || interaction.user;
         const member = interaction.guild.members.cache.get(user.id);
-                const embed = new EmbedBuilder()
+        const embed = new EmbedBuilder()
             .setTitle(`Info card for ${user.username}`)
             .setColor('#0099ff')
             .setThumbnail(user.avatarURL({ dynamic: true }))

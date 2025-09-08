@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('@discordjs/builders');
+const { SlashCommandBuilder } = require('@discordjs/builders');
 const { QuoteBuilder } = require(`${__dirname}/../helpers/quoteBuilder.js`);
 const { Colors } = require('discord.js');
 const API = require(`${__dirname}/../config/index.js`).apis.quotedb;
