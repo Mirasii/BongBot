@@ -5,11 +5,7 @@ module.exports = {
         .setName('ping')
         .setDescription('Health Check BongBot'),
     async execute(interaction, client) {
-        try {
-            return 'Pong';
-        } catch (error) {
-            return await buildError(interaction, error);
-        }
+        return 'Pong';
     },
     fullDesc: {
         options: [],

@@ -3,7 +3,8 @@ const logging = require('../../src/helpers/logging.js');
 
 jest.mock('fs', () => ({
     writeFile: jest.fn((path, content, callback) => callback(null)),
-    appendFile: jest.fn((path, content, callback) => callback(null))
+    appendFile: jest.fn((path, content, callback) => callback(null)),
+    mkdir: jest.fn((path, options, callback) => callback(null))
 }));
 
 describe('logging helper', () => {
@@ -89,6 +90,16 @@ describe('logging helper', () => {
             
             expect(mockConsoleError).toHaveBeenCalledWith('Log file not initialized');
             expect(fs.appendFile).not.toHaveBeenCalled();
+        });
+
+        test('throws error when appendFile fails', async () => {
+            const mockError = new Error('appendFile failed');
+            fs.appendFile.mockImplementation((path, data, callback) => {
+                callback(mockError);
+            });
+
+            const message = 'Test error';
+            await expect(logging.log(message)).rejects.toThrow('appendFile failed');
         });
     });
 });
