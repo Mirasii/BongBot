@@ -8,7 +8,7 @@ module.exports = {
         .setDescription('cringe!'),
     async execute(interaction, client) {
         try {
-            return await new EMBED_BUILDER().constructEmbedWithImage('cringe.png').build();
+            return await new EMBED_BUILDER().constructEmbedWithImage('cringe.png').addDefaultFooter(client).build();
         } catch (error) {
             return await buildError(interaction, error);
         }

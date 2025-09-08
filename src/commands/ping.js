@@ -1,5 +1,4 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { buildError } = require(`${__dirname}/../helpers/errorBuilder.js`);
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ping')
