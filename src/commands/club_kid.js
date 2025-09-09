@@ -8,9 +8,11 @@ module.exports = {
         .setDescription('groovy kid in a groovy club!'),
     async execute(interaction, client) {
         try {
-            let dirLength = fs.readdirSync('./src/clubkid').length;
-            let num = Math.floor(Math.random() * dirLength) + 1;
-            return { files: [{ attachment: fs.readFileSync(`./src/clubkid/kid${num}.mp4`), name: `kid${num}.mp4` }] };
+            const dir =`${__dirname}/../clubkid`;
+            const files = fs.readdirSync(dir).filter(f => f.toLowerCase().endsWith('.mp4'));
+            if (files.length === 0) return await buildError(interaction, new Error('No clubkid videos found.'));
+            const choice = files[Math.floor(Math.random() * files.length)];
+            return { files: [{ attachment: fs.readFileSync(`${dir}/${choice}`), name: choice }] };
         } catch (error) {
             return await buildError(interaction, error);
         }
