@@ -1,4 +1,5 @@
 const { EmbedBuilder, Colors } = require('discord.js');
+const CALLER = require('./caller.js');
 const GITHUB_REPO_OWNER = 'Mirasii';
 const GITHUB_REPO_NAME = 'BongBot';
 let apiResponse;
@@ -10,24 +11,16 @@ const getRepoInfoFromAPI = async (owner, repo) => {
 
     try {
         // 1. Fetch latest release
-        const releaseResponse = await fetch(`${repoApiUrl}/releases/latest`, { headers });
-        if (!releaseResponse.ok) throw new Error (`Release fetch failed: ${releaseResponse.statusText}`);
-        const tagsData = await releaseResponse.json();
-        const tag = tagsData.tag_name;
+        const tag = (await CALLER.get(repoApiUrl, '/releases/latest', null, headers))?.tag_name;
         const defaultBranch = process.env.BRANCH ?? 'main';
         // 2. Fetch the latest commit from that default branch
-        const branchesResponse = await fetch(`${repoApiUrl}/branches/${defaultBranch}`, { headers });
-        if (!branchesResponse.ok) throw new Error(`Branches fetch failed: ${branchesResponse.statusText}`);
-        const branchesData = await branchesResponse.json();
-        const latestCommit = branchesData.commit;
-        const commitMessage = latestCommit.commit.message.split('\n')[0]; // Get first line only
-        const shortHash = latestCommit.sha.substring(0, 7);
-
+        const latestCommit = (await CALLER.get(repoApiUrl, `/branches/${defaultBranch}`, null, headers))?.commit;
+        const commitMessage = latestCommit?.message?.split('\n')[0]; // Get first line only
         return {
             repoUrl: `https://github.com/${owner}/${repo}`,
             branchName: defaultBranch,
-            commitUrl: latestCommit.html_url,
-            shortHash: shortHash,
+            commitUrl: latestCommit?.html_url,
+            shortHash: latestCommit?.sha?.substring(0, 7),
             commitMessage,
             tag
         };
