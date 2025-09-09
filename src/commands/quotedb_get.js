@@ -10,7 +10,7 @@ module.exports = {
         .addBooleanOption(option => option.setName('server').setDescription('Get quotes from this server only? Default: true').setRequired(false)),
     async execute(interaction, client) {
         try {
-            return await getQuote('Recent Quotes',interaction, '/api/v1/quotes/search', client);
+            return await getQuote('Recent Quotes',  interaction, '/api/v1/quotes/search', client);
         } catch (error) {
             return await buildError(interaction, error);
         }
