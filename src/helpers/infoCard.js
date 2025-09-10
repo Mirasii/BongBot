@@ -15,7 +15,7 @@ const getRepoInfoFromAPI = async (owner, repo) => {
         const defaultBranch = process.env.BRANCH ?? 'main';
         // 2. Fetch the latest commit from that default branch
         const latestCommit = (await CALLER.get(repoApiUrl, `/branches/${defaultBranch}`, null, headers))?.commit;
-        const commitMessage = latestCommit?.message?.split('\n')[0]; // Get first line only
+        const commitMessage = latestCommit?.commit?.message?.split('\n')[0];
         return {
             repoUrl: `https://github.com/${owner}/${repo}`,
             branchName: defaultBranch,
