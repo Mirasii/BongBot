@@ -15,8 +15,8 @@ module.exports = {
         try {
             const quote = interaction.options.getString('quote');
             const author = interaction.options.getString('author');
-            const serverId = interaction.guild.id;
-            return await createQuote(quote, author, client, serverId);
+            const server = { id: interaction.guild.id, name: interaction.guild.name };
+            return await createQuote(quote, author, client, server);
         } catch (error) {
             return await buildError(interaction, error);
         }
@@ -30,8 +30,8 @@ module.exports = {
             const quoteText = repliedToMessage.content;
             const quoteAuthor = repliedToMessage.member;
             const authorDisplayName = quoteAuthor.displayName;
-            const serverId = message.guild.id;
-            return await createQuote(quoteText, authorDisplayName, client, serverId);
+            const server = { id: message.guild.id, name: message.guild.name };
+            return await createQuote(quoteText, authorDisplayName, client, server);
         } catch (error) {
             return await buildUnknownError(error);
         }
@@ -42,7 +42,7 @@ module.exports = {
     }
 }
 
-async function createQuote(quote, author, client, serverId) {
+async function createQuote(quote, author, client, server) {
     const response = await CALLER.post(
         API.url,
         '/api/v1/quotes',
@@ -52,7 +52,7 @@ async function createQuote(quote, author, client, serverId) {
             author: author,
             user_id: API.user_id,
             date: new Date().toLocaleString(), 
-            server_id:  serverId
+            server: server
         }
     );
     return new QuoteBuilder()
