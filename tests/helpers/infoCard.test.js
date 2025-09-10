@@ -1,8 +1,8 @@
-const { http, HttpResponse } = require('msw');
-const { setupStandardTestEnvironment, server } = require('../utils/testSetup.js');
-
-// Setup MSW server and standard test cleanup
-setupStandardTestEnvironment();
+// Mock caller helper
+const mockGet = jest.fn();
+jest.mock('../../src/helpers/caller.js', () => ({
+    get: mockGet
+}));
 
 // Mock discord.js EmbedBuilder and Colors
 jest.mock('discord.js', () => {
@@ -54,23 +54,18 @@ jest.mock('discord.js', () => {
 
     return {
         EmbedBuilder: jest.fn().mockImplementation(() => new MockEmbed()),
-        Colors: {
-            Purple: '#800080'
-        }
+        Colors: { Purple: '#800080' }
     };
 });
 
-// Do not mock the entire module to test actual implementation
-const infoCard = require('../../src/helpers/infoCard.js');
-
-const { generateCard } = require('../../src/helpers/infoCard.js');
-
 describe('infoCard helper', () => {
-    const mockBot = {
-        user: {
-            displayAvatarURL: jest.fn(() => 'http://example.com/bot_avatar.jpg'),
-        },
-    };
+    const mockBot = { user: { displayAvatarURL: jest.fn(() => 'http://example.com/bot_avatar.jpg') } };
+
+    beforeEach(() => {
+        mockGet.mockClear();
+        // Reset module cache to ensure fresh API calls
+        jest.resetModules();
+    });
 
     // No need to mock Date.now or Math.floor if mocking the entire module
 
@@ -78,34 +73,52 @@ describe('infoCard helper', () => {
         process.env.BRANCH = 'main';
         process.env.ENV = 'prod';
 
-        const card = await infoCard.generateCard(mockBot);
+        // Mock successful API responses
+        mockGet.mockResolvedValueOnce({ tag_name: 'v1.0.0' }) // releases/latest
+            .mockResolvedValueOnce({
+                commit: { sha: 'abc123def456', commit: { message: 'Test commit message' },
+                    html_url: 'https://github.com/Mirasii/BongBot/commit/abc123def456'
+                }
+            }); // branches/main
+
+        const { generateCard } = require('../../src/helpers/infoCard.js');
+        const card = await generateCard(mockBot);
 
         expect(card).toBeDefined();
         expect(card.data.title).toBeDefined();
         expect(card.data.color).toBeDefined();
         expect(card.data.fields).toBeInstanceOf(Array);
+        expect(mockGet).toHaveBeenCalledTimes(2);
+        expect(mockGet).toHaveBeenNthCalledWith(
+            1,
+            'https://api.github.com/repos/Mirasii/BongBot',
+            '/releases/latest',
+            null,
+            { 'User-Agent': 'Node.js-Deploy-Script' }
+        );
+        expect(mockGet).toHaveBeenNthCalledWith(
+            2,
+            'https://api.github.com/repos/Mirasii/BongBot',
+            '/branches/main',
+            null,
+            { 'User-Agent': 'Node.js-Deploy-Script' }
+        );
+
+        const requiredFields = ['Repository', 'Last Started', 'Node.js', 'Library'];
+        for (const fieldName of requiredFields) {
+            expect(card.data.fields.some(f => f.name.includes(fieldName))).toBe(true);
+        }
     });
 
     test('generateCard should handle GitHub API failure gracefully', async () => {
         process.env.BRANCH = 'dev';
         process.env.ENV = 'dev';
 
-        // Reset the cached apiResponse to force a new API call
-        const infoCardModule = require('../../src/helpers/infoCard.js');
-        jest.resetModules();
-        const freshInfoCard = require('../../src/helpers/infoCard.js');
-
         // Mock failed GitHub API responses for both releases and branches
-        server.use(
-            http.get('https://api.github.com/repos/Mirasii/BongBot/releases/latest', () => {
-                return new HttpResponse(null, { status: 500 });
-            }),
-            http.get('https://api.github.com/repos/Mirasii/BongBot/branches/dev', () => {
-                return new HttpResponse(null, { status: 500 });
-            })
-        );
+        mockGet.mockRejectedValue(new Error('Network response was not ok: 500 Internal Server Error'));
 
-        const card = await freshInfoCard.generateCard(mockBot);
+        const { generateCard } = require('../../src/helpers/infoCard.js');
+        const card = await generateCard(mockBot);
 
         expect(card).toBeDefined();
         expect(card.data.title).toBeDefined();
@@ -120,18 +133,13 @@ describe('infoCard helper', () => {
         process.env.BRANCH = 'main';
         process.env.ENV = 'dev';
 
-        // Reset modules to clear cache
-        jest.resetModules();
-        const freshInfoCard = require('../../src/helpers/infoCard.js');
-
         // Mock successful releases but failed branches
-        server.use(
-            http.get('https://api.github.com/repos/Mirasii/BongBot/branches/main', () => {
-                return new HttpResponse(null, { status: 404 });
-            })
-        );
+        mockGet
+            .mockResolvedValueOnce({ tag_name: 'v1.0.0' }) // releases/latest succeeds
+            .mockRejectedValueOnce(new Error('Network response was not ok: 404 Not Found')); // branches/main fails
 
-        const card = await freshInfoCard.generateCard(mockBot);
+        const { generateCard } = require('../../src/helpers/infoCard.js');
+        const card = await generateCard(mockBot);
 
         expect(card).toBeDefined();
         expect(card.data.description).toContain('N/A');
@@ -139,25 +147,21 @@ describe('infoCard helper', () => {
     });
 
     test('generateCard should handle missing bot avatar gracefully', async () => {
-        const mockBotNoAvatar = {
-            user: {
-                displayAvatarURL: jest.fn(() => null),
-                avatarURL: null
-            }
-        };
+        const mockBotNoAvatar = { user: { displayAvatarURL: jest.fn(() => null), avatarURL: null }};
 
-        const card = await infoCard.generateCard(mockBotNoAvatar);
+        // Mock successful API responses
+        mockGet
+            .mockResolvedValueOnce({ tag_name: 'v1.0.0' })
+            .mockResolvedValueOnce({
+                commit: { sha: 'abc123def456', commit: { message: 'Test commit message' },
+                    html_url: 'https://github.com/Mirasii/BongBot/commit/abc123def456'
+                }
+            });
+
+        const { generateCard } = require('../../src/helpers/infoCard.js');
+        const card = await generateCard(mockBotNoAvatar);
         expect(card).toBeDefined();
         expect(card.data.thumbnail).toEqual({ url: null });
-    });
-
-    test('generateCard should include all required fields', async () => {
-        const card = await infoCard.generateCard(mockBot);
-        
-        const requiredFields = ['Repository', 'Last Started', 'Node.js', 'Library'];
-        for (const fieldName of requiredFields) {
-            expect(card.data.fields.some(f => f.name.includes(fieldName))).toBe(true);
-        }
     });
 
     test('uses fallback value when no Branch env var provided', async () => {
@@ -166,14 +170,44 @@ describe('infoCard helper', () => {
         delete process.env.BRANCH;
         process.env.ENV = 'dev';
 
-        // Reset modules to clear cache and ensure fresh API call
-        jest.resetModules();
-        const freshInfoCard = require('../../src/helpers/infoCard.js');
-        const card = await freshInfoCard.generateCard(mockBot);
+        // Mock successful API responses with 'main' branch (fallback)
+        mockGet
+            .mockResolvedValueOnce({ tag_name: 'v1.0.0' })
+            .mockResolvedValueOnce({
+                commit: { sha: 'abc123def456', commit: { message: 'Test commit message' },
+                    html_url: 'https://github.com/Mirasii/BongBot/commit/abc123def456'
+                }
+            });
+
+        const { generateCard } = require('../../src/helpers/infoCard.js');
+        const card = await generateCard(mockBot);
 
         expect(card).toBeDefined();
         expect(card.data.description).toContain('main'); // Should use fallback 'main'
-        expect(card.data.description).toContain('abc'); // Should use our mock data
+        expect(card.data.description).toContain('abc123d'); // Should use our mock data
         if (originalBranch !== undefined) process.env.BRANCH = originalBranch;
     });
+
+    test('generateCard should use cached values for repeated calls', async () => {
+        process.env.BRANCH = 'main';
+        process.env.ENV = 'prod';
+
+        // Mock successful API responses
+        mockGet.mockResolvedValueOnce({ tag_name: 'v1.0.0' }) // releases/latest
+            .mockResolvedValueOnce({
+                commit: { sha: 'abc123def456', commit: { message: 'Test commit message' },
+                    html_url: 'https://github.com/Mirasii/BongBot/commit/abc123def456'
+                }
+            }); // branches/main
+
+        const { generateCard } = require('../../src/helpers/infoCard.js');
+        const card = await generateCard(mockBot);
+        const card2 = await generateCard(mockBot); // Call again to test caching
+
+        expect(card).toBeDefined();
+        expect(card2).toBeDefined();
+        expect(JSON.stringify(card)).toBe(JSON.stringify(card2)); // Should return cached version on second call
+        expect(mockGet).toHaveBeenCalledTimes(2); // API should only be called twice total
+    });
+    
 });
