@@ -4,6 +4,9 @@ module.exports = {
     transform: {
         '^.+\.js$': 'babel-jest',
     },
+    transformIgnorePatterns: [
+        'node_modules/(?!(msw|@mswjs|@bundled-es-modules|until-async|strict-event-emitter|outvariant|@inquirer|statuses)/)'
+    ],
     collectCoverage: true,
     collectCoverageFrom: ["**/*.{js,vue}", "!**/node_modules/**"],
     coverageReporters: ["text", "text-summary", "json", "json-summary", "lcov"],
