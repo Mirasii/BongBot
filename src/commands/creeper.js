@@ -8,7 +8,7 @@ module.exports = {
         .setDescription('creeper!'),
     async execute(interaction, client) {
         try {
-            return { files: [{ attachment: fs.readFileSync('./src/files/creeper.webm'), name: "creeper.webm" }] };
+            return { files: [{ attachment: fs.readFileSync('./src/files/Creeper.webm'), name: "creeper.webm" }] };
         } catch (error) {
             return await buildError(interaction, error);
         }
