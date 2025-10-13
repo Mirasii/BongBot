@@ -9,7 +9,7 @@
     },
     "dependencies": {
         "@google/generative-ai": "^0.24.1",
-        "discord.js": "^14.22.1",
+        "discord.js": "^14.23.2",
         "dotenv": "17.2.3",
         "select-random-file": "^1.2.4"
     },
