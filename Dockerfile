@@ -1,4 +1,4 @@
-FROM node:22.12-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -6,7 +6,7 @@ COPY . /app
 
 RUN --mount=type=cache,target=/root/.npm-production npm ci --ignore-scripts --omit=dev
 
-FROM node:22-alpine AS release
+FROM node:24-alpine AS release
 
 WORKDIR /app
 
