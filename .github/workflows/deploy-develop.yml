@@ -231,6 +231,7 @@ jobs:
         if: github.actor != 'dependabot[bot]'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH_NAME: ${{ github.head_ref }}
         run: |
           # Create a temporary .env file for the test
           cat <<EOF > .env.test
@@ -242,6 +243,7 @@ jobs:
           docker run -d \
             --name bongbot-test \
             --env-file ./.env.test \
+            --env BRANCH=${{ env.BRANCH_NAME }} \
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:pr-${{ github.event.pull_request.number }}
 
           echo "Waiting for 15 seconds to let the container initialize..."
@@ -269,17 +271,19 @@ jobs:
       - name: SSH and Start Service (User PR)
         if: github.actor != 'dependabot[bot]'
         uses: appleboy/ssh-action@master
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            if systemctl is-active --quiet bongbot-develop; then
-              echo "✅ Service 'bongbot-develop' is running. Restarting service..."
-              sudo systemctl restart bongbot-develop
+            if systemctl is-active --quiet bongbot-develop@${{ env.BRANCH_NAME }}; then
+              echo "✅ Service 'bongbot-develop@${{ env.BRANCH_NAME }}' is running. Restarting service..."
+              sudo systemctl restart bongbot-develop@${{ env.BRANCH_NAME }}
             else
-              echo "ℹ️ Service 'bongbot-develop' is not running. Starting service..."
-              sudo systemctl start bongbot-develop
+              echo "ℹ️ Service 'bongbot-develop@${{ env.BRANCH_NAME }}' is not running. Starting service..."
+              sudo systemctl start bongbot-develop@${{ env.BRANCH_NAME }}
             fi
 
       - name: Create New Comment (User PR)
