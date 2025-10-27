@@ -3,7 +3,7 @@
 ![Build Status](https://img.shields.io/github/actions/workflow/status/Mirasii/BongBot/deploy.yml?label=Production%20Deploy&logo=github)
 ![Coverage](https://codecov.io/gh/Mirasii/BongBot/branch/main/graph/badge.svg)
 ![License](https://img.shields.io/github/license/Mirasii/BongBot?v=2)
-![Node Version](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen?logo=node.js)
+![Node Version](https://img.shields.io/badge/node-%3E%3D24.0.0-brightgreen?logo=node.js)
 
 Welcome to BongBot! 🤖
 
