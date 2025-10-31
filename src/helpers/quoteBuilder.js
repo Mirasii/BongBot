@@ -1,4 +1,7 @@
 const { EmbedBuilder, Colors } = require('discord.js');
+const API = require(`${__dirname}/../config/index.js`).apis.quotedb;
+const CALLER = require(`${__dirname}/caller.js`);
+const { buildError } = require(`${__dirname}/errorBuilder.js`);
 
 class QuoteBuilder {
     embed;
@@ -29,4 +32,24 @@ class QuoteBuilder {
     }
 }
 
-module.exports = { QuoteBuilder };
+async function getQuote(title, interaction, base, client) {
+    const number = interaction.options.getInteger('number') || 1;
+    if (number > 5) return await buildError(interaction, new Error("You can only request up to 5 quotes at a time."));
+    const server = interaction.options.getBoolean('server');
+    const response = await CALLER.get(
+        API.url,
+        (server === null || server === true) ? 
+        `${base}/server/${interaction.guild.id}` : 
+        `${base}/user/${API.user_id}`,
+        `max_quotes=${number}`,
+        { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API.apikey}` }
+    );
+    if (response?.quotes?.length === 0) return await buildError(interaction, new Error("No quotes found."));
+    if (response?.quotes?.length === 1 && title.endsWith('Quotes')) title = title.replace('Quotes', 'Quote');
+    return new QuoteBuilder()
+            .setTitle(title)
+            .addQuotes(response.quotes)
+            .build(client);
+}
+
+module.exports = { QuoteBuilder, getQuote };
