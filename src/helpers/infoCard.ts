@@ -1,5 +1,5 @@
 import { EmbedBuilder, Colors } from 'discord.js';
-import type { Client } from 'discord.js';
+import type { ExtendedClient } from '../helpers/interfaces';
 const GITHUB_REPO_OWNER = 'Mirasii';
 const GITHUB_REPO_NAME = 'BongBot';
 let apiResponse: GithubInfo | undefined;
@@ -45,8 +45,9 @@ const getRepoInfoFromAPI = async (owner: string, repo: string) => {
     }
 };
 
-export const generateCard = async (bot: Client) => {
+export const generateCard = async (bot: ExtendedClient) => {
     if (!apiResponse) { apiResponse = await getRepoInfoFromAPI(GITHUB_REPO_OWNER, GITHUB_REPO_NAME); }
+    bot.version = apiResponse.tag;
     return new EmbedBuilder()
         .setTitle('🤖 BongBot Info Card')
         .setColor(Colors.Purple)

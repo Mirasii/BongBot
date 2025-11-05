@@ -1,5 +1,5 @@
 import { EmbedBuilder, Colors } from 'discord.js';
-import type { Client } from 'discord.js';
+import type { ExtendedClient } from '../helpers/interfaces';
 
 export default class QuoteBuilder {
     private embed: EmbedBuilder;
@@ -22,7 +22,7 @@ export default class QuoteBuilder {
         return this;
     }
 
-    build(client: Client): { embeds: [EmbedBuilder] } {
+    build(client: ExtendedClient): { embeds: [EmbedBuilder] } {
         this.embed.setFooter({ text: `BongBot • Quotes from quotes.elmu.dev`, iconURL: client.user?.displayAvatarURL() });
         this.embed.setTimestamp();
         this.embed.setColor(Colors.Purple);
