@@ -1,32 +1,33 @@
-const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
-const randomFile = require('select-random-file');
+import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
+import type { ExtendedClient } from './interfaces';
+import randomFile from 'select-random-file';
 const dir = `${__dirname}/../responses`;
 
 class EMBED_BUILDER {
-    attachment;
-    embed;
+    attachment?: AttachmentBuilder;
+    embed: EmbedBuilder;
 
-    constructor(attachment) {
+    constructor(attachment?: AttachmentBuilder) {
         this.attachment = attachment;
         this.embed = new EmbedBuilder();
         return this;
     }
 
-    constructEmbedWithAttachment(description, filename) {
+    constructEmbedWithAttachment(description: string, filename: string) {
         this.embed.setDescription(description);
         if (!this.attachment) throw new Error("No attachment provided for embed.");
         this.embed.setThumbnail(`attachment://${filename}`);
         return this;
     }
 
-    constructEmbedWithImage(fileName) {
+    constructEmbedWithImage(fileName: string) {
         let attach = new AttachmentBuilder(`./src/files/${fileName}`);
         this.embed.setImage(`attachment://${fileName}`);
         this.attachment = attach;
         return this;
     }
 
-    async constructEmbedWithRandomFile(description) {
+    async constructEmbedWithRandomFile(description: string) {
         this.embed.setDescription(description);
         const file = await selectRandomFile(dir);
         let attach = new AttachmentBuilder(`./src/responses/${file}`);
@@ -35,29 +36,30 @@ class EMBED_BUILDER {
         return this.build();
     }
 
-    addDefaultFooter(client) {
-        this.embed.setFooter({ text: `BongBot • ${client?.version ?? 'dev build'}`, iconURL: client.user.displayAvatarURL() });
+    addDefaultFooter(client: ExtendedClient) {
+        this.embed.setFooter({ text: `BongBot • ${client?.version ?? 'dev build'}`, iconURL: client.user?.displayAvatarURL() });
         this.embed.setTimestamp();
         return this;
     }
 
-    addFooter(text, iconURL) {
+    addFooter(text: string, iconURL: string) {
         this.embed.setFooter({ text: text, iconURL: iconURL });
         return this;
     }
 
-    build() {
+    build(): { embeds: [EmbedBuilder], files: AttachmentBuilder [] } {
+        if (!this.attachment) {return { embeds: [this.embed], files: [] };}
         return { embeds: [this.embed], files: [this.attachment].filter(f => f)};
     }
 }
 
-async function selectRandomFile(dir) {
+async function selectRandomFile(dir: string): Promise<string> {
     return new Promise((resolve, reject) => {
         randomFile(dir, (err, file) => {
             if (err) { reject(err); return; } 
-            resolve(file);
+            resolve(file ?? '');
         });
     });
 }
 
-module.exports = { EMBED_BUILDER };
+export default EMBED_BUILDER;

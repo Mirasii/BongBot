@@ -1,5 +1,5 @@
 import { EmbedBuilder, Colors } from 'discord.js';
-import type { ExtendedClient } from '../helpers/interfaces';
+import type { ExtendedClient, GithubInfo } from '../helpers/interfaces';
 const GITHUB_REPO_OWNER = 'Mirasii';
 const GITHUB_REPO_NAME = 'BongBot';
 let apiResponse: GithubInfo | undefined;
@@ -61,13 +61,4 @@ export const generateCard = async (bot: ExtendedClient) => {
         )
         .setFooter({ text: `BongBot • ${process.env.ENV === 'prod' ? apiResponse.tag : 'dev build' }`, iconURL: bot.user?.displayAvatarURL() })
         .setTimestamp();
-}
-
-interface GithubInfo {
-    repoUrl: string;
-    branchName: string;
-    commitUrl: string;
-    shortHash: string;
-    commitMessage: string;
-    tag: string;
 }
