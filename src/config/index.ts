@@ -1,5 +1,6 @@
-require('dotenv').config();
-const config = {
+import dotenv from 'dotenv';
+dotenv.config();
+export const config = {
     discord: {
         apikey: process.env.DISCORD_API_KEY || null
     },
@@ -28,5 +29,3 @@ const config = {
         }
     }
 };
-
-module.exports = config;
