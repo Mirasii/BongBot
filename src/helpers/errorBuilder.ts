@@ -1,19 +1,20 @@
-const { MessageFlags, Colors } = require('discord.js');
+import { MessageFlags, Colors } from 'discord.js';
+import type { CommandInteraction } from 'discord.js';
 const errorMsg = 'There was an error while executing the "{interaction}" command.';
-const LOGGER = require(`${__dirname}/logging.js`);
-const { EMBED_BUILDER } = require(`${__dirname}/embedBuilder.js`);
+import LOGGER from './logging'
+import EMBED_BUILDER from './embedBuilder';
 
-async function buildError(interaction, error) {
+async function buildError(interaction: CommandInteraction, error: any) {
     console.error(`Error executing ${interaction?.commandName ?? 'unknown'} command`);
     return await buildErrorHelper(error, errorMsg.replace('{interaction}', interaction?.commandName ?? 'unknown'));
 
 };
 
-async function buildUnknownError(error) {
+async function buildUnknownError(error: any) {
     return await buildErrorHelper(error, 'Leave me alone! I\'m not talking to you! (there was an unexpected error)');
 }
 
-async function buildErrorHelper(error, errorMessage) {
+async function buildErrorHelper(error: any, errorMessage: string) {
     LOGGER.log(error);
     const returnEmbed = await new EMBED_BUILDER().constructEmbedWithRandomFile(error.message);
     const embed = returnEmbed.embeds[0];
@@ -27,4 +28,4 @@ async function buildErrorHelper(error, errorMessage) {
     };
 }
 
-module.exports = { buildError, buildUnknownError };
+export { buildError, buildUnknownError };
