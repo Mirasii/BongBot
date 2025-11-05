@@ -1,7 +1,8 @@
-import type { Client } from 'discord.js';
+import type { Client, Collection } from 'discord.js';
 
 export interface ExtendedClient extends Client {
-    version: string;
+    version?: string;
+    commands?: Collection<string, any>;
 }
 
 export interface GithubInfo {
