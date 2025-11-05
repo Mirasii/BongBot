@@ -1,6 +1,6 @@
 import { EmbedBuilder } from 'discord.js';
 import CALLER from './caller';
-import { config } from '../config/index';
+import config from '../config/index';
 const api = config.apis.google;
 
 export async function searchImage(query: string) {

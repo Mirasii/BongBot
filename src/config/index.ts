@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config();
-export const config = {
+const config = {
     discord: {
         apikey: process.env.DISCORD_API_KEY || null
     },
@@ -29,3 +29,5 @@ export const config = {
         }
     }
 };
+
+export default config;
