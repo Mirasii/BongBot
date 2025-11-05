@@ -1,21 +1,22 @@
-const CALLER = require(`${__dirname}/caller.js`)
-const api = require(`${__dirname}/../config/index.js`).apis.google;
-const { EmbedBuilder } = require('discord.js');
+import { EmbedBuilder } from 'discord.js';
+import { get } from './caller';
+import { config } from '../config/index';
+const api = config.apis.google;
 
-async function searchImage(query) {
+export async function searchImage(query: string) {
     // API endpoint and query parameters
     const endpoint = api.url;
     const params = new URLSearchParams({
         q: query,
-        key: api.apikey,
-        cx: api.cx,
+        key: api.apikey!,
+        cx: api.cx!,
         searchType: 'image',
-        start: Math.floor(Math.random() * 50)
+        start: Math.floor(Math.random() * 50).toString()
     }).toString();
 
     try {
-        const urls = await CALLER.get(endpoint, '/customsearch/v1', params, {})
-            .then(data => { return data.items.map((item) => item.link) });
+        const urls = await get(endpoint, '/customsearch/v1', params, {})
+            .then(data => { return data.items.map((item: { link: string }) => item.link) });
         if (!urls.length) {
             throw new Error('No images found');
         }
@@ -31,5 +32,3 @@ async function searchImage(query) {
     }
 
 }
-
-module.exports = { searchImage };
