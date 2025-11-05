@@ -1,13 +1,13 @@
 import LOGGER from './logging'
 
-export async function get(url: string, path?: string, params?: string, headers?: { [key: string]: any }) {
+async function get(url: string, path?: string, params?: string, headers?: { [key: string]: any }) {
     const config = {
         method: 'GET',
         headers: headers
     };
     return await makeCallout(constructFullPath(url, path, params), config);
 }
-export async function post(url: string, path?: string, headers?: { [key: string]: any }, body?: any) {
+async function post(url: string, path?: string, headers?: { [key: string]: any }, body?: any) {
     const config = {
         method: 'POST',
         headers: headers,
@@ -32,3 +32,5 @@ async function makeCallout(url: string, config: { [key: string]: any }): Promise
     });
     return resp;
 }
+
+export default { get, post };
