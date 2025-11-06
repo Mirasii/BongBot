@@ -51,7 +51,7 @@ bot.on('interactionCreate', async (interaction: Interaction) => {
         }
         await interaction.followUp(response);
     } catch (error) {
-        await interaction.deleteReply();
+        if (interaction.replied) { await interaction.deleteReply(); }
         await interaction.followUp(await buildUnknownError(error) as InteractionReplyOptions);
     }
 });
