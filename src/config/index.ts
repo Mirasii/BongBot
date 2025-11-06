@@ -1,5 +1,3 @@
-import dotenv from 'dotenv';
-dotenv.config();
 const config = {
     discord: {
         apikey: process.env.DISCORD_API_KEY || null
