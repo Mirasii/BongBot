@@ -35,10 +35,17 @@ const TEST_CONFIGS = {
     }
 };
 
+type MockFunction = () => void;
+type ConfigMockFunction = (configOverrides?: object) => void;
+
+interface MockConfigs {
+  [key: string]: MockFunction | ConfigMockFunction;
+}
+
 /**
  * Common mock configurations to avoid repetitive mock setup
  */
-const MOCK_CONFIGS = {
+const MOCK_CONFIGS: MockConfigs = {
     fs: () => jest.mock('fs', () => ({
         readFileSync: jest.fn()
     })),
@@ -105,11 +112,10 @@ const MOCK_CONFIGS = {
  * @param {Array} mockNames - Array of mock names to setup
  * @param {Object} overrides - Override configurations for specific mocks
  */
-const setupMocks = (mockNames, overrides = {}) => {
+const setupMocks = (mockNames: Array<string>, overrides: MockConfigs = {}) => {
     mockNames.forEach(mockName => {
         if (MOCK_CONFIGS[mockName]) {
             if (overrides[mockName]) {
-                // Apply overrides if provided
                 overrides[mockName]();
             } else {
                 MOCK_CONFIGS[mockName]();
@@ -118,12 +124,14 @@ const setupMocks = (mockNames, overrides = {}) => {
     });
 };
 
+type CommandType = keyof typeof TEST_CONFIGS;
+
 /**
  * Get test configuration for a command type
  * @param {string} commandType - Type of command (MEDIA_COMMAND, API_COMMAND, etc.)
  * @returns {Object} Test configuration
  */
-const getTestConfig = (commandType) => {
+const getTestConfig = (commandType: CommandType) => {
     return TEST_CONFIGS[commandType] || TEST_CONFIGS.SIMPLE_COMMAND;
 };
 

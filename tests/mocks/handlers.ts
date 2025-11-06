@@ -1,5 +1,5 @@
 
-const { http, HttpResponse } = require('msw');
+import { http, HttpResponse } from 'msw';
 const mockBody = { name: 'test', value: 123 };
 
 const handlers = [
@@ -90,4 +90,4 @@ const handlers = [
     })
 ];
 
-module.exports = { handlers, mockBody };
+export { handlers, mockBody };

@@ -1,8 +1,7 @@
 /**
  * @fileoverview MSW server setup utilities to eliminate duplication
  */
-const { server } = require('../mocks/server.js');
-
+import { server } from '../mocks/server.js';
 /**
  * Standard MSW setup for tests that use HTTP mocking
  * Should be called in describe block of tests that need MSW
@@ -38,7 +37,7 @@ const setupStandardTestEnvironment = () => {
     setupMockCleanup();
 };
 
-module.exports = {
+export {
     setupStandardTestEnvironment,
     setupMSWServer,
     setupMockCleanup,

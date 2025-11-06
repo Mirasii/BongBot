@@ -2,6 +2,10 @@
  * @fileoverview Common test scenarios and patterns to eliminate duplication
  */
 
+import { CommandInteraction } from "discord.js";
+import { ExpectedResult } from "./interfaces.js";
+import { ExtendedClient } from "../../src/helpers/interfaces.js";
+
 /**
  * Test error handling for a command
  * @param {Function} commandExecute - The command execute function
@@ -10,14 +14,9 @@
  * @param {Function} errorTriggerFn - Function that should trigger an error
  * @param {string} expectedErrorType - Expected error type to be called
  */
-const testErrorHandling = async (commandExecute, interaction, client, errorTriggerFn, expectedErrorType = 'buildError') => {
-    // Setup error condition
+const testErrorHandling = async (commandExecute: Function, interaction: CommandInteraction, client: ExtendedClient, errorTriggerFn: Function, expectedErrorType = 'buildError') => {
     errorTriggerFn();
-
-    // Execute command
     const result = await commandExecute(interaction, client);
-
-    // Verify error handling
     const errorBuilder = require('../../src/helpers/errorBuilder.js');
     expect(errorBuilder[expectedErrorType]).toHaveBeenCalled();
     
@@ -35,7 +34,7 @@ const testErrorHandling = async (commandExecute, interaction, client, errorTrigg
  * @param {Object} client - Mock client
  * @param {Object} expectedResult - Expected result properties
  */
-const testSuccessfulExecution = async (commandExecute, interaction, client, expectedResult) => {
+const testSuccessfulExecution = async (commandExecute: Function, interaction: CommandInteraction, client: ExtendedClient, expectedResult: ExpectedResult) => {
     const result = await commandExecute(interaction, client);
     
     // Check common success patterns
@@ -67,7 +66,7 @@ const testSuccessfulExecution = async (commandExecute, interaction, client, expe
  * @param {Function} commandExecute - The command execute function
  * @param {Object} mockSetup - Mock setup configuration
  */
-const testApiCommand = (commandName, commandExecute, mockSetup) => {
+const testApiCommand = (commandName: string, commandExecute: Function, mockSetup: any) => {
     describe(`${commandName} API integration`, () => {
         it('should handle successful API response', async () => {
             // Setup successful API mock
@@ -105,14 +104,14 @@ const testApiCommand = (commandName, commandExecute, mockSetup) => {
  * @param {Function} commandExecute - The command execute function
  * @param {Array} optionTests - Array of option test configurations
  */
-const testCommandOptions = (commandName, commandExecute, optionTests) => {
+const testCommandOptions = (commandName: string, commandExecute: Function, optionTests: Array<any>) => {
     describe(`${commandName} option handling`, () => {
         optionTests.forEach(test => {
             it(`should handle ${test.description}`, async () => {
                 const result = await commandExecute(test.interaction, test.client);
                 
                 if (test.expectations) {
-                    test.expectations.forEach(expectation => {
+                    test.expectations.forEach((expectation: Function) => {
                         expectation(result);
                     });
                 }
@@ -123,7 +122,7 @@ const testCommandOptions = (commandName, commandExecute, optionTests) => {
     });
 };
 
-module.exports = {
+export {
     testErrorHandling,
     testSuccessfulExecution,
     testApiCommand,

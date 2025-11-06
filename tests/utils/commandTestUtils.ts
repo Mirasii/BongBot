@@ -1,8 +1,8 @@
 /**
  * @fileoverview Shared utilities for command testing to eliminate code duplication
  */
-const { SlashCommandBuilder } = require('discord.js');
-
+import { SlashCommandBuilder } from "discord.js";
+import { Command } from "./interfaces.js";
 /**
  * Common mocks used across command tests
  */
@@ -29,7 +29,7 @@ const mockErrorBuilder = () => {
  * @param {string} expectedName - Expected command name
  * @param {string} expectedAttachment - Expected attachment filename (for media commands)
  */
-const testCommandStructure = (command, expectedName, expectedAttachment = null) => {
+const testCommandStructure = (command: Command, expectedName: string) => {
     describe(`${expectedName} command structure`, () => {
         it('should have a data property', () => {
             expect(command.data).toBeInstanceOf(SlashCommandBuilder);
@@ -54,7 +54,7 @@ const testCommandStructure = (command, expectedName, expectedAttachment = null) 
  * @param {Object} command - The command module to test
  * @param {string} expectedAttachment - Expected attachment filename
  */
-const testMediaCommand = (command, expectedAttachment) => {
+const testMediaCommand = (command: Command, expectedAttachment: string) => {
     describe(`${command.data.name} command execution`, () => {
         it(`should return an object with ${expectedAttachment} as attachment`, async () => {
             const result = await command.execute();
@@ -83,7 +83,7 @@ const testMediaCommand = (command, expectedAttachment) => {
  * @param {string} filename - Expected filename
  * @param {string} moduleName - Optional module name if different from command name
  */
-const setupMediaCommandTest = (commandName, filename, moduleName = commandName) => {
+const setupMediaCommandTest = (commandName: string, filename: string, moduleName = commandName) => {
     // Setup mocks
     mockFs();
     mockErrorBuilder();
@@ -91,17 +91,22 @@ const setupMediaCommandTest = (commandName, filename, moduleName = commandName) 
     const command = require(`../../src/commands/${moduleName}`);
     
     describe(`${commandName} command`, () => {
-        testCommandStructure(command, commandName, filename);
+        testCommandStructure(command, commandName);
         testMediaCommand(command, filename);
     });
 };
+
+interface MockInteractionOptions {
+  commandName?: string;
+  // Add other optional properties that can be passed in options if needed
+}
 
 /**
  * Create a standardized mock interaction for testing
  * @param {Object} options - Configuration for the mock interaction
  * @returns {Object} Mock interaction object
  */
-const createMockInteraction = (options = {}) => {
+const createMockInteraction = (options: MockInteractionOptions = {}) => {
     const defaults = {
         options: {
             getString: jest.fn(),

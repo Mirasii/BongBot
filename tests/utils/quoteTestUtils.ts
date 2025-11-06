@@ -1,9 +1,8 @@
 /**
  * @fileoverview Shared utilities for quote database command testing
  */
-
-const { testCommandStructure } = require('./commandStructureTestUtils.js');
-
+import { testCommandStructure } from './commandStructureTestUtils.js';
+import { Command } from './interfaces.js';
 /**
  * Standard mocks for quote database commands
  */
@@ -67,7 +66,7 @@ const createMockQuoteInteraction = (getIntegerReturn = null, getStringReturn = n
  * @param {Object} command - The command module to test
  * @param {string} commandName - Name of the command
  */
-const setupQuoteCommandTest = (command, commandName) => {
+const setupQuoteCommandTest = (command: Command, commandName: string) => {
     setupQuoteMocks();
     testCommandStructure(command, commandName);
 };

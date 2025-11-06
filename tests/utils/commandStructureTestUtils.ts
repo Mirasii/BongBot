@@ -4,8 +4,8 @@
  * Provides standardized tests for Discord slash command structure validation.
  * Eliminates duplication across command test files.
  */
-
-const { SlashCommandBuilder } = require('discord.js');
+import { SlashCommandBuilder } from 'discord.js';
+import { Command } from './interfaces.js';
 
 /**
  * Test standard command structure (data property, name, description, execute method)
@@ -13,7 +13,7 @@ const { SlashCommandBuilder } = require('discord.js');
  * @param {string} expectedName - Expected command name
  * @param {string} [description] - Optional specific description test
  */
-function testCommandStructure(command, expectedName, description = null) {
+function testCommandStructure(command: Command, expectedName: string, description = null) {
     describe('command structure', () => {
         test('should have a data property', () => {
             expect(command.data).toBeInstanceOf(SlashCommandBuilder);
@@ -43,7 +43,7 @@ function testCommandStructure(command, expectedName, description = null) {
  * @param {string} expectedName - Expected command name
  * @param {string} searchQuery - Expected search query the command uses
  */
-function testGoogleSearchCommand(command, expectedName, searchQuery) {
+function testGoogleSearchCommand(command: Command, expectedName: string) {
     testCommandStructure(command, expectedName);
     
     describe('Google Search command behavior', () => {
@@ -62,7 +62,7 @@ function testGoogleSearchCommand(command, expectedName, searchQuery) {
  * @param {Object} command - The command module to test
  * @param {string} expectedName - Expected command name
  */
-function testEmbedCommand(command, expectedName) {
+function testEmbedCommand(command: Command, expectedName: string) {
     testCommandStructure(command, expectedName);
     
     describe('Embed command behavior', () => {
@@ -77,7 +77,7 @@ function testEmbedCommand(command, expectedName) {
  * @param {Object} command - The command module to test  
  * @param {string} expectedName - Expected command name
  */
-function testInfoCardCommand(command, expectedName) {
+function testInfoCardCommand(command: Command, expectedName: string) {
     testCommandStructure(command, expectedName);
     
     describe('Info Card command behavior', () => {
@@ -91,7 +91,7 @@ function testInfoCardCommand(command, expectedName) {
     });
 }
 
-module.exports = {
+export {
     testCommandStructure,
     testGoogleSearchCommand, 
     testEmbedCommand,

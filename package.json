@@ -11,13 +11,14 @@
         "test": "jest --json --coverage --outputFile=report.json --passWithNoTests"
     },
     "devDependencies": {
+        "@google/generative-ai": "^0.24.1",
+        "@types/jest": "^30.0.0",
         "discord.js": "^14.24.0",
         "esbuild": "^0.25.12",
         "jest": "^30.2.0",
         "jest-junit": "^16.0.0",
         "msw": "^2.11.6",
         "ts-jest": "^29.4.5",
-        "typescript": "^5.9.3",
-        "@google/generative-ai": "^0.24.1"
+        "typescript": "^5.9.3"
     }
 }
