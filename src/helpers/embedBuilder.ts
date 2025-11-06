@@ -1,7 +1,7 @@
 import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
 import type { ExtendedClient } from './interfaces.js';
 import randomFile from 'select-random-file';
-const dir = `${__dirname}/../responses`;
+const dir = './dist/responses';
 
 class EMBED_BUILDER {
     attachment?: AttachmentBuilder;
@@ -21,7 +21,7 @@ class EMBED_BUILDER {
     }
 
     constructEmbedWithImage(fileName: string) {
-        let attach = new AttachmentBuilder(`./src/files/${fileName}`);
+        let attach = new AttachmentBuilder(`./dist/files/${fileName}`);
         this.embed.setImage(`attachment://${fileName}`);
         this.attachment = attach;
         return this;
@@ -30,7 +30,7 @@ class EMBED_BUILDER {
     async constructEmbedWithRandomFile(description: string) {
         this.embed.setDescription(description);
         const file = await selectRandomFile(dir);
-        let attach = new AttachmentBuilder(`./src/responses/${file}`);
+        let attach = new AttachmentBuilder(`./dist/responses/${file}`);
         this.embed.setThumbnail(`attachment://${file}`);
         this.attachment = attach;
         return this.build();

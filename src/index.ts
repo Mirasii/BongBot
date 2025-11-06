@@ -9,6 +9,8 @@ import crypto from 'crypto';
 import config from './config/index.js';
 import { buildUnknownError } from './helpers/errorBuilder.js';
 import { generateCard } from './helpers/infoCard.js';
+const __dirname = import.meta.dirname;
+const __filename = import.meta.url;
 
 const token: string = config.discord.apikey!;
 const bot: ExtendedClient = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
@@ -29,7 +31,8 @@ bot.commands = new Collection();
 const commands: Array<ApplicationCommandDataResolvable> = [];
 for (const file of commandFiles) {
     const filePath = path.join(filesPath, file);
-    const command = await import(pathToFileURL(filePath).href);
+    const command = await import(pathToFileURL(filePath).href)
+                    .then(module => module.default);
     bot.commands.set(command.data.name, command);
     commands.push(command.data.toJSON());
 }
@@ -43,7 +46,10 @@ bot.on('interactionCreate', async (interaction: Interaction) => {
         if (!command) return;
         await interaction.deferReply();
         const response = await command.execute(interaction, bot); 
-        if (response?.isError === true) { await interaction.deleteReply(); }
+        console.log(interaction.replied, interaction.deferred);
+        if (response?.isError === true && interaction.replied) { 
+            await interaction.deleteReply(); 
+        }
         await interaction.followUp(response);
     } catch (error) {
         await interaction.deleteReply();
