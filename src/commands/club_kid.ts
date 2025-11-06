@@ -1,14 +1,15 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const fs = require('fs');
-const { buildError } = require(`${__dirname}/../helpers/errorBuilder.js`);
+import { CommandInteraction, SlashCommandBuilder } from 'discord.js';
+import fs from 'fs';
+import { buildError } from '../helpers/errorBuilder.js';
+import { getFilePath } from '../config/index.js';
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName('club_kid')
         .setDescription('groovy kid in a groovy club!'),
-    async execute(interaction, client) {
+    async execute(interaction: CommandInteraction) {
         try {
-            const dir =`${__dirname}/../clubkid`;
+            const dir = getFilePath('clubkid');
             const files = fs.readdirSync(dir).filter(f => f.toLowerCase().endsWith('.mp4'));
             if (files.length === 0) return await buildError(interaction, new Error('No clubkid videos found.'));
             const choice = files[Math.floor(Math.random() * files.length)];

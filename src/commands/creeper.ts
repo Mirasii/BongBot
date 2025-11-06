@@ -1,22 +1,21 @@
-import { SlashCommandBuilder } from '@discordjs/builders';
+import { CommandInteraction, SlashCommandBuilder } from 'discord.js';
 import fs from 'fs';
 import { buildError } from '../helpers/errorBuilder.js';
-import { CommandInteraction } from 'discord.js';
 import { getFilePath } from '../config/index.js';
 
 export default {
     data: new SlashCommandBuilder()
-        .setName('arab')
-        .setDescription('Mash\'allah'),
+        .setName('creeper')
+        .setDescription('creeper!'),
     async execute(interaction: CommandInteraction) {
         try {
-            return { files: [{ attachment: fs.readFileSync(getFilePath('files/arab.mp4')), name: "arab.mp4" }] };
+            return { files: [{ attachment: fs.readFileSync(getFilePath('files/Creeper.webm')), name: "creeper.webm" }] };
         } catch (error) {
             return await buildError(interaction, error);
         }
     },
     fullDesc: {
         options: [],
-        description: "Praise unto you, my friend"
+        description: "Posts a creeper!"
     }
 }

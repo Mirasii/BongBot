@@ -6,17 +6,17 @@ import { getFilePath } from '../config/index.js';
 
 export default {
     data: new SlashCommandBuilder()
-        .setName('arab')
-        .setDescription('Mash\'allah'),
+        .setName('callirap')
+        .setDescription('callirap!'),
     async execute(interaction: CommandInteraction) {
         try {
-            return { files: [{ attachment: fs.readFileSync(getFilePath('files/arab.mp4')), name: "arab.mp4" }] };
+            return { files: [{ attachment: fs.readFileSync(getFilePath('files/callirap.mp4')), name: "callirap.mp4" }] };
         } catch (error) {
             return await buildError(interaction, error);
         }
     },
     fullDesc: {
         options: [],
-        description: "Praise unto you, my friend"
+        description: "Posts a callirap!"
     }
 }
