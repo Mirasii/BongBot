@@ -46,7 +46,6 @@ bot.on('interactionCreate', async (interaction: Interaction) => {
         if (!command) return;
         await interaction.deferReply();
         const response = await command.execute(interaction, bot); 
-        console.log(interaction.replied, interaction.deferred);
         if (response?.isError === true && interaction.replied) { 
             await interaction.deleteReply(); 
         }
