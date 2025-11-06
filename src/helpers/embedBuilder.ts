@@ -49,7 +49,7 @@ class EMBED_BUILDER {
         return this;
     }
 
-    build(): { embeds: [EmbedBuilder], files: AttachmentBuilder [] } {
+    build(): { embeds: [EmbedBuilder], files: AttachmentBuilder [] } | string {
         if (!this.attachment) {return { embeds: [this.embed], files: [] };}
         return { embeds: [this.embed], files: [this.attachment].filter(f => f)};
     }

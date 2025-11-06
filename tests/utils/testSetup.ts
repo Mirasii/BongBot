@@ -2,6 +2,8 @@
  * @fileoverview MSW server setup utilities to eliminate duplication
  */
 import { server } from '../mocks/server.js';
+import { jest } from '@jest/globals';
+
 /**
  * Standard MSW setup for tests that use HTTP mocking
  * Should be called in describe block of tests that need MSW

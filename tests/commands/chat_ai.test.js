@@ -1,8 +1,10 @@
-const chatAiCommand = require('../../src/commands/chat_ai');
-const { setupStandardTestEnvironment, server } = require('../utils/testSetup.js');
-const { testCommandStructure, createMockInteraction, createMockClient } = require('../utils/commandTestUtils.js');
-const { http, HttpResponse } = require('msw');
-const { EMBED_BUILDER } = require('../../src/helpers/embedBuilder.js');
+/** Intentionally kept as a .js file due to difficulties mocking Discord standard types. */
+import chatAiCommand from '../../src/commands/chat_ai.ts';
+import { jest } from '@jest/globals';
+import { setupStandardTestEnvironment, server } from '../utils/testSetup.js';
+import { testCommandStructure, createMockInteraction, createMockClient } from '../utils/commandTestUtils.js';
+import { http, HttpResponse } from 'msw';
+import EMBED_BUILDER from '../../src/helpers/embedBuilder.js';
 
 // Mock the config module to control API keys and URLs
 jest.mock('../../src/config/index.js', () => ({
@@ -24,7 +26,7 @@ jest.mock('../../src/config/index.js', () => ({
 }));
 
 // Import the mocked api after the mock is defined
-const api = require('../../src/config/index.js').apis;
+const api = await import('../../src/config/index.js').then((module) => module.apis);
 
 jest.mock('../../src/helpers/embedBuilder.js');
 
@@ -43,8 +45,8 @@ describe('chat_ai command execution', () => {
     beforeEach(() => {
         api.openai.active = true;
         api.googleai.active = false;
-        EMBED_BUILDER.prototype.constructEmbedWithRandomFile.mockReturnValue('mocked embed');
-        EMBED_BUILDER.prototype.constructEmbedWithAttachment.mockReturnValue({
+        jest.spyOn(EMBED_BUILDER.prototype, 'constructEmbedWithRandomFile').mockReturnValue('mocked embed');
+        jest.spyOn(EMBED_BUILDER.prototype, 'constructEmbedWithAttachment').mockReturnValue({
             addFooter: jest.fn().mockReturnThis(),
             build: jest.fn().mockReturnValue('mocked embed with attachment'),
         });
@@ -53,6 +55,7 @@ describe('chat_ai command execution', () => {
             options: {
                 getString: jest.fn().mockReturnValue('test input'),
             },
+            guildId: 'test_server',
             guild: {
                 members: {
                     fetch: jest.fn().mockResolvedValue({ nickname: 'test_user' }),
@@ -73,6 +76,7 @@ describe('chat_ai command execution', () => {
 
     it('should call Google AI API when it is active', async () => {
         api.openai.active = false;
+        api.googleai.apikey = 'mock_googleai_key';
         api.googleai.active = true;
 
         const result = await chatAiCommand.execute(mockInteraction, mockClient);
@@ -120,6 +124,7 @@ describe('chat_ai command execution', () => {
 
     it('should handle Google AI image generation failure and fallback to random file', async () => {
         api.googleai.active = true;
+        api.googleai.apikey = 'mock_googleai_key';
         api.openai.active = false;
 
         // Mock image generation failure
@@ -153,6 +158,7 @@ describe('chat_ai command execution', () => {
             user: {
                 id: 'test_user_id',
             },
+            guildId: 'test_server',
             guild: {
                 id: 'test_server',
                 members: {
@@ -169,9 +175,7 @@ describe('chat_ai command execution', () => {
         api.openai.active = true;
         api.googleai.active = false;
 
-        // Fill up the history to exceed MAX_HISTORY_LENGTH (100)
-        const chatHistoryModule = require('../../src/commands/chat_ai.js');
-        
+        // Fill up the history to exceed MAX_HISTORY_LENGTH (100)        
         // Access the chatHistory object (this is a bit of a hack but necessary for testing)
         // Since chatHistory is not exported, we'll simulate many conversations
         for (let i = 0; i < 51; i++) {
@@ -183,8 +187,9 @@ describe('chat_ai command execution', () => {
                 user: {
                     id: 'test_user_id',
                 },
+                guildId: 'history_test_server',
                 guild: {
-                    id: 'history_test_server',
+                    
                     members: {
                         fetch: jest.fn().mockResolvedValue({ nickname: 'test_user' }),
                     },
@@ -199,6 +204,7 @@ describe('chat_ai command execution', () => {
 
     it('should throw error when Google AI returns no text response', async () => {
         api.googleai.active = true;
+        api.googleai.apikey = 'mock_googleai_key';
         api.openai.active = false;
 
         // Mock Google AI to return no text
