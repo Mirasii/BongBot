@@ -1,7 +1,9 @@
 import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
 import type { ExtendedClient } from './interfaces.js';
 import randomFile from './randomFile.js';
-const dir = './dist/responses';
+import config from '../config/index.js';
+const file_root = config.media.file_root;
+const dir = `${file_root}/responses`;
 
 class EMBED_BUILDER {
     attachment?: AttachmentBuilder;

@@ -11,8 +11,10 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
     "noImplicitReturns": false,
     "noFallthroughCasesInSwitch": true,
+    "rootDir": ".",
     "types": ["jest", "node"]
   },
   "include": ["src/**/*", "tests/**/*"],

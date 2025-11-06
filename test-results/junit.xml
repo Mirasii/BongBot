@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="6" failures="0" errors="0" time="1.732">
+  <testsuite name="tests\commands\arab.test.ts" errors="0" failures="0" skipped="0" timestamp="2025-11-06T21:55:49" time="1.472" tests="6">
+    <testcase classname="arab command › arab command structure" name="should have a data property of SlashCommandBuilder type" time="0.002">
+    </testcase>
+    <testcase classname="arab command › arab command structure" name="should have a name of &quot;arab&quot;" time="0">
+    </testcase>
+    <testcase classname="arab command › arab command structure" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="arab command › arab command structure" name="should have an execute method" time="0.001">
+    </testcase>
+    <testcase classname="arab command › arab command execution" name="should return an object with arab.mp4 as attachment" time="0.002">
+    </testcase>
+    <testcase classname="arab command › arab command execution" name="should handle errors gracefully" time="0.036">
+    </testcase>
+  </testsuite>
+</testsuites>

@@ -1,24 +1,20 @@
 /**
  * @fileoverview Shared utilities for command testing to eliminate code duplication
  */
-import { SlashCommandBuilder } from "discord.js";
 import { Command } from "./interfaces.js";
-/**
- * Common mocks used across command tests
- */
-const mockFs = () => {
-    return jest.mock('fs', () => ({
-        readFileSync: jest.fn()
-    }));
-};
+import { jest } from '@jest/globals';
+import fs from 'fs';
+jest.mock('fs');
 
 const mockErrorBuilder = () => {
     return jest.mock('../../src/helpers/errorBuilder', () => ({
-        buildError: jest.fn().mockResolvedValue({
-            embeds: [],
-            files: [],
-            flags: 64,
-            isError: true
+        buildError: jest.fn((interaction, error) => {
+            return {
+                embeds: [],
+                files: [],
+                flags: 64,
+                isError: true
+            };
         })
     }));
 };
@@ -31,8 +27,8 @@ const mockErrorBuilder = () => {
  */
 const testCommandStructure = (command: Command, expectedName: string) => {
     describe(`${expectedName} command structure`, () => {
-        it('should have a data property', () => {
-            expect(command.data).toBeInstanceOf(SlashCommandBuilder);
+        it('should have a data property of SlashCommandBuilder type', () => {
+            expect(command.data.constructor.name).toBe('SlashCommandBuilder');
         });
 
         it(`should have a name of "${expectedName}"`, () => {
@@ -66,8 +62,7 @@ const testMediaCommand = (command: Command, expectedAttachment: string) => {
 
         it('should handle errors gracefully', async () => {
             // Force an error condition
-            const fs = require('fs');
-            fs.readFileSync.mockImplementation(() => {
+            jest.spyOn(fs, 'readFileSync').mockImplementation(() => {
                 throw new Error('File not found');
             });
 
@@ -83,13 +78,11 @@ const testMediaCommand = (command: Command, expectedAttachment: string) => {
  * @param {string} filename - Expected filename
  * @param {string} moduleName - Optional module name if different from command name
  */
-const setupMediaCommandTest = (commandName: string, filename: string, moduleName = commandName) => {
+const setupMediaCommandTest = async (commandName: string, filename: string, moduleName = commandName) => {
     // Setup mocks
-    mockFs();
     mockErrorBuilder();
 
-    const command = require(`../../src/commands/${moduleName}`);
-    
+    const command = await import(`../../src/commands/${moduleName}`).then(mod => mod.default);
     describe(`${commandName} command`, () => {
         testCommandStructure(command, commandName);
         testMediaCommand(command, filename);
@@ -147,8 +140,7 @@ const createMockClient = (options = {}) => {
     return { ...defaults, ...options };
 };
 
-module.exports = {
-    mockFs,
+export {
     mockErrorBuilder,
     testCommandStructure,
     testMediaCommand,

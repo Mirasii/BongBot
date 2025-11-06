@@ -25,6 +25,9 @@ const config = {
             model: process.env.GOOGLEAI_MODEL || "gemini-2.5-flash-lite",
             image_model: process.env.GOOGLEAI_IMAGE_MODEL || "gemini-2.5-flash-image-preview"
         }
+    },
+    media : {
+        file_root: process.env.JEST_WORKER_ID !== undefined ? './src/' : './dist/'
     }
 };
 
