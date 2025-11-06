@@ -1,5 +1,5 @@
 import { EmbedBuilder, Colors } from 'discord.js';
-import type { ExtendedClient, GithubInfo } from '../helpers/interfaces.ts';
+import type { ExtendedClient, GithubInfo, GithubBranchResponse, GithubTagResponse } from '../helpers/interfaces.ts';
 const GITHUB_REPO_OWNER = 'Mirasii';
 const GITHUB_REPO_NAME = 'BongBot';
 let apiResponse: GithubInfo | undefined;
@@ -13,13 +13,13 @@ const getRepoInfoFromAPI = async (owner: string, repo: string) => {
         // 1. Fetch latest release
         const releaseResponse = await fetch(`${repoApiUrl}/releases/latest`, { headers });
         if (!releaseResponse.ok) throw new Error (`Release fetch failed: ${releaseResponse.statusText}`);
-        const tagsData = await releaseResponse.json();
+        const tagsData: GithubTagResponse = await releaseResponse.json() as GithubTagResponse;
         const tag = tagsData.tag_name;
         const defaultBranch = process.env.BRANCH ?? 'main';
         // 2. Fetch the latest commit from that default branch
         const branchesResponse = await fetch(`${repoApiUrl}/branches/${defaultBranch}`, { headers });
         if (!branchesResponse.ok) throw new Error(`Branches fetch failed: ${branchesResponse.statusText}`);
-        const branchesData = await branchesResponse.json();
+        const branchesData: GithubBranchResponse = await branchesResponse.json() as GithubBranchResponse;
         const latestCommit = branchesData.commit;
         const commitMessage = latestCommit.commit.message.split('\n')[0]; // Get first line only
         const shortHash = latestCommit.sha.substring(0, 7);

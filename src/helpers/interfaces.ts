@@ -5,6 +5,19 @@ export interface ExtendedClient extends Client {
     commands?: Collection<string, any>;
 }
 
+export interface GithubBranchResponse {
+    commit: {
+        sha: string;
+        commit: {
+            message: string;
+        };
+    };
+}
+
+export interface GithubTagResponse {
+    tag_name: string;
+}
+
 export interface GithubInfo {
     repoUrl: string;
     branchName: string;
