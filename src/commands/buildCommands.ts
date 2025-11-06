@@ -8,9 +8,10 @@ import classic from './classic.js';
 import club_kid from './club_kid.js';
 import creeper from './creeper.js';
 import cringe from './cringe.js';
+import dance from './dance.js';
 
 
-const commandsArray = [ arab, callirap, chat_ai, cherry, classic, club_kid, creeper, cringe ];
+const commandsArray = [ arab, callirap, chat_ai, cherry, classic, club_kid, creeper, cringe, dance ];
 
 export default function buildCommands(client: ExtendedClient) {
     console.log('Building commands...');
