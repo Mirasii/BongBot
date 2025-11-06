@@ -1,16 +1,12 @@
 import { Client, GatewayIntentBits, Collection, ActivityType } from 'discord.js';
 import type { Message, MessageReplyOptions, InteractionReplyOptions, CommandInteraction, Interaction, ApplicationCommandDataResolvable } from 'discord.js';
 import type { ExtendedClient } from './helpers/interfaces.ts';
-import fs from 'fs';
-import path from 'path';
-import { pathToFileURL } from 'url'
 import LOGGER from './helpers/logging.js';
 import crypto from 'crypto';
 import config from './config/index.js';
 import { buildUnknownError } from './helpers/errorBuilder.js';
 import { generateCard } from './helpers/infoCard.js';
-const __dirname = import.meta.dirname;
-const __filename = import.meta.url;
+import buildCommands from './commands/buildCommands.js';
 
 const token: string = config.discord.apikey!;
 const bot: ExtendedClient = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
@@ -18,24 +14,7 @@ const bot: ExtendedClient = new Client({ intents: [GatewayIntentBits.Guilds, Gat
 /** set up logging */
 const sessionId = crypto.randomUUID();
 LOGGER.init(sessionId);
-
-/** import commands */
-const filesPath = path.join(__dirname, 'commands');
-const fileExtension = path.extname(__filename) === '.js' ? '.js' : '.ts';
-const commandFiles = fs.readdirSync(filesPath).filter((file: string) => file.endsWith(fileExtension));
-if (commandFiles.length === 0) {
-    console.error('No command files found. Exiting.');
-    process.exit(1);
-}
-bot.commands = new Collection();
-const commands: Array<ApplicationCommandDataResolvable> = [];
-for (const file of commandFiles) {
-    const filePath = path.join(filesPath, file);
-    const command = await import(pathToFileURL(filePath).href)
-                    .then(module => module.default);
-    bot.commands.set(command.data.name, command);
-    commands.push(command.data.toJSON());
-}
+const commands: Array<ApplicationCommandDataResolvable> = buildCommands(bot);
 
 /** respond to slash commands */
 bot.on('interactionCreate', async (interaction: Interaction) => {

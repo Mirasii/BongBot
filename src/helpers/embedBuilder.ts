@@ -1,6 +1,6 @@
 import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
 import type { ExtendedClient } from './interfaces.js';
-import randomFile from 'select-random-file';
+import randomFile from './randomFile.js';
 const dir = './dist/responses';
 
 class EMBED_BUILDER {

@@ -13,19 +13,13 @@ RUN npm run build
 COPY ./src/files /app/dist/files
 COPY ./src/clubkid /app/dist/clubkid
 COPY ./src/responses /app/dist/responses
-
-# Remove node_modules to reinstall only production deps.
-RUN rm -rf /app/node_modules/
-# Install production dependencies in builder and create logs dir so they
-# are present in the final minimal image.
-RUN npm ci --ignore-scripts --omit=dev && mkdir -p /app/logs
+RUN mkdir -p /app/logs
 
 FROM gcr.io/distroless/nodejs24-debian12 AS release
 
 WORKDIR /app
 
 COPY --from=builder /app/dist /app/dist
-COPY --from=builder /app/node_modules /app/node_modules
 COPY --from=builder /app/logs /app/logs
 ENV NODE_ENV=production
 
