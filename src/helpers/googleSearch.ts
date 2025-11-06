@@ -1,6 +1,6 @@
 import { EmbedBuilder } from 'discord.js';
-import CALLER from './caller';
-import config from '../config/index';
+import CALLER from './caller.js';
+import config from '../config/index.js';
 const api = config.apis.google;
 
 export async function searchImage(query: string) {
@@ -16,7 +16,7 @@ export async function searchImage(query: string) {
 
     try {
         const urls = await CALLER.get(endpoint, '/customsearch/v1', params, {})
-            .then(data => { return data.items.map((item: { link: string }) => item.link) });
+            .then((data: { items: Array<{ link: string }> }) => { return data.items.map(item => item.link) });
         if (!urls.length) {
             throw new Error('No images found');
         }

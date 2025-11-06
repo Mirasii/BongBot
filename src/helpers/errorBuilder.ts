@@ -1,8 +1,8 @@
 import { MessageFlags, Colors } from 'discord.js';
 import type { CommandInteraction } from 'discord.js';
 const errorMsg = 'There was an error while executing the "{interaction}" command.';
-import LOGGER from './logging'
-import EMBED_BUILDER from './embedBuilder';
+import LOGGER from './logging.js'
+import EMBED_BUILDER from './embedBuilder.js';
 
 async function buildError(interaction: CommandInteraction, error: any) {
     console.error(`Error executing ${interaction?.commandName ?? 'unknown'} command`);

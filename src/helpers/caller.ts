@@ -1,4 +1,4 @@
-import LOGGER from './logging'
+import LOGGER from './logging.js'
 
 async function get(url: string, path?: string, params?: string, headers?: { [key: string]: any }) {
     const config = {

@@ -1,14 +1,14 @@
 import { Client, GatewayIntentBits, Collection, ActivityType } from 'discord.js';
 import type { Message, MessageReplyOptions, InteractionReplyOptions, CommandInteraction, Interaction, ApplicationCommandDataResolvable } from 'discord.js';
-import type { ExtendedClient } from './helpers/interfaces';
+import type { ExtendedClient } from './helpers/interfaces.ts';
 import fs from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'url'
-import LOGGER from './helpers/logging';
+import LOGGER from './helpers/logging.js';
 import crypto from 'crypto';
-import config from './config/index';
-import { buildUnknownError } from './helpers/errorBuilder';
-import { generateCard } from './helpers/infoCard';
+import config from './config/index.js';
+import { buildUnknownError } from './helpers/errorBuilder.js';
+import { generateCard } from './helpers/infoCard.js';
 
 const token: string = config.discord.apikey!;
 const bot: ExtendedClient = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
@@ -93,8 +93,8 @@ const postDeploymentMessage = async () => {
     if (!('send' in channel && typeof channel.send === 'function')) return;
     try {
         const messages = await channel.messages.fetch({ limit: 100 });
-        const botMessages = messages.filter(msg => msg.author.id === bot.user!.id);
-        botMessages?.forEach(message => message.delete());
+        const botMessages = messages.filter((msg: Message) => msg.author.id === bot.user!.id);
+        botMessages?.forEach((message: Message) => message.delete());
     } catch (err: any) {
         console.warn(`Warning: Could not delete messages. The bot might be missing 'Manage Messages' permissions. Error: ${err.message}`);
     }

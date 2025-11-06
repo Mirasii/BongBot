@@ -1,5 +1,5 @@
 import { EmbedBuilder, Colors } from 'discord.js';
-import type { ExtendedClient } from '../helpers/interfaces';
+import type { ExtendedClient } from '../helpers/interfaces.ts';
 
 export default class QuoteBuilder {
     private embed: EmbedBuilder;

@@ -1,5 +1,5 @@
 import { EmbedBuilder, Colors } from 'discord.js';
-import type { ExtendedClient, GithubInfo } from '../helpers/interfaces';
+import type { ExtendedClient, GithubInfo } from '../helpers/interfaces.ts';
 const GITHUB_REPO_OWNER = 'Mirasii';
 const GITHUB_REPO_NAME = 'BongBot';
 let apiResponse: GithubInfo | undefined;

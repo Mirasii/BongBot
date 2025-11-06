@@ -1,5 +1,5 @@
 import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
-import type { ExtendedClient } from './interfaces';
+import type { ExtendedClient } from './interfaces.js';
 import randomFile from 'select-random-file';
 const dir = `${__dirname}/../responses`;
 
