@@ -1,12 +1,13 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EMBED_BUILDER } = require(`${__dirname}/../helpers/embedBuilder.js`);
-const { buildError } = require(`${__dirname}/../helpers/errorBuilder.js`);
+import { SlashCommandBuilder, CommandInteraction } from 'discord.js';
+import EMBED_BUILDER from '../helpers/embedBuilder.js';
+import { buildError } from '../helpers/errorBuilder.js';
+import { ExtendedClient } from '../helpers/interfaces.js';
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName('cringe')
         .setDescription('cringe!'),
-    async execute(interaction, client) {
+    async execute(interaction: CommandInteraction, client: ExtendedClient) {
         try {
             return await new EMBED_BUILDER().constructEmbedWithImage('cringe.png').addDefaultFooter(client).build();
         } catch (error) {

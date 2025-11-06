@@ -7,8 +7,10 @@ import cherry from './cherry.js';
 import classic from './classic.js';
 import club_kid from './club_kid.js';
 import creeper from './creeper.js';
+import cringe from './cringe.js';
 
-const commandsArray = [ arab, callirap, chat_ai, cherry, classic, club_kid, creeper ];
+
+const commandsArray = [ arab, callirap, chat_ai, cherry, classic, club_kid, creeper, cringe ];
 
 export default function buildCommands(client: ExtendedClient) {
     console.log('Building commands...');
