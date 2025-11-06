@@ -32,3 +32,7 @@ const config = {
 };
 
 export default config;
+export function getFilePath(resolved_path: string): string {
+    return `${config.media.file_root}/${resolved_path}`;
+}
+export const apis = config.apis;
