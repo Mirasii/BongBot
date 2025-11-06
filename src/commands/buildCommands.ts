@@ -10,10 +10,11 @@ import creeper from './creeper.js';
 import cringe from './cringe.js';
 import dance from './dance.js';
 import die from './die.js';
-import fubuki from './fubuki.js'
+import fubuki from './fubuki.js';
+import funk from './funk.js';
 
 
-const commandsArray = [ arab, callirap, chat_ai, cherry, classic, club_kid, creeper, cringe, dance, die, fubuki ];
+const commandsArray = [ arab, callirap, chat_ai, cherry, classic, club_kid, creeper, cringe, dance, die, fubuki, funk ];
 
 export default function buildCommands(client: ExtendedClient) {
     console.log('Building commands...');
