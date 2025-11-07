@@ -13,10 +13,10 @@ import die from './die.js';
 import fubuki from './fubuki.js';
 import funk from './funk.js';
 import help from './help.js';
-
+import hentai from './hentai.js';
 
 const commandsArray = [ arab, callirap, chat_ai, cherry, classic, club_kid, creeper, cringe, dance, die, fubuki, funk, 
-                        help ];
+                        help, hentai ];
 
 export default function buildCommands(client: ExtendedClient) {
     const commands: Array<any> = [];
