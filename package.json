@@ -5,7 +5,7 @@
     "main": "./dist/index.js",
     "type": "module",
     "scripts": {
-        "build": "esbuild src/index.ts --platform=node --target=esnext --outdir=dist --format=esm --bundle --external:node:* --banner:js='import { createRequire } from \"module\"; const require = createRequire(import.meta.url);'",
+        "build": "esbuild src/index.ts --platform=node --target=esnext --outdir=dist --format=esm --bundle --external:node:* --banner:js='import { createRequire } from \"module\"; const require = createRequire(import.meta.url);' --minify",
         "dev": "esbuild src/index.ts --platform=node --target=esnext --outdir=dist --format=esm --bundle --external:node:* --banner:js='import { createRequire } from \"module\"; const require = createRequire(import.meta.url);' --sourcemap --watch",
         "start": "node ./dist/index.js",
         "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --json --coverage --outputFile=report.json --passWithNoTests"
@@ -13,6 +13,7 @@
     "devDependencies": {
         "@google/generative-ai": "^0.24.1",
         "@types/jest": "^30.0.0",
+        "@types/node-schedule": "^2.1.8",
         "cross-env": "^10.1.0",
         "discord.js": "^14.24.0",
         "esbuild": "^0.25.12",
