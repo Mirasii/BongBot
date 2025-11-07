@@ -12,6 +12,7 @@ import dance from './dance.js';
 import die from './die.js';
 import fubuki from './fubuki.js';
 import funk from './funk.js';
+import help from './help.js';
 
 
 const commandsArray = [ arab, callirap, chat_ai, cherry, classic, club_kid, creeper, cringe, dance, die, fubuki, funk ];
