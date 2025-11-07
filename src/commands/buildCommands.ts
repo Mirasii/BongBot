@@ -15,7 +15,7 @@ import funk from './funk.js';
 import help from './help.js';
 
 
-const commandsArray = [ arab, callirap, chat_ai, cherry, classic, club_kid, creeper, cringe, dance, die, fubuki, funk ];
+const commandsArray = [ arab, callirap, chat_ai, cherry, classic, club_kid, creeper, cringe, dance, die, fubuki, funk, help ];
 
 export default function buildCommands(client: ExtendedClient) {
     const commands: Array<any> = [];
