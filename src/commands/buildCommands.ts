@@ -18,11 +18,9 @@ import help from './help.js';
 const commandsArray = [ arab, callirap, chat_ai, cherry, classic, club_kid, creeper, cringe, dance, die, fubuki, funk ];
 
 export default function buildCommands(client: ExtendedClient) {
-    console.log('Building commands...');
     const commands: Array<any> = [];
     client.commands = new Collection<string, any>();
     for (const command of commandsArray) {
-        console.log(JSON.stringify(command));
         client.commands.set(command.data.name, command);
         commands.push(command.data.toJSON());
     }
