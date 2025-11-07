@@ -15,10 +15,11 @@ import funk from './funk.js';
 import help from './help.js';
 import hentai from './hentai.js';
 import hoe from './hoe.js';
+import info from './info.js';
 
 
 const commandsArray = [ arab, callirap, chat_ai, cherry, classic, club_kid, creeper, cringe, dance, die, fubuki, funk, 
-                        help, hentai, hoe ];
+                        help, hentai, hoe, info ];
 
 export default function buildCommands(client: ExtendedClient) {
     const commands: Array<any> = [];

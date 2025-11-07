@@ -1,12 +1,13 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const { generateCard } = require(`${__dirname}/../helpers/infoCard.js`);
-const { buildError } = require(`${__dirname}/../helpers/errorBuilder.js`);
+import { SlashCommandBuilder, CommandInteraction } from 'discord.js';
+import { generateCard } from '../helpers/infoCard.js';
+import { buildError } from '../helpers/errorBuilder.js';
+import { ExtendedClient } from '../helpers/interfaces.js';
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName('info')
         .setDescription('Get BongBot Info Card'),
-    async execute(interaction, client) {
+    async execute(interaction: CommandInteraction, client: ExtendedClient) {
         try {
             const embed = await generateCard(client);
             return { embeds: [embed] };
