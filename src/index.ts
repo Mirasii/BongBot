@@ -7,7 +7,9 @@ import config from './config/index.js';
 import { buildUnknownError } from './helpers/errorBuilder.js';
 import { generateCard } from './helpers/infoCard.js';
 import buildCommands from './commands/buildCommands.js';
+import TikTok from './commands/naniko.js';
 
+let tiktok_client;
 const token: string = config.discord.apikey!;
 const bot: ExtendedClient = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
@@ -61,6 +63,7 @@ bot.on('clientReady', async () => {
         await bot.application!.commands.set(commands);
         console.log('Commands Initiated!');
         postDeploymentMessage();
+        tiktok_client = new TikTok(bot, LOGGER);
         bot.user!.setPresence({ activities: [{ 
             name: `with your heart`, 
             type: ActivityType.Playing
