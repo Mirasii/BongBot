@@ -8,10 +8,12 @@ const streamer_avatar = 'https://p19-common-sign-useastred.tiktokcdn-eu.com/tos-
 export default class TikTokLiveNotifier {
     #client: ExtendedClient
     #logger;
-    #card
+    #card;
+    #dayCheck;
     constructor(client: ExtendedClient, _logger: {log: Function}) { 
         this.#logger = _logger;
         this.#client = client; 
+        this.#dayCheck = new Map<string, boolean>();
         this.#card = new EmbedBuilder()
                     .setTitle('🎵 Tiktok Live Notification')
                     .setColor(Colors.Purple)
@@ -20,17 +22,26 @@ export default class TikTokLiveNotifier {
                         { name: '⏱️ Naniko Noni is live!', value: `[Watch the stream here!](https://www.tiktok.com/@pokenonii/live)`, inline: false },
                     )
                     .setFooter({ text: `BongBot • ${this.#client.version}`, iconURL: this.#client.user?.displayAvatarURL() })
-        cron.scheduleJob('0 15 * * *', () => {
+        cron.scheduleJob('/1 15 * * *', () => {
             this.#checkLive();
         });
     }
 
     async #checkLive(): Promise<void> {
         console.log('Starting TikTok live check for user: ' + tiktok_username);
+        let today: string = new Date().toLocaleDateString();
+        if (!this.#dayCheck.has(today)) { 
+            /** Clear out map to prevent memory leaks over time */
+            this.#dayCheck.clear();
+            this.#dayCheck.set(today, false) 
+        }
+        if (this.#dayCheck.get(today)) return;
         try {
             const connector = new TikTokLiveConnection(tiktok_username);
             console.log('connector created');
-            await connector.waitUntilLive(14400); // 4 hours = 14400 seconds
+            const state = await connector.connect();
+            if (!state?.isConnected) { return; }
+            this.#dayCheck.set(today, true);
             console.log('live found!');
             if (!process.env.TIKTOK_LIVE_CHANNEL_ID) {
                 this.#logger.log('Error: TIKTOK_LIVE_CHANNEL_ID environment variable not set.');
@@ -47,10 +58,8 @@ export default class TikTokLiveNotifier {
             }
             this.#card.setTimestamp();
             await channel.send({ embeds: [this.#card] });
-            this.#logger.log('Notification sent successfully.');
 
         } catch (err) {
-            this.#logger.log('waitUntilLive check finished or an error occurred:');
             this.#logger.log(err);
         }
     }
