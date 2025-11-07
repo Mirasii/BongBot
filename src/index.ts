@@ -61,13 +61,13 @@ bot.on('messageCreate', async (message: Message) => {
 bot.on('clientReady', async () => {
     try {
         await bot.application!.commands.set(commands);
-        console.log('Commands Initiated!');
-        postDeploymentMessage();
-        tiktok_client = new TikTok(bot, LOGGER);
         bot.user!.setPresence({ activities: [{ 
             name: `with your heart`, 
             type: ActivityType.Playing
         }], status: 'online' });
+        console.log('Commands Initiated!');
+        await postDeploymentMessage();
+        tiktok_client = new TikTok(bot, LOGGER);
     } catch (error) {
         LOGGER.log(error);
     }

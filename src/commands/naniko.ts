@@ -10,7 +10,9 @@ export default class TikTokLiveNotifier {
     #logger;
     #card;
     #dayCheck;
+    #channels;
     constructor(client: ExtendedClient, _logger: {log: Function}) { 
+        this.#channels = process.env.TIKTOK_LIVE_CHANNEL_IDS?.split(',');
         this.#logger = _logger;
         this.#client = client; 
         this.#dayCheck = new Map<string, boolean>();
@@ -22,7 +24,7 @@ export default class TikTokLiveNotifier {
                         { name: '⏱️ Naniko Noni is live!', value: `[Watch the stream here!](https://www.tiktok.com/@pokenonii/live)`, inline: false },
                     )
                     .setFooter({ text: `BongBot • ${this.#client.version}`, iconURL: this.#client.user?.displayAvatarURL() })
-        cron.scheduleJob('/1 15 * * *', () => {
+        cron.scheduleJob('*/1 15-18 * * *', () => {
             this.#checkLive();
         });
     }
@@ -47,21 +49,22 @@ export default class TikTokLiveNotifier {
                 this.#logger.log('Error: TIKTOK_LIVE_CHANNEL_ID environment variable not set.');
                 return;
             }
-            const channel = await this.#client.channels.fetch(process.env.TIKTOK_LIVE_CHANNEL_ID);
-            if (!channel || !channel.isTextBased()) {
-                this.#logger.log('Error: Channel not found or is not a text-based channel.');
-                return;
-            }
-            if (!('send' in channel && typeof channel.send === 'function')) {
-                this.#logger.log('Error: Bot does not have permission to send messages in the channel.');
-                return;
-            }
-            this.#card.setTimestamp();
-            await channel.send({ embeds: [this.#card] });
+            this.#channels?.forEach(channelId => async () =>{
+                const channel = await this.#client.channels.fetch(channelId);
+                if (!channel || !channel.isTextBased()) {
+                    this.#logger.log('Error: Channel not found or is not a text-based channel.');
+                    return;
+                }
+                if (!('send' in channel && typeof channel.send === 'function')) {
+                    this.#logger.log('Error: Bot does not have permission to send messages in the channel.');
+                    return;
+                }
+                this.#card.setTimestamp();
+                await channel.send({ embeds: [this.#card] });
+            });
 
         } catch (err) {
             this.#logger.log(err);
         }
     }
 }
-
