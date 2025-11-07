@@ -23,4 +23,4 @@ COPY --from=builder /app/dist /app/dist
 COPY --from=builder /app/logs /app/logs
 ENV NODE_ENV=production
 
-CMD ["/app/dist/index.js", "--no-deprecation"]
+CMD ["--no-deprecation", "/app/dist/index.js"]

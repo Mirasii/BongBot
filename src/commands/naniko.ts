@@ -24,32 +24,44 @@ export default class TikTokLiveNotifier {
                         { name: '⏱️ Naniko Noni is live!', value: `[Watch the stream here!](https://www.tiktok.com/@pokenonii/live)`, inline: false },
                     )
                     .setFooter({ text: `BongBot • ${this.#client.version}`, iconURL: this.#client.user?.displayAvatarURL() })
+        this.lockImmutables();
+        this.#dayCheck = new Map<string, boolean>();
         cron.scheduleJob('*/1 15-18 * * *', () => {
             this.#checkLive();
         });
     }
 
+    lockImmutables(): void {
+        Object.freeze(this.#dayCheck);
+        Object.freeze(this.#channels);
+        Object.freeze(this.#card);
+        Object.freeze(this.#logger);
+        Object.freeze(this.#client);
+    }
+
     async #checkLive(): Promise<void> {
-        console.log('Starting TikTok live check for user: ' + tiktok_username);
         let today: string = new Date().toLocaleDateString();
         if (!this.#dayCheck.has(today)) { 
             /** Clear out map to prevent memory leaks over time */
             this.#dayCheck.clear();
             this.#dayCheck.set(today, false) 
         }
-        if (this.#dayCheck.get(today)) return;
+        if (this.#dayCheck.get(today)) { return; }
+        console.log('Starting TikTok live check for user: ' + tiktok_username);
         try {
             const connector = new TikTokLiveConnection(tiktok_username);
-            console.log('connector created');
-            const state = await connector.connect();
-            if (!state?.isConnected) { return; }
+            const state = await connector.connect().catch(e => {
+                if (!e.message.includes("The requested user isn't online")) { throw e; }
+            });
+            if (!state) { return; }
             this.#dayCheck.set(today, true);
-            console.log('live found!');
-            if (!process.env.TIKTOK_LIVE_CHANNEL_ID) {
-                this.#logger.log('Error: TIKTOK_LIVE_CHANNEL_ID environment variable not set.');
+            if ((this.#channels?.length ?? 0) === 0) {
+                this.#logger.log('Error: No Channel Ids found in environment variable TIKTOK_LIVE_CHANNEL_IDS.');
                 return;
             }
+            console.log(this.#channels);
             this.#channels?.forEach(channelId => async () =>{
+                console.log(channelId);
                 const channel = await this.#client.channels.fetch(channelId);
                 if (!channel || !channel.isTextBased()) {
                     this.#logger.log('Error: Channel not found or is not a text-based channel.');
