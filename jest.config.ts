@@ -32,7 +32,7 @@ const config: Config = {
   coverageDirectory: 'coverage',
   coveragePathIgnorePatterns: [
     '/babel.config.js',
-    '/jest.config.js',
+    '/jest.config.ts',
     '/tests/utils/*',
     '/tests/mocks/*',
     '/coverage/*',
