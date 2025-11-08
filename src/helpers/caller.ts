@@ -1,13 +1,13 @@
 import LOGGER from './logging.js'
 
-async function get(url: string, path?: string, params?: string, headers?: { [key: string]: any }) {
+async function get(url: string, path?: string | null, params?: string | null, headers?: { [key: string]: any }) {
     const config = {
         method: 'GET',
         headers: headers
     };
     return await makeCallout(constructFullPath(url, path, params), config);
 }
-async function post(url: string, path?: string, headers?: { [key: string]: any }, body?: any) {
+async function post(url: string, path?: string | null, headers?: { [key: string]: any } | null, body?: any) {
     const config = {
         method: 'POST',
         headers: headers,
@@ -17,7 +17,7 @@ async function post(url: string, path?: string, headers?: { [key: string]: any }
 }
 
 
-function constructFullPath(url: string, path?: string, params?: string) {
+function constructFullPath(url: string, path?: string | null, params?: string | null) {
     return `${url}${path ?? ''}${params ? `?${params}` : ''}`;
 }
 

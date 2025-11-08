@@ -1,12 +1,17 @@
-const { http, HttpResponse } = require('msw');
-const { setupStandardTestEnvironment, server } = require('../utils/testSetup.js');
-const { mockBody } = require(`../mocks/handlers.js`)
-const caller = require('../../src/helpers/caller.js');
+import { http, HttpResponse } from 'msw';
+import { setupStandardTestEnvironment, server } from '../utils/testSetup.js';
+import { mockBody } from '../mocks/handlers.js';
+import { jest } from '@jest/globals';
 
 // Mock the LOGGER module
-jest.mock('../../src/helpers/logging.js', () => ({
-    log: jest.fn(),
+const mockLog = jest.fn();
+jest.unstable_mockModule('../../src/helpers/logging.js', () => ({
+    default: {
+        log: mockLog,
+    },
 }));
+
+const { default: caller } = await import('../../src/helpers/caller.js');
 
 describe('caller helper', () => {
     // Use shared setup utility instead of duplicating MSW setup
@@ -77,7 +82,7 @@ describe('caller helper', () => {
         await expect(caller.get(mockUrl, mockPath, null, mockHeaders)).rejects.toThrow(
             'Network response was not ok: 404 Not Found Not Found'
         );
-        expect(require('../../src/helpers/logging.js').log).toHaveBeenCalledWith('Not Found');
+        expect(mockLog).toHaveBeenCalledWith('Not Found');
     });
 
     test('post method should make a successful POST request with body and headers', async () => {
@@ -98,6 +103,6 @@ describe('caller helper', () => {
         await expect(caller.post(mockUrl, mockPath, mockHeaders, mockBody)).rejects.toThrow(
             'Network response was not ok: 500 Internal Server Error Internal Server Error'
         );
-        expect(require('../../src/helpers/logging.js').log).toHaveBeenCalledWith('Internal Server Error');
+        expect(mockLog).toHaveBeenCalledWith('Internal Server Error');
     });
 });
