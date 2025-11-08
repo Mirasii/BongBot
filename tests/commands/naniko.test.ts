@@ -2,7 +2,7 @@ import { jest, describe, test, expect, beforeEach, afterEach } from '@jest/globa
 import type { ExtendedClient } from '../../src/helpers/interfaces.js';
 
 // Mock TikTok Live Connector
-const mockConnect = jest.fn();
+const mockConnect = jest.fn<() => Promise<any>>();
 const mockTikTokLiveConnection = jest.fn().mockImplementation(() => ({
     connect: mockConnect,
 }));
@@ -49,13 +49,16 @@ const { default: TikTokLiveNotifier } = await import('../../src/commands/naniko.
 describe('TikTokLiveNotifier', () => {
     let mockClient: ExtendedClient;
     let mockLogger: { log: jest.Mock };
-    let notifier: TikTokLiveNotifier;
-    let scheduledCallback: Function;
+    let notifier: typeof TikTokLiveNotifier.prototype;
+    let scheduledCallbacks: Function[] = [];
 
     beforeEach(() => {
-        // Capture the scheduled callback
-        mockScheduleJob.mockImplementation((schedule: string, callback: Function) => {
-            scheduledCallback = callback;
+        scheduledCallbacks = [];
+        
+        // Capture ALL scheduled callbacks
+        mockScheduleJob.mockImplementation((...args: any[]) => {
+            const callback = args[1] as Function;
+            scheduledCallbacks.push(callback);
             return {};
         });
 
@@ -65,7 +68,7 @@ describe('TikTokLiveNotifier', () => {
                 displayAvatarURL: jest.fn(() => 'http://example.com/avatar.jpg'),
             },
             channels: {
-                fetch: jest.fn(),
+                fetch: jest.fn<(id: string) => Promise<any>>(),
             },
         } as unknown as ExtendedClient;
 
@@ -101,7 +104,7 @@ describe('TikTokLiveNotifier', () => {
             notifier = new TikTokLiveNotifier(mockClient, mockLogger);
             
             expect(mockEmbedBuilder).toHaveBeenCalled();
-            expect(mockSetTitle).toHaveBeenCalledWith('🎵 Tiktok Live Notification');
+            expect(mockSetTitle).toHaveBeenCalledWith('🎵 Live Notification');
             expect(mockSetColor).toHaveBeenCalledWith(10181046);
             expect(mockSetThumbnail).toHaveBeenCalled();
             expect(mockAddFields).toHaveBeenCalled();
@@ -146,59 +149,73 @@ describe('TikTokLiveNotifier', () => {
     });
 
     describe('checkLive - scheduled task', () => {
-        beforeEach(() => {
-            process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
-        });
-
         test('should check if user is live when scheduled', async () => {
+            process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
             mockConnect.mockResolvedValue({ connected: true });
             
             notifier = new TikTokLiveNotifier(mockClient, mockLogger);
+            const callback = scheduledCallbacks[scheduledCallbacks.length - 1];
             
             // Execute the scheduled callback
-            await scheduledCallback();
+            await callback();
             
             expect(mockTikTokLiveConnection).toHaveBeenCalledWith('pokenonii');
             expect(mockConnect).toHaveBeenCalled();
         });
 
         test('should handle user not online error gracefully', async () => {
+            process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
             const notOnlineError = new Error("The requested user isn't online");
             mockConnect.mockRejectedValue(notOnlineError);
             
             notifier = new TikTokLiveNotifier(mockClient, mockLogger);
+            const callback = scheduledCallbacks[scheduledCallbacks.length - 1];
             
-            await scheduledCallback();
+            await callback();
             
-            // Should not throw
+            // Should not throw and should not log this specific error
             expect(mockConnect).toHaveBeenCalled();
+            expect(mockLogger.log).not.toHaveBeenCalledWith(notOnlineError);
         });
 
-        test('should rethrow other errors', async () => {
+        test('should catch and log other errors', async () => {
+            process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
             const otherError = new Error('Network error');
             mockConnect.mockRejectedValue(otherError);
             
             notifier = new TikTokLiveNotifier(mockClient, mockLogger);
+            const callback = scheduledCallbacks[scheduledCallbacks.length - 1];
             
-            await scheduledCallback();
+            // Clear the mock from any constructor calls
+            mockLogger.log.mockClear();
             
-            expect(mockLogger.log).toHaveBeenCalledWith(otherError);
+            await callback();
+            
+            // Give async operations time to complete
+            await new Promise(resolve => setImmediate(resolve));
+            
+            // The error should be caught in the try-catch and logged
+            expect(mockLogger.log).toHaveBeenCalled();
+            const loggedError = mockLogger.log.mock.calls[0][0];
+            expect(loggedError).toBe(otherError);
         });
 
         test('should not send notification if already sent today', async () => {
+            process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
             mockConnect.mockResolvedValue({ connected: true });
             
             notifier = new TikTokLiveNotifier(mockClient, mockLogger);
+            const callback = scheduledCallbacks[scheduledCallbacks.length - 1];
             
             // First call
-            await scheduledCallback();
+            await callback();
             
             // Clear mocks
             mockConnect.mockClear();
             mockTikTokLiveConnection.mockClear();
             
             // Second call same day
-            await scheduledCallback();
+            await callback();
             
             // Should still check but return early
             expect(mockTikTokLiveConnection).toHaveBeenCalled();
@@ -209,15 +226,16 @@ describe('TikTokLiveNotifier', () => {
             
             const mockChannel = {
                 isTextBased: jest.fn(() => true),
-                send: jest.fn().mockResolvedValue({}),
+                send: jest.fn<() => Promise<any>>().mockResolvedValue({} as any),
             };
             
-            (mockClient.channels.fetch as jest.Mock).mockResolvedValue(mockChannel);
+            (mockClient.channels.fetch as jest.Mock<(id: string) => Promise<any>>).mockResolvedValue(mockChannel as any);
             mockConnect.mockResolvedValue({ connected: true });
             
             notifier = new TikTokLiveNotifier(mockClient, mockLogger);
+            const callback = scheduledCallbacks[scheduledCallbacks.length - 1];
             
-            await scheduledCallback();
+            await callback();
             
             // Note: There's a bug in the original code - forEach with async arrow function
             // The async function is not awaited, so this test reflects current behavior
@@ -229,24 +247,44 @@ describe('TikTokLiveNotifier', () => {
             
             mockConnect.mockResolvedValue({ connected: true });
             
+            // Create new notifier with no channel IDs
             notifier = new TikTokLiveNotifier(mockClient, mockLogger);
+            const callback = scheduledCallbacks[scheduledCallbacks.length - 1];
             
-            await scheduledCallback();
+            // Clear the mock from constructor calls
+            mockLogger.log.mockClear();
             
-            expect(mockLogger.log).toHaveBeenCalledWith(
-                'Error: No Channel Ids found in environment variable TIKTOK_LIVE_CHANNEL_IDS.'
-            );
+            await callback();
+            
+            // Give async operations time to complete
+            await new Promise(resolve => setImmediate(resolve));
+            
+            // Should log the error about missing channel IDs
+            expect(mockLogger.log).toHaveBeenCalled();
+            const logCalls = mockLogger.log.mock.calls;
+            const hasErrorMessage = logCalls.some(call => {
+                const arg = call[0];
+                if (typeof arg === 'string') {
+                    return arg.includes('No Channel Ids found');
+                }
+                if (arg && typeof arg === 'object' && 'includes' in arg && typeof arg.includes === 'function') {
+                    return arg.includes('No Channel Ids found');
+                }
+                return false;
+            });
+            expect(hasErrorMessage).toBe(true);
         });
 
         test('should handle channel fetch failure', async () => {
             process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
             
-            (mockClient.channels.fetch as jest.Mock).mockResolvedValue(null);
+            (mockClient.channels.fetch as jest.Mock<(id: string) => Promise<any>>).mockResolvedValue(null as any);
             mockConnect.mockResolvedValue({ connected: true });
             
             notifier = new TikTokLiveNotifier(mockClient, mockLogger);
+            const callback = scheduledCallbacks[scheduledCallbacks.length - 1];
             
-            await scheduledCallback();
+            await callback();
             
             // Should handle gracefully
             expect(mockConnect).toHaveBeenCalled();
@@ -259,12 +297,13 @@ describe('TikTokLiveNotifier', () => {
                 isTextBased: jest.fn(() => false),
             };
             
-            (mockClient.channels.fetch as jest.Mock).mockResolvedValue(mockVoiceChannel);
+            (mockClient.channels.fetch as jest.Mock<(id: string) => Promise<any>>).mockResolvedValue(mockVoiceChannel as any);
             mockConnect.mockResolvedValue({ connected: true });
             
             notifier = new TikTokLiveNotifier(mockClient, mockLogger);
+            const callback = scheduledCallbacks[scheduledCallbacks.length - 1];
             
-            await scheduledCallback();
+            await callback();
             
             // Should handle gracefully
             expect(mockConnect).toHaveBeenCalled();
@@ -278,23 +317,26 @@ describe('TikTokLiveNotifier', () => {
                 // No send method
             };
             
-            (mockClient.channels.fetch as jest.Mock).mockResolvedValue(mockChannelNoSend);
+            (mockClient.channels.fetch as jest.Mock<(id: string) => Promise<any>>).mockResolvedValue(mockChannelNoSend as any);
             mockConnect.mockResolvedValue({ connected: true });
             
             notifier = new TikTokLiveNotifier(mockClient, mockLogger);
+            const callback = scheduledCallbacks[scheduledCallbacks.length - 1];
             
-            await scheduledCallback();
+            await callback();
             
             // Should handle gracefully
             expect(mockConnect).toHaveBeenCalled();
         });
 
         test('should return early if connect returns falsy', async () => {
+            process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
             mockConnect.mockResolvedValue(null);
             
             notifier = new TikTokLiveNotifier(mockClient, mockLogger);
+            const callback = scheduledCallbacks[scheduledCallbacks.length - 1];
             
-            await scheduledCallback();
+            await callback();
             
             expect(mockConnect).toHaveBeenCalled();
             expect(mockLogger.log).not.toHaveBeenCalledWith(
@@ -303,12 +345,14 @@ describe('TikTokLiveNotifier', () => {
         });
 
         test('should clear dayCheck map on new day', async () => {
+            process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
             mockConnect.mockResolvedValue({ connected: true });
             
             notifier = new TikTokLiveNotifier(mockClient, mockLogger);
+            const callback = scheduledCallbacks[scheduledCallbacks.length - 1];
             
             // First call
-            await scheduledCallback();
+            await callback();
             
             // The map should be cleared and reset each time if date changes
             // This test verifies the logic works without error

@@ -24,7 +24,7 @@ export default class TikTokLiveNotifier {
                     .setColor(Colors.Purple)
                     .setThumbnail(streamer_avatar)
                     .addFields(
-                        { name: '⏱️ Naniko Noni is live!', value: liveNotif, inline: false },
+                        { name: '⏱️ pokenonii is live!', value: liveNotif, inline: false },
                     )
                     .setFooter({ text: `BongBot • ${this.#client.version}`, iconURL: this.#client.user?.displayAvatarURL() })
         this.lockImmutables();
