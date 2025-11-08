@@ -1,5 +1,5 @@
 import { MessageFlags, Colors } from 'discord.js';
-import type { CommandInteraction } from 'discord.js';
+import type { AttachmentBuilder, CommandInteraction, EmbedBuilder } from 'discord.js';
 const errorMsg = 'There was an error while executing the "{interaction}" command.';
 import LOGGER from './logging.js'
 import EMBED_BUILDER from './embedBuilder.js';
@@ -16,7 +16,7 @@ async function buildUnknownError(error: any) {
 
 async function buildErrorHelper(error: any, errorMessage: string) {
     LOGGER.log(error);
-    const returnEmbed = await new EMBED_BUILDER().constructEmbedWithRandomFile(error.message);
+    const returnEmbed = await new EMBED_BUILDER().constructEmbedWithRandomFile(error.message) as { embeds: [EmbedBuilder], files: [AttachmentBuilder] };
     const embed = returnEmbed.embeds[0];
     embed.setTitle(errorMessage)
         .setColor(Colors.Red);
