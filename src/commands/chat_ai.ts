@@ -19,7 +19,7 @@ export default {
     async execute(interaction: ChatInputCommandInteraction , client: ExtendedClient) {
         const input = interaction.options.getString('input');
         const interactionGuildMember= await interaction.guild!.members.fetch(interaction.user.id);
-        const authorId = interactionGuildMember.nickname;
+        const authorId = interactionGuildMember.nickname ?? interactionGuildMember.user.globalName;
         const serverId = interaction.guildId;
         return await executeAI(input, authorId, serverId, client);
     },

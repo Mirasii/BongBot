@@ -9,7 +9,7 @@ export default {
         .setDescription('dance!'),
     async execute(interaction: CommandInteraction) {
         try {
-            return { files: [{ attachment: fs.readFileSync(getFilePath('files/dance.mp4')), name: "dance.mp4" }] };
+            return { files: [{ attachment: fs.readFileSync(getFilePath('files/dog_dance.mp4')), name: "dance.mp4" }] };
         } catch (error) {
             return await buildError(interaction, error);
         }
