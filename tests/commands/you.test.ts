@@ -3,7 +3,7 @@ import type { Client, ChatInputCommandInteraction, CacheType } from 'discord.js'
 
 // Mock functions must be defined before unstable_mockModule
 const mockBuild = jest.fn<() => Promise<any>>().mockResolvedValue({ 
-  files: [{ attachment: 'mock-attachment', name: 'cringe.png' }] 
+  files: [{ attachment: 'mock-attachment', name: 'clown.jpg' }] 
 });
 const mockAddDefaultFooter = jest.fn<any>().mockReturnValue({ build: mockBuild });
 const mockConstructEmbedWithImage = jest.fn<any>().mockReturnValue({ 
@@ -29,32 +29,32 @@ jest.unstable_mockModule('../../src/helpers/errorBuilder.js', () => ({
 }));
 
 // Now import the command (after mocks are set up)
-const { default: cringeCommand } = await import('../../src/commands/cringe.js') as { default: any };
+const { default: youCommand } = await import('../../src/commands/you.js') as { default: any };
 
 // Import and run test utilities inline to avoid module resolution issues
 describe('command structure', () => {
   test('should have a data property', () => {
-    expect(cringeCommand.data).toBeDefined();
+    expect(youCommand.data).toBeDefined();
   });
 
-  test('should have a name of "cringe"', () => {
-    expect(cringeCommand.data.name).toBe('cringe');
+  test('should have a name of "you"', () => {
+    expect(youCommand.data.name).toBe('you');
   });
 
   test('should have a description', () => {
-    expect(cringeCommand.data.description).toBeTruthy();
+    expect(youCommand.data.description).toBeTruthy();
   });
 
   test('should have an execute method', () => {
-    expect(cringeCommand.execute).toBeInstanceOf(Function);
+    expect(youCommand.execute).toBeInstanceOf(Function);
   });
 });
 
-describe('cringe command execution', () => {
+describe('you command execution', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockBuild.mockResolvedValue({ 
-      files: [{ attachment: 'mock-attachment', name: 'cringe.png' }] 
+      files: [{ attachment: 'mock-attachment', name: 'clown.jpg' }] 
     });
   });
 
@@ -71,14 +71,14 @@ describe('cringe command execution', () => {
       } 
     } as unknown as Client;
     
-    const result = await cringeCommand.execute(mockInteraction, mockClient);
+    const result = await youCommand.execute(mockInteraction, mockClient);
     
-    expect(mockConstructEmbedWithImage).toHaveBeenCalledWith('cringe.png');
+    expect(mockConstructEmbedWithImage).toHaveBeenCalledWith('clown.jpg');
     expect(mockAddDefaultFooter).toHaveBeenCalledWith(mockClient);
     expect(mockBuild).toHaveBeenCalled();
     expect(result).toHaveProperty('files');
     expect((result as any).files[0]).toHaveProperty('attachment');
-    expect((result as any).files[0].name).toBe('cringe.png');
+    expect((result as any).files[0].name).toBe('clown.jpg');
   });
 
   it('should handle error scenarios', async () => {
@@ -86,7 +86,7 @@ describe('cringe command execution', () => {
     mockBuild.mockRejectedValueOnce(new Error('Build failed'));
 
     const mockInteraction = {
-      commandName: 'cringe'
+      commandName: 'you'
     } as unknown as ChatInputCommandInteraction<CacheType>;
     const mockClient = { 
       version: '1.0.0', 
@@ -95,7 +95,7 @@ describe('cringe command execution', () => {
       } 
     } as unknown as Client;
 
-    const result = await cringeCommand.execute(mockInteraction, mockClient);
+    const result = await youCommand.execute(mockInteraction, mockClient);
     expect(result).toHaveProperty('isError', true);
     expect(result).toHaveProperty('embeds');
     expect(result).toHaveProperty('files');

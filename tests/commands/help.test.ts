@@ -1,8 +1,9 @@
-
-const { setupMockCleanup } = require('../utils/testSetup.js');
-const { testCommandStructure, createMockInteraction, createMockClient } = require('../utils/commandTestUtils.js');
-
-const helpCommand = require('../../src/commands/help');
+import { jest } from '@jest/globals';
+import { setupMockCleanup } from '../utils/testSetup.js';
+import { testCommandStructure, createMockInteraction, createMockClient } from '../utils/commandTestUtils.js';
+import helpCommand from '../../src/commands/help.js';
+import type { ChatInputCommandInteraction } from 'discord.js';
+import type { ExtendedClient } from '../../src/helpers/interfaces.js';
 
 // Setup standard mock cleanup
 setupMockCleanup();
@@ -12,28 +13,29 @@ testCommandStructure(helpCommand, 'help');
 
 describe('help command execution', () => {
     it('should return a list of commands when no command is specified', async () => {
-        const mockCommands = new Map();
+        const mockCommands = new Map<string, any>();
         mockCommands.set('command1', { data: { name: 'command1' } });
         mockCommands.set('command2', { data: { name: 'command2' } });
 
         const mockClient = createMockClient({
             commands: mockCommands,
-        });
+        }) as unknown as ExtendedClient;
 
-        const interaction = createMockInteraction({
+        const interaction = {
+            ...createMockInteraction({}),
             options: {
                 getString: jest.fn().mockReturnValue(null),
             },
-        });
+        } as unknown as ChatInputCommandInteraction;
 
         const result = await helpCommand.execute(interaction, mockClient);
 
         expect(result).toHaveProperty('embeds');
-        expect(result.embeds[0].fields[0].value).toBe('command1\ncommand2');
+        expect(result.embeds[0].fields![0].value).toBe('command1\ncommand2');
     });
 
     it('should return detailed help for a specified command', async () => {
-        const mockCommands = new Map();
+        const mockCommands = new Map<string, any>();
         mockCommands.set('testcommand', {
             data: { name: 'testcommand' },
             fullDesc: {
@@ -47,37 +49,39 @@ describe('help command execution', () => {
 
         const mockClient = createMockClient({
             commands: mockCommands,
-        });
+        }) as unknown as ExtendedClient;
 
-        const interaction = createMockInteraction({
+        const interaction = {
+            ...createMockInteraction({}),
             options: {
                 getString: jest.fn().mockReturnValue('testcommand'),
             },
-        });
+        } as unknown as ChatInputCommandInteraction;
 
         const result = await helpCommand.execute(interaction, mockClient);
 
         expect(result).toHaveProperty('embeds');
         expect(result.embeds[0].title).toBe('testcommand');
         expect(result.embeds[0].description).toBe('This is a test command.');
-        expect(result.embeds[0].fields[0].value).toBe('option1: Description for option 1\noption2: Description for option 2');
+        expect(result.embeds[0].fields![0].value).toBe('option1: Description for option 1\noption2: Description for option 2');
     });
 
     it('should return a message for commands without full description', async () => {
-        const mockCommands = new Map();
+        const mockCommands = new Map<string, any>();
         mockCommands.set('testcommand', {
             data: { name: 'testcommand' },
         });
 
         const mockClient = createMockClient({
             commands: mockCommands,
-        });
+        }) as unknown as ExtendedClient;
 
-        const interaction = createMockInteraction({
+        const interaction = {
+            ...createMockInteraction({}),
             options: {
                 getString: jest.fn().mockReturnValue('testcommand'),
             },
-        });
+        } as unknown as ChatInputCommandInteraction;
 
         const result = await helpCommand.execute(interaction, mockClient);
 
@@ -86,7 +90,7 @@ describe('help command execution', () => {
     });
 
     it('should handle commands with no options', async () => {
-        const mockCommands = new Map();
+        const mockCommands = new Map<string, any>();
         mockCommands.set('simplecommand', {
             data: { name: 'simplecommand' },
             fullDesc: {
@@ -97,13 +101,14 @@ describe('help command execution', () => {
 
         const mockClient = createMockClient({
             commands: mockCommands,
-        });
+        }) as unknown as ExtendedClient;
 
-        const interaction = createMockInteraction({
+        const interaction = {
+            ...createMockInteraction({}),
             options: {
                 getString: jest.fn().mockReturnValue('simplecommand'),
             },
-        });
+        } as unknown as ChatInputCommandInteraction;
 
         const result = await helpCommand.execute(interaction, mockClient);
 

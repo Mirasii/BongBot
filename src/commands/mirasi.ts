@@ -9,7 +9,7 @@ export default {
         .setDescription('mirasi!'),
     async execute(interaction: CommandInteraction) {
         try {
-            return { files: [{ attachment: fs.readFileSync(getFilePath('files/mirasi.mp4')), name: "mirasi.mp4" }] };
+            return { files: [{ attachment: fs.readFileSync(getFilePath('files/Mirasi.mp4')), name: "mirasi.mp4" }] };
         } catch (error) {
             return await buildError(interaction, error);
         }
