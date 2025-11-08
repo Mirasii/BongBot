@@ -1,4 +1,6 @@
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+import * as Discord from 'discord.js';
+
 
 // Mock discord.js EmbedBuilder and AttachmentBuilder
 class MockEmbedBuilder {
