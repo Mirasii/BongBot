@@ -70,6 +70,10 @@ jest.unstable_mockModule('../../src/helpers/randomFile.js', () => ({
     default: mockSelectRandomFile
 }));
 
+// Dynamically import after mocks are set up
+const { default: EMBED_BUILDER } = await import('../../src/helpers/embedBuilder.js');
+const { EmbedBuilder, AttachmentBuilder } = await import('discord.js');
+
 describe('EMBED_BUILDER class', () => {
     let EMBED_BUILDER: any;
     let EmbedBuilder: any;
@@ -123,7 +127,7 @@ describe('EMBED_BUILDER class', () => {
             const builder = new EMBED_BUILDER();
             const fileName = 'test-image.png';
 
-            const result = builder.constructEmbedWithImage(fileName);
+            const result = builder.constructEmbedWithImage(fileName, './dist/files/');
 
             expect(AttachmentBuilder).toHaveBeenCalledWith(`./dist/files/${fileName}`);
             expect(builder.embed.setImage).toHaveBeenCalledWith(`attachment://${fileName}`);
@@ -175,7 +179,7 @@ describe('EMBED_BUILDER class', () => {
                 user: {
                     displayAvatarURL: jest.fn<any>(() => 'http://example.com/avatar.png')
                 }
-            };
+            } as unknown as Client;
 
             const result = builder.addDefaultFooter(mockClient);
 
@@ -194,7 +198,7 @@ describe('EMBED_BUILDER class', () => {
                 user: {
                     displayAvatarURL: jest.fn<any>(() => 'http://example.com/avatar.png')
                 }
-            };
+            } as unknown as Client;
 
             builder.addDefaultFooter(mockClient);
 
@@ -212,7 +216,7 @@ describe('EMBED_BUILDER class', () => {
                 user: {
                     displayAvatarURL: jest.fn<any>(() => null)
                 }
-            };
+            } as unknown as Client;
 
             builder.addDefaultFooter(mockClient);
 
