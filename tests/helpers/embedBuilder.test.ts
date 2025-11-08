@@ -1,52 +1,90 @@
-const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
-const { setupMockCleanup } = require('../utils/testSetup.js');
-
-const { EMBED_BUILDER } = require('../../src/helpers/embedBuilder.js');
+import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 
 // Mock discord.js EmbedBuilder and AttachmentBuilder
-jest.mock('discord.js', () => ({
-    EmbedBuilder: jest.fn().mockImplementation(function() {
-        this.description = null;
-        this.thumbnail = null;
-        this.footer = null;
-        this.image = null;
-        this.timestamp = null;
-        this.setDescription = jest.fn(function(desc) { this.description = desc; return this; });
-        this.setThumbnail = jest.fn(function(thumb) { this.thumbnail = thumb; return this; });
-        this.setImage = jest.fn(function(img) { this.image = img; return this; });
-        this.setFooter = jest.fn(function(footer) { this.footer = footer; return this; });
-        this.setTimestamp = jest.fn(function(timestamp) { this.timestamp = timestamp || new Date(); return this; });
-        this.toJSON = jest.fn(function() {
-            return {
-                description: this.description,
-                thumbnail: this.thumbnail,
-                image: this.image,
-                footer: this.footer,
-                timestamp: this.timestamp,
-                mockEmbed: true,
-            };
-        });
-    }),
-    AttachmentBuilder: jest.fn().mockImplementation(function(file, options) {
+class MockEmbedBuilder {
+    description: string | null = null;
+    thumbnail: any = null;
+    footer: any = null;
+    image: any = null;
+    timestamp: Date | null = null;
+
+    setDescription = jest.fn((desc: string) => {
+        this.description = desc;
+        return this;
+    });
+
+    setThumbnail = jest.fn((thumb: any) => {
+        this.thumbnail = thumb;
+        return this;
+    });
+
+    setImage = jest.fn((img: any) => {
+        this.image = img;
+        return this;
+    });
+
+    setFooter = jest.fn((footer: any) => {
+        this.footer = footer;
+        return this;
+    });
+
+    setTimestamp = jest.fn((timestamp?: Date) => {
+        this.timestamp = timestamp || new Date();
+        return this;
+    });
+
+    toJSON = jest.fn(() => ({
+        description: this.description,
+        thumbnail: this.thumbnail,
+        image: this.image,
+        footer: this.footer,
+        timestamp: this.timestamp,
+        mockEmbed: true,
+    }));
+}
+
+class MockAttachmentBuilder {
+    file: any;
+    options: any;
+
+    constructor(file: any, options?: any) {
         this.file = file;
         this.options = options;
-        this.toJSON = jest.fn(function() {
-            return {
-                file: this.file,
-                options: this.options,
-                mockAttachment: true,
-            };
-        });
-    }),
+    }
+
+    toJSON = jest.fn(() => ({
+        file: this.file,
+        options: this.options,
+        mockAttachment: true,
+    }));
+}
+
+jest.unstable_mockModule('discord.js', () => ({
+    EmbedBuilder: jest.fn(() => new MockEmbedBuilder()),
+    AttachmentBuilder: jest.fn((file: any, options?: any) => new MockAttachmentBuilder(file, options))
 }));
 
 // Mock select-random-file
-jest.mock('select-random-file', () => jest.fn());
-
-// Setup standard mock cleanup
-setupMockCleanup();
+const mockSelectRandomFile = jest.fn();
+jest.unstable_mockModule('select-random-file', () => ({
+    default: mockSelectRandomFile
+}));
 
 describe('EMBED_BUILDER class', () => {
+    let EMBED_BUILDER: any;
+    let EmbedBuilder: any;
+    let AttachmentBuilder: any;
+
+    beforeEach(async () => {
+        jest.clearAllMocks();
+        
+        const discordModule = await import('discord.js');
+        EmbedBuilder = discordModule.EmbedBuilder;
+        AttachmentBuilder = discordModule.AttachmentBuilder;
+        
+        const embedBuilderModule = await import('../../src/helpers/embedBuilder.js');
+        EMBED_BUILDER = embedBuilderModule.default;
+    });
 
     test('constructor should initialize embed and attachment', () => {
         const mockAttachment = 'mockAttachment';
@@ -54,7 +92,7 @@ describe('EMBED_BUILDER class', () => {
 
         expect(builder.attachment).toBe(mockAttachment);
         expect(EmbedBuilder).toHaveBeenCalledTimes(1);
-        expect(builder.embed).toBeInstanceOf(EmbedBuilder);
+        expect(builder.embed).toBeInstanceOf(MockEmbedBuilder);
     });
 
     describe('constructEmbedWithAttachment', () => {
@@ -89,34 +127,36 @@ describe('EMBED_BUILDER class', () => {
 
             expect(AttachmentBuilder).toHaveBeenCalledWith(`./src/files/${fileName}`);
             expect(builder.embed.setImage).toHaveBeenCalledWith(`attachment://${fileName}`);
-            expect(builder.attachment).toBeInstanceOf(AttachmentBuilder);
-            expect(result).toBe(builder); // Should return this for chaining
+            expect(builder.attachment).toBeInstanceOf(MockAttachmentBuilder);
+            expect(result).toBe(builder);
         });
     });
 
     describe('constructEmbedWithRandomFile', () => {
-        const mockRandomFile = require('select-random-file');
-
         test('should set description and thumbnail from a random file', async () => {
-            mockRandomFile.mockImplementationOnce((dir, callback) => callback(null, 'random.png'));
+            mockSelectRandomFile.mockImplementationOnce((dir: any, callback: any) => 
+                callback(null, 'random.png')
+            );
 
             const builder = new EMBED_BUILDER();
             const description = 'Random Description';
             const result = await builder.constructEmbedWithRandomFile(description);
 
             expect(builder.embed.setDescription).toHaveBeenCalledWith(description);
-            expect(mockRandomFile).toHaveBeenCalledTimes(1);
+            expect(mockSelectRandomFile).toHaveBeenCalledTimes(1);
             expect(AttachmentBuilder).toHaveBeenCalledWith('./src/responses/random.png');
             expect(builder.embed.setThumbnail).toHaveBeenCalledWith('attachment://random.png');
             expect(result).toEqual({
-                embeds: [expect.any(EmbedBuilder)],
-                files: [expect.any(AttachmentBuilder)],
+                embeds: [expect.any(MockEmbedBuilder)],
+                files: [expect.any(MockAttachmentBuilder)],
             });
         });
 
         test('should handle errors from selectRandomFile', async () => {
             const mockError = new Error('File selection error');
-            mockRandomFile.mockImplementationOnce((dir, callback) => callback(mockError));
+            mockSelectRandomFile.mockImplementationOnce((dir: any, callback: any) => 
+                callback(mockError)
+            );
 
             const builder = new EMBED_BUILDER();
             const description = 'Random Description';
@@ -133,7 +173,7 @@ describe('EMBED_BUILDER class', () => {
             const mockClient = {
                 version: '1.2.3',
                 user: {
-                    displayAvatarURL: jest.fn().mockReturnValue('http://example.com/avatar.png')
+                    displayAvatarURL: jest.fn<any>(() => 'http://example.com/avatar.png')
                 }
             };
 
@@ -144,7 +184,7 @@ describe('EMBED_BUILDER class', () => {
                 iconURL: 'http://example.com/avatar.png'
             });
             expect(builder.embed.setTimestamp).toHaveBeenCalledTimes(1);
-            expect(result).toBe(builder); // Should return this for chaining
+            expect(result).toBe(builder);
         });
 
         test('should handle client without version (dev build)', () => {
@@ -152,7 +192,7 @@ describe('EMBED_BUILDER class', () => {
             const mockClient = {
                 version: null,
                 user: {
-                    displayAvatarURL: jest.fn().mockReturnValue('http://example.com/avatar.png')
+                    displayAvatarURL: jest.fn<any>(() => 'http://example.com/avatar.png')
                 }
             };
 
@@ -170,7 +210,7 @@ describe('EMBED_BUILDER class', () => {
             const mockClient = {
                 version: '1.0.0',
                 user: {
-                    displayAvatarURL: jest.fn().mockReturnValue(null)
+                    displayAvatarURL: jest.fn<any>(() => null)
                 }
             };
 
@@ -200,7 +240,7 @@ describe('EMBED_BUILDER class', () => {
         const result = builder.build();
 
         expect(result).toEqual({
-            embeds: [expect.any(EmbedBuilder)],
+            embeds: [expect.any(MockEmbedBuilder)],
             files: [mockAttach],
         });
     });
@@ -211,7 +251,7 @@ describe('EMBED_BUILDER class', () => {
         const result = builder.build();
 
         expect(result).toEqual({
-            embeds: [expect.any(EmbedBuilder)],
+            embeds: [expect.any(MockEmbedBuilder)],
             files: [],
         });
     });
