@@ -1,9 +1,9 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName('ping')
         .setDescription('Health Check BongBot'),
-    async execute(interaction, client) {
+    async execute() {
         return 'Pong';
     },
     fullDesc: {

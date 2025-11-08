@@ -1,17 +1,18 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const { QuoteBuilder } = require(`${__dirname}/../helpers/quoteBuilder.js`);
-const API = require(`${__dirname}/../config/index.js`).apis.quotedb;
-const CALLER = require(`${__dirname}/../helpers/caller.js`);
-const { buildError } = require(`${__dirname}/../helpers/errorBuilder.js`);
+import { SlashCommandBuilder, Client, ChatInputCommandInteraction } from 'discord.js';
+import QuoteBuilder from '../helpers/quoteBuilder.js';
+import CALLER from '../helpers/caller.js';
+import { buildError } from '../helpers/errorBuilder.js';
 
-module.exports = {
+const API = await import('../config/index.js').then(module => module.apis.quotedb);
+
+export default {
     data: new SlashCommandBuilder()
         .setName('random_quotes')
         .setDescription('Get up to 5 random quotes!')
         .addIntegerOption(option => option.setName('number').setDescription('How many quotes do you want?').setRequired(false)),
-    async execute(interaction, client) {
+    async execute(interaction: ChatInputCommandInteraction, client: Client) {
         try {
-            const number = interaction.options.getInteger('number') || 1;
+            const number = interaction.options.getInteger('number') ?? 1;
             if (number > 5) return await buildError(interaction, new Error("You can only request up to 5 quotes at a time."));
 
             const response = await CALLER.get(
@@ -22,9 +23,9 @@ module.exports = {
             );
             if (response?.quotes?.length === 0) return await buildError(interaction, new Error("No quotes found."));
             return new QuoteBuilder()
-                    .setTitle('Random Quotes')
-                    .addQuotes(response.quotes)
-                    .build(client);
+                .setTitle('Random Quotes')
+                .addQuotes(response.quotes)
+                .build(client);
         } catch (error) {
             return await buildError(interaction, error);
         }

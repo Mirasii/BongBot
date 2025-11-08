@@ -1,12 +1,12 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EMBED_BUILDER } = require(`${__dirname}/../helpers/embedBuilder.js`);
-const { buildError } = require(`${__dirname}/../helpers/errorBuilder.js`);
+import { SlashCommandBuilder, CommandInteraction, Client } from 'discord.js';
+import EMBED_BUILDER from '../helpers/embedBuilder.js';
+import { buildError } from '../helpers/errorBuilder.js';
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName('you')
         .setDescription('you!'),
-    async execute(interaction, client) {
+    async execute(interaction: CommandInteraction, client: Client) {
         try {
             return await new EMBED_BUILDER().constructEmbedWithImage('clown.jpg').addDefaultFooter(client).build();
         } catch (error) {
