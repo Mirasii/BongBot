@@ -1,10 +1,7 @@
-// Mock dotenv to prevent it from loading .env files during tests
-jest.mock('dotenv', () => ({
-    config: jest.fn(),
-}));
+import { jest } from '@jest/globals';
 
 describe('config/index.js', () => {
-    let originalEnv;
+    let originalEnv: NodeJS.ProcessEnv;
 
     beforeEach(() => {
         // Save original process.env
@@ -12,17 +9,16 @@ describe('config/index.js', () => {
         // Clear module cache to ensure a fresh import of config/index.js for each test
         jest.resetModules();
         // Mock process.env for each test
-        process.env = { ...originalEnv };
-        // Ensure dotenv.config() is called
-        require('dotenv').config();
+        process.env = { ...originalEnv }; // Create a shallow copy
     });
 
     afterEach(() => {
         // Restore original process.env
         process.env = originalEnv;
+        jest.resetModules();
     });
 
-    test('should load configuration values from process.env when set', () => {
+    test('should load configuration values from process.env when set', async () => {
         process.env.DISCORD_API_KEY = 'mock_discord_key';
         process.env.QUOTEDB_API_KEY = 'mock_quotedb_key';
         process.env.QUOTEDB_USER_ID = 'mock_quotedb_user_id';
@@ -36,7 +32,7 @@ describe('config/index.js', () => {
         process.env.GOOGLEAI_MODEL = 'mock_googleai_model';
         process.env.GOOGLEAI_IMAGE_MODEL = 'mock_googleai_image_model';
 
-        const config = require('../../src/config/index.js');
+        const { default: config } = await import('../../src/config/index.js');
 
         expect(config.discord.apikey).toBe('mock_discord_key');
         expect(config.apis.quotedb.url).toBe('https://quotes.elmu.dev');
@@ -55,7 +51,7 @@ describe('config/index.js', () => {
         expect(config.apis.googleai.image_model).toBe('mock_googleai_image_model');
     });
 
-    test('should use default values when environment variables are not set', () => {
+    test('should use default values when environment variables are not set', async () => {
         // Ensure relevant env vars are undefined
         delete process.env.DISCORD_API_KEY;
         delete process.env.QUOTEDB_API_KEY;
@@ -70,7 +66,7 @@ describe('config/index.js', () => {
         delete process.env.GOOGLEAI_MODEL;
         delete process.env.GOOGLEAI_IMAGE_MODEL;
 
-        const config = require('../../src/config/index.js');
+        const { default: config } = await import('../../src/config/index.js');
 
         expect(config.discord.apikey).toBe(null);
         expect(config.apis.quotedb.url).toBe('https://quotes.elmu.dev');
@@ -89,11 +85,11 @@ describe('config/index.js', () => {
         expect(config.apis.googleai.image_model).toBe('gemini-2.5-flash-image-preview');
     });
 
-    test('should correctly convert active flags to boolean', () => {
+    test('should correctly convert active flags to boolean', async () => {
         process.env.OPENAI_ACTIVE = 'false';
         process.env.GOOGLEAI_ACTIVE = 'true';
 
-        const config = require('../../src/config/index.js');
+        const { default: config } = await import('../../src/config/index.js');
 
         expect(config.apis.openai.active).toBe(false);
         expect(config.apis.googleai.active).toBe(true);
