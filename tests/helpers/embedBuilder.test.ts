@@ -91,7 +91,7 @@ describe('EMBED_BUILDER class', () => {
     });
 
     test('constructor should initialize embed and attachment', () => {
-        const mockAttachment = 'mockAttachment';
+        const mockAttachment = { name: 'mockAttachment.png' } as unknown as Discord.AttachmentBuilder;
         const builder = new EMBED_BUILDER(mockAttachment);
 
         expect(builder.attachment).toBe(mockAttachment);
@@ -101,7 +101,8 @@ describe('EMBED_BUILDER class', () => {
 
     describe('constructEmbedWithAttachment', () => {
         test('should set description and thumbnail', () => {
-            const builder = new EMBED_BUILDER('mockAttachment');
+            const mockAttachment = { name: 'mockAttachment.png' } as unknown as Discord.AttachmentBuilder;
+            const builder = new EMBED_BUILDER(mockAttachment);
             const description = 'Test Description';
             const filename = 'test.png';
 
@@ -112,7 +113,7 @@ describe('EMBED_BUILDER class', () => {
         });
 
         test('should throw error if no attachment is provided', () => {
-            const builder = new EMBED_BUILDER(null);
+            const builder = new EMBED_BUILDER();
             const description = 'Test Description';
             const filename = 'test.png';
 
@@ -126,10 +127,10 @@ describe('EMBED_BUILDER class', () => {
         test('should create attachment and set image', () => {
             const builder = new EMBED_BUILDER();
             const fileName = 'test-image.png';
+            const filePath = './dist/files/';
+            const result = builder.constructEmbedWithImage(fileName);
 
-            const result = builder.constructEmbedWithImage(fileName, './dist/files/');
-
-            expect(AttachmentBuilder).toHaveBeenCalledWith(`./dist/files/${fileName}`);
+            expect(AttachmentBuilder).toHaveBeenCalledWith(`${filePath}${fileName}`);
             expect(builder.embed.setImage).toHaveBeenCalledWith(`attachment://${fileName}`);
             expect(builder.attachment).toBeInstanceOf(MockAttachmentBuilder);
             expect(result).toBe(builder);
@@ -179,7 +180,7 @@ describe('EMBED_BUILDER class', () => {
                 user: {
                     displayAvatarURL: jest.fn<any>(() => 'http://example.com/avatar.png')
                 }
-            } as unknown as Client;
+            } as unknown as Discord.Client;
 
             const result = builder.addDefaultFooter(mockClient);
 
@@ -198,7 +199,7 @@ describe('EMBED_BUILDER class', () => {
                 user: {
                     displayAvatarURL: jest.fn<any>(() => 'http://example.com/avatar.png')
                 }
-            } as unknown as Client;
+            } as unknown as Discord.Client;
 
             builder.addDefaultFooter(mockClient);
 
@@ -216,7 +217,7 @@ describe('EMBED_BUILDER class', () => {
                 user: {
                     displayAvatarURL: jest.fn<any>(() => null)
                 }
-            } as unknown as Client;
+            } as unknown as Discord.Client;
 
             builder.addDefaultFooter(mockClient);
 
@@ -238,7 +239,7 @@ describe('EMBED_BUILDER class', () => {
     });
 
     test('build should correctly return the embed and files', () => {
-        const mockAttach = { name: 'mockAttach.png' };
+        const mockAttach = { name: 'mockAttach.png' } as unknown as Discord.AttachmentBuilder;
         const builder = new EMBED_BUILDER(mockAttach);
 
         const result = builder.build();
@@ -250,7 +251,7 @@ describe('EMBED_BUILDER class', () => {
     });
 
     test('build should return embed without files if no attachment', () => {
-        const builder = new EMBED_BUILDER(null);
+        const builder = new EMBED_BUILDER();
 
         const result = builder.build();
 
