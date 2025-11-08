@@ -16,12 +16,15 @@ export default class TikTokLiveNotifier {
         this.#logger = _logger;
         this.#client = client; 
         this.#dayCheck = new Map<string, boolean>();
+        let liveNotif = `Watch on [TikTok](https://www.tiktok.com/@pokenonii/live)${
+            process.env.TWITCH_STREAM ? ' or [Twitch](https://www.twitch.tv/pokenoni)' : ''
+        } now!`
         this.#card = new EmbedBuilder()
-                    .setTitle('🎵 Tiktok Live Notification')
+                    .setTitle('🎵 Live Notification')
                     .setColor(Colors.Purple)
                     .setThumbnail(streamer_avatar)
                     .addFields(
-                        { name: '⏱️ Naniko Noni is live!', value: `[Watch the stream here!](https://www.tiktok.com/@pokenonii/live)`, inline: false },
+                        { name: '⏱️ Naniko Noni is live!', value: liveNotif, inline: false },
                     )
                     .setFooter({ text: `BongBot • ${this.#client.version}`, iconURL: this.#client.user?.displayAvatarURL() })
         this.lockImmutables();
@@ -47,7 +50,6 @@ export default class TikTokLiveNotifier {
             this.#dayCheck.set(today, false) 
         }
         if (this.#dayCheck.get(today)) { return; }
-        console.log('Starting TikTok live check for user: ' + tiktok_username);
         try {
             const connector = new TikTokLiveConnection(tiktok_username);
             const state = await connector.connect().catch(e => {
@@ -59,9 +61,7 @@ export default class TikTokLiveNotifier {
                 this.#logger.log('Error: No Channel Ids found in environment variable TIKTOK_LIVE_CHANNEL_IDS.');
                 return;
             }
-            console.log(this.#channels);
-            this.#channels?.forEach(channelId => async () =>{
-                console.log(channelId);
+            this.#channels?.forEach(async (channelId) => {
                 const channel = await this.#client.channels.fetch(channelId);
                 if (!channel || !channel.isTextBased()) {
                     this.#logger.log('Error: Channel not found or is not a text-based channel.');
