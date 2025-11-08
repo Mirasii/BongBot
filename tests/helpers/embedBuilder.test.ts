@@ -66,7 +66,7 @@ jest.unstable_mockModule('discord.js', () => ({
 
 // Mock select-random-file
 const mockSelectRandomFile = jest.fn();
-jest.unstable_mockModule('select-random-file', () => ({
+jest.unstable_mockModule('../../src/helpers/randomFile.js', () => ({
     default: mockSelectRandomFile
 }));
 
@@ -125,7 +125,7 @@ describe('EMBED_BUILDER class', () => {
 
             const result = builder.constructEmbedWithImage(fileName);
 
-            expect(AttachmentBuilder).toHaveBeenCalledWith(`./src/files/${fileName}`);
+            expect(AttachmentBuilder).toHaveBeenCalledWith(`./dist/files/${fileName}`);
             expect(builder.embed.setImage).toHaveBeenCalledWith(`attachment://${fileName}`);
             expect(builder.attachment).toBeInstanceOf(MockAttachmentBuilder);
             expect(result).toBe(builder);
@@ -144,7 +144,7 @@ describe('EMBED_BUILDER class', () => {
 
             expect(builder.embed.setDescription).toHaveBeenCalledWith(description);
             expect(mockSelectRandomFile).toHaveBeenCalledTimes(1);
-            expect(AttachmentBuilder).toHaveBeenCalledWith('./src/responses/random.png');
+            expect(AttachmentBuilder).toHaveBeenCalledWith('./dist/responses/random.png');
             expect(builder.embed.setThumbnail).toHaveBeenCalledWith('attachment://random.png');
             expect(result).toEqual({
                 embeds: [expect.any(MockEmbedBuilder)],
