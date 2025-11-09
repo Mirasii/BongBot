@@ -47,7 +47,7 @@ const getRepoInfoFromAPI = async (owner: string, repo: string) => {
 
 export const generateCard = async (bot: ExtendedClient) => {
     if (!apiResponse) { apiResponse = await getRepoInfoFromAPI(GITHUB_REPO_OWNER, GITHUB_REPO_NAME); }
-    bot.version = apiResponse.tag;
+    if (!bot.version) { bot.version = apiResponse.tag; }
     return new EmbedBuilder()
         .setTitle('🤖 BongBot Info Card')
         .setColor(Colors.Purple)
