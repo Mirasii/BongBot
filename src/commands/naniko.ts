@@ -98,22 +98,16 @@ async function fetchAvatarFromProfile(username: string): Promise<string | null> 
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
         });
-
         if (!response.ok) return null;
-
         const html = await response.text();
-
         // Extract embedded JSON data from the script tag
         const scriptMatch = html.match(/<script[^>]*id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>(.*?)<\/script>/s);
         if (!scriptMatch) return null;
-
         const data = JSON.parse(scriptMatch[1]);
-
         // Navigate to avatar URL in the embedded data structure
         const avatarLarger = data?.__DEFAULT_SCOPE__?.['webapp.user-detail']?.userInfo?.user?.avatarLarger;
         const avatarMedium = data?.__DEFAULT_SCOPE__?.['webapp.user-detail']?.userInfo?.user?.avatarMedium;
-
-        return avatarLarger || avatarMedium || null;
+        return avatarLarger ?? avatarMedium ?? null;
     } catch (error) {
         return null; // Silent fail - will use fallback
     }
