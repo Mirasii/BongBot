@@ -55,17 +55,9 @@ jest.unstable_mockModule('discord.js', () => ({
 const { default: TikTokLiveNotifier } = await import('../../src/commands/naniko.js');
 
 describe('TikTokLiveNotifier - without TIKTOK_USERNAME', () => {
-    test('should return early if TIKTOK_USERNAME is not set', async () => {
-        // Save current value
+    test('should return early if TIKTOK_USERNAME is not set', () => {
         const savedUsername = process.env.TIKTOK_USERNAME;
-
-        // Delete it before import
         delete process.env.TIKTOK_USERNAME;
-
-        // Clear the module cache and reimport
-        jest.resetModules();
-
-        const { default: TikTokLiveNotifierNoUsername } = await import('../../src/commands/naniko.js?t=' + Date.now());
 
         const mockClient = {
             version: '1.0.0',
@@ -81,13 +73,12 @@ describe('TikTokLiveNotifier - without TIKTOK_USERNAME', () => {
             log: jest.fn(),
         };
 
-        const notifier = new TikTokLiveNotifierNoUsername(mockClient, mockLogger);
+        mockScheduleJob.mockClear();
+        const notifier = new TikTokLiveNotifier(mockClient, mockLogger);
 
-        // Should not initialize anything
         expect(notifier).toBeDefined();
         expect(mockScheduleJob).not.toHaveBeenCalled();
 
-        // Restore the value
         process.env.TIKTOK_USERNAME = savedUsername;
     });
 });
@@ -154,6 +145,58 @@ describe('TikTokLiveNotifier', () => {
     });
 
     describe('constructor', () => {
+        test('should throw error if LIVE_DISPLAY_NAME is missing', () => {
+            process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
+            const savedDisplayName = process.env.LIVE_DISPLAY_NAME;
+            delete process.env.LIVE_DISPLAY_NAME;
+
+            expect(() => {
+                new TikTokLiveNotifier(mockClient, mockLogger);
+            }).toThrow('LIVE_DISPLAY_NAME environment variable is required');
+
+            process.env.LIVE_DISPLAY_NAME = savedDisplayName;
+        });
+
+        test('should throw error for invalid time format', () => {
+            process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
+            const savedStartTime = process.env.LIVE_START_TIME;
+            process.env.LIVE_START_TIME = 'invalid';
+
+            expect(() => {
+                new TikTokLiveNotifier(mockClient, mockLogger);
+            }).toThrow('must be valid hour numbers');
+
+            process.env.LIVE_START_TIME = savedStartTime;
+        });
+
+        test('should throw error for time out of range', () => {
+            process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
+            const savedStartTime = process.env.LIVE_START_TIME;
+            process.env.LIVE_START_TIME = '25';
+
+            expect(() => {
+                new TikTokLiveNotifier(mockClient, mockLogger);
+            }).toThrow('must be between 0 and 23');
+
+            process.env.LIVE_START_TIME = savedStartTime;
+        });
+
+        test('should use default time values if not set', () => {
+            process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
+            const savedStartTime = process.env.LIVE_START_TIME;
+            const savedEndTime = process.env.LIVE_END_TIME;
+            delete process.env.LIVE_START_TIME;
+            delete process.env.LIVE_END_TIME;
+
+            notifier = new TikTokLiveNotifier(mockClient, mockLogger);
+
+            expect(notifier).toBeDefined();
+            expect(mockScheduleJob).toHaveBeenCalledWith('*/1 15-18 * * *', expect.any(Function));
+
+            process.env.LIVE_START_TIME = savedStartTime;
+            process.env.LIVE_END_TIME = savedEndTime;
+        });
+
         test('should initialize with client and logger', () => {
             process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
 
@@ -354,7 +397,7 @@ describe('TikTokLiveNotifier', () => {
             // Error logging happens twice: first the message string, then the error object
             expect(mockLogger.log).toHaveBeenCalled();
             const loggedError = mockLogger.log.mock.calls[mockLogger.log.mock.calls.length - 1][0] as Error;
-            expect(loggedError.message).toContain('avatarUrl not returned');
+            expect(loggedError.message).toContain('Failed to fetch avatar');
         });
 
         test('should handle missing script tag in HTML', async () => {
@@ -378,7 +421,7 @@ describe('TikTokLiveNotifier', () => {
             // Error logging happens twice: first the message string, then the error object
             expect(mockLogger.log).toHaveBeenCalled();
             const loggedError = mockLogger.log.mock.calls[mockLogger.log.mock.calls.length - 1][0] as Error;
-            expect(loggedError.message).toContain('avatarUrl not returned');
+            expect(loggedError.message).toContain('Failed to fetch avatar');
         });
 
         test('should handle invalid JSON in script tag', async () => {
@@ -402,7 +445,7 @@ describe('TikTokLiveNotifier', () => {
             // Error logging happens twice: first the message string, then the error object
             expect(mockLogger.log).toHaveBeenCalled();
             const loggedError = mockLogger.log.mock.calls[mockLogger.log.mock.calls.length - 1][0] as Error;
-            expect(loggedError.message).toContain('avatarUrl not returned');
+            expect(loggedError.message).toContain('Failed to fetch avatar');
         });
 
         test('should handle missing avatar data in parsed JSON', async () => {
@@ -426,7 +469,7 @@ describe('TikTokLiveNotifier', () => {
             // Error logging happens twice: first the message string, then the error object
             expect(mockLogger.log).toHaveBeenCalled();
             const loggedError = mockLogger.log.mock.calls[mockLogger.log.mock.calls.length - 1][0] as Error;
-            expect(loggedError.message).toContain('avatarUrl not returned');
+            expect(loggedError.message).toContain('Failed to fetch avatar');
         });
 
         test('should handle partial JSON structure with missing user', async () => {
@@ -450,7 +493,7 @@ describe('TikTokLiveNotifier', () => {
             // Error logging happens twice: first the message string, then the error object
             expect(mockLogger.log).toHaveBeenCalled();
             const loggedError = mockLogger.log.mock.calls[mockLogger.log.mock.calls.length - 1][0] as Error;
-            expect(loggedError.message).toContain('avatarUrl not returned');
+            expect(loggedError.message).toContain('Failed to fetch avatar');
         });
 
         test('should handle fetch throwing an error', async () => {
@@ -474,8 +517,9 @@ describe('TikTokLiveNotifier', () => {
             // Error logging happens twice: first the message string, then the error object
             expect(mockLogger.log).toHaveBeenCalled();
             const loggedError = mockLogger.log.mock.calls[mockLogger.log.mock.calls.length - 1][0] as Error;
-            expect(loggedError.message).toContain('avatarUrl not returned');
+            expect(loggedError.message).toContain('Failed to fetch avatar');
         });
+
     });
 
     describe('lockImmutables', () => {
@@ -509,17 +553,40 @@ describe('TikTokLiveNotifier', () => {
             process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
             const notOnlineError = new Error("The requested user isn't online");
             mockConnect.mockRejectedValue(notOnlineError);
-            
+
             notifier = new TikTokLiveNotifier(mockClient, mockLogger);
             const callback = scheduledCallbacks[scheduledCallbacks.length - 1];
-            
+
             await callback();
-            
+
             // Should not throw and should not log this specific error
             expect(mockConnect).toHaveBeenCalled();
             expect(mockLogger.log).not.toHaveBeenCalledWith(notOnlineError);
         });
-        
+
+        test('should catch and log other errors', async () => {
+            process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
+            const otherError = new Error('Network error');
+            mockConnect.mockRejectedValue(otherError);
+
+            notifier = new TikTokLiveNotifier(mockClient, mockLogger);
+            const callback = scheduledCallbacks[scheduledCallbacks.length - 1];
+
+            // Clear the mock from constructor calls
+            mockLogger.log.mockClear();
+
+            await callback();
+
+            // Give async operations time to complete
+            await new Promise(resolve => setImmediate(resolve));
+
+            // The error should be caught in the try-catch and logged
+            // First call is the error message string, second call is the actual error
+            expect(mockLogger.log).toHaveBeenCalledTimes(2);
+            expect(mockLogger.log.mock.calls[0][0]).toBe('Error occurred attempting to get Live Status');
+            expect(mockLogger.log.mock.calls[1][0]).toBe(otherError);
+        });
+
         test('should not send notification if already sent today', async () => {
             process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
 
@@ -602,10 +669,10 @@ describe('TikTokLiveNotifier', () => {
             const hasErrorMessage = logCalls.some(call => {
                 const arg = call[0];
                 if (typeof arg === 'string') {
-                    return arg.includes('No Channel Ids found');
+                    return arg.includes('No Channel ID');
                 }
                 if (arg && typeof arg === 'object' && 'message' in arg && typeof arg.message === 'string') {
-                    return arg.message.includes('No Channel Ids found');
+                    return arg.message.includes('No Channel ID');
                 }
                 return false;
             });
@@ -697,6 +764,30 @@ describe('TikTokLiveNotifier', () => {
             // Should handle gracefully - logged via continue statement
             expect(mockConnect).toHaveBeenCalled();
             expect(mockLogger.log).toHaveBeenCalledWith('Error: Bot does not have permission to send messages in the channel.');
+        });
+
+        test('should handle channel send throwing an error', async () => {
+            process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
+
+            const sendError = new Error('Send failed');
+            const mockChannel = {
+                isTextBased: jest.fn(() => true),
+                send: jest.fn<() => Promise<any>>().mockRejectedValue(sendError),
+            };
+
+            (mockClient.channels.fetch as jest.Mock<(id: string) => Promise<any>>).mockResolvedValue(mockChannel as any);
+            mockConnect.mockResolvedValue({ connected: true });
+
+            notifier = new TikTokLiveNotifier(mockClient, mockLogger);
+            const callback = scheduledCallbacks[scheduledCallbacks.length - 1];
+
+            mockLogger.log.mockClear();
+            await callback();
+            await new Promise(resolve => setImmediate(resolve));
+
+            // Should catch and log the send error
+            expect(mockConnect).toHaveBeenCalled();
+            expect(mockLogger.log).toHaveBeenCalledWith(expect.stringContaining('Error sending to channel'));
         });
 
         test('should return early if connect returns falsy', async () => {
