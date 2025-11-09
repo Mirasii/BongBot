@@ -30,7 +30,6 @@ export default class TikTokLiveNotifier {
 
         // Fetch fresh avatar from TikTok profile (async - won't block startup)
         fetchAvatarFromProfile(tiktok_username).then(avatarUrl => {
-            this.#logger.log(`Fetched fresh TikTok avatar for @${tiktok_username}`);
             if (!avatarUrl) { throw Error('avatarUrl not returned from fetchAvatar method'); }
             this.#card.setThumbnail(avatarUrl); 
         }).catch(err => {
