@@ -3,31 +3,32 @@ import { ExtendedClient } from '../helpers/interfaces.js';
 import { EmbedBuilder, Colors } from 'discord.js';
 import cron from 'node-schedule';
 
-const tiktok_username = 'pokenonii';
+const tiktok_username = process.env.TIKTOK_USERNAME;
 export default class TikTokLiveNotifier {
-    #client: ExtendedClient
+    #client: ExtendedClient | undefined;
     #logger;
     #card;
     #dayCheck;
     #channels;
     constructor(client: ExtendedClient, _logger: {log: Function}) {
+        if (!tiktok_username) { return; }
         this.#channels = process.env.TIKTOK_LIVE_CHANNEL_IDS?.split(',');
         this.#logger = _logger;
         this.#client = client;
         this.#dayCheck = new Map<string, boolean>();
-        let liveNotif = `Watch on [TikTok](https://www.tiktok.com/@pokenonii/live)${
-            process.env.TWITCH_STREAM ? ' or [Twitch](https://www.twitch.tv/pokenoni)' : ''
-        } now!`
+        let liveNotif = `Watch on [TikTok](https://www.tiktok.com/@${tiktok_username}/live)${
+            process.env.TWITCH_STREAM ? ` or [Twitch](https://www.twitch.tv/${process.env.TWITCH_USERNAME})` : ''
+        } now!`;
         this.#card = new EmbedBuilder()
                     .setTitle('🎵 Live Notification')
                     .setColor(Colors.Purple)
                     .addFields(
-                        { name: '⏱️ PokeNoni is live!', value: liveNotif, inline: false },
+                        { name: `⏱️ ${process.env.LIVE_DISPLAY_NAME} is live!`, value: liveNotif, inline: false },
                     )
                     .setFooter({ text: `BongBot • ${this.#client.version}`, iconURL: this.#client.user?.displayAvatarURL() })
         this.lockImmutables();
         this.#dayCheck = new Map<string, boolean>();
-        cron.scheduleJob('*/1 15-18 * * *', () => {
+        cron.scheduleJob(`*/1 ${process.env.LIVE_START_TIME}-${process.env.LIVE_END_TIME} * * *`, () => {
             this.#checkLive();
         });
     }
@@ -42,42 +43,42 @@ export default class TikTokLiveNotifier {
 
     async #checkLive(): Promise<void> {
         let today: string = new Date().toLocaleDateString();
-        if (!this.#dayCheck.has(today)) {
+        if (!this.#dayCheck!.has(today)) {
             /** Clear out map to prevent memory leaks over time */
-            this.#dayCheck.clear();
-            this.#dayCheck.set(today, false)
+            this.#dayCheck!.clear();
+            this.#dayCheck!.set(today, false)
         }
-        if (this.#dayCheck.get(today)) { return; }
+        if (this.#dayCheck!.get(today)) { return; }
         try {
-            const connector = new TikTokLiveConnection(tiktok_username);
+            const connector = new TikTokLiveConnection(tiktok_username!);
             const state = await connector.connect().catch(e => {
                 if (!e.message.includes("The requested user isn't online")) { throw e; }
             });
             if (!state) { return; }
-            this.#dayCheck.set(today, true);
+            this.#dayCheck!.set(today, true);
 
             if ((this.#channels?.length ?? 0) === 0) { throw Error('Fatal Error: No Channel Ids found in environment variable TIKTOK_LIVE_CHANNEL_IDS.'); }
-            const avatarUrl = await fetchAvatarFromProfile(tiktok_username)
+            const avatarUrl = await fetchAvatarFromProfile(tiktok_username!)
             if (!avatarUrl) { throw Error('Fatal Error: avatarUrl not returned from fetchAvatar method.'); }
-            this.#card.setThumbnail(avatarUrl); 
+            this.#card!.setThumbnail(avatarUrl); 
 
             for (const channelId of this.#channels ?? []) {
-                const channel = await this.#client.channels.fetch(channelId);
+                const channel = await this.#client!.channels.fetch(channelId);
                 if (!channel || !channel.isTextBased()) {
-                    this.#logger.log('Error: Channel not found or is not a text-based channel.');
+                    this.#logger!.log('Error: Channel not found or is not a text-based channel.');
                     continue;
                 }
                 if (!('send' in channel && typeof channel.send === 'function')) {
-                    this.#logger.log('Error: Bot does not have permission to send messages in the channel.');
+                    this.#logger!.log('Error: Bot does not have permission to send messages in the channel.');
                     continue;
                 }
-                this.#card.setTimestamp();
-                await channel.send({ embeds: [this.#card] });
+                this.#card!.setTimestamp();
+                await channel.send({ embeds: [this.#card!] });
             }
 
         } catch (err) {
-            this.#logger.log(err);
-            this.#dayCheck.set(today, true); /** Assume all other attempts today will error and skip posting until tomorrow to save processing. */
+            this.#logger!.log(err);
+            this.#dayCheck!.set(today, true); /** Assume all other attempts today will error and skip posting until tomorrow to save processing. */
         }
     }
 }
