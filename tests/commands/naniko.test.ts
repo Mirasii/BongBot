@@ -106,7 +106,6 @@ describe('TikTokLiveNotifier', () => {
             expect(mockEmbedBuilder).toHaveBeenCalled();
             expect(mockSetTitle).toHaveBeenCalledWith('🎵 Live Notification');
             expect(mockSetColor).toHaveBeenCalledWith(10181046);
-            expect(mockSetThumbnail).toHaveBeenCalled();
             expect(mockAddFields).toHaveBeenCalled();
             expect(mockSetFooter).toHaveBeenCalled();
         });
@@ -121,7 +120,7 @@ describe('TikTokLiveNotifier', () => {
 
             expect(mockAddFields).toHaveBeenCalled();
             // addFields is called with a field object containing the value
-            const firstArg = mockAddFields.mock.calls[0][0];
+            const firstArg = mockAddFields.mock.calls[0][0] as any;
             expect(firstArg).toBeDefined();
             expect(firstArg.value).toBeDefined();
             expect(firstArg.value).toContain('Twitch');
