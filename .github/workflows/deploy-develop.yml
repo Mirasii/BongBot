@@ -82,6 +82,10 @@ jobs:
           if [ -f coverage/coverage-summary.json ]; then
             echo "Generating detailed coverage report from coverage-summary.json..."
             
+            # Debug: Show all keys in the coverage file
+            echo "Available keys in coverage-summary.json:"
+            jq -r 'keys[]' coverage/coverage-summary.json
+            
             # Function to get coverage emoji and color
             get_coverage_indicator() {
               local percentage=$1
@@ -119,12 +123,26 @@ jobs:
             
             # Process files by directory
             declare -A dir_files
-            declare -A dir_stats
             
-            # Collect all source files and organize by directory
-            for file_path in $(jq -r 'keys[]' coverage/coverage-summary.json | grep -v "^total$" | grep "^/.*\.js$" | grep -v "node_modules" | grep -v "coverage/" | sort); do
-              # Extract directory and filename relative to project root
-              rel_path=$(echo "$file_path" | sed "s|^.*/BongBot/||")
+            # Collect all source files - try different path patterns
+            echo "Processing individual files..."
+            for file_path in $(jq -r 'keys[]' coverage/coverage-summary.json | grep -v "^total$"); do
+              echo "Found file: $file_path"
+              
+              # Clean up the path - handle both absolute and relative paths
+              if [[ "$file_path" == /* ]]; then
+                # Absolute path - extract relative path
+                rel_path=$(echo "$file_path" | sed 's|^.*/BongBot/||' | sed 's|^/home/[^/]*/[^/]*/||')
+              else
+                # Already relative
+                rel_path="$file_path"
+              fi
+              
+              # Skip node_modules and coverage directories
+              if [[ "$rel_path" == *"node_modules"* ]] || [[ "$rel_path" == *"coverage/"* ]]; then
+                continue
+              fi
+              
               dir_name=$(dirname "$rel_path")
               file_name=$(basename "$rel_path")
               
@@ -133,6 +151,8 @@ jobs:
               branches=$(jq -r ".[\"$file_path\"].branches.pct // 0" coverage/coverage-summary.json)
               functions=$(jq -r ".[\"$file_path\"].functions.pct // 0" coverage/coverage-summary.json)
               lines=$(jq -r ".[\"$file_path\"].lines.pct // 0" coverage/coverage-summary.json)
+              
+              echo "  Stats: S:$statements B:$branches F:$functions L:$lines"
               
               # Get indicators
               stmt_ind=$(get_coverage_indicator "$statements")
@@ -169,6 +189,8 @@ jobs:
               fi
               dir_files["$dir_name"]="${dir_files[$dir_name]}$file_row\n"
             done
+            
+            echo "Found ${#dir_files[@]} directories with files"
             
             # Add directory sections to report
             for dir in $(printf '%s\n' "${!dir_files[@]}" | sort); do

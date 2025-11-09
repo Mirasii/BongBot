@@ -7,3 +7,4 @@ commands.old
 coverage/*
 .env
 report.json
+dist/*
