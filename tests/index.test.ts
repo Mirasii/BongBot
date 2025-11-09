@@ -85,7 +85,8 @@ jest.unstable_mockModule('../src/config/index.js', () => ({
         discord: {
             apikey: 'fake-token'
         }
-    }
+    },
+    validateRequiredConfig: jest.fn() // Mock validation to not throw in tests
 }));
 
 // Mock buildCommands

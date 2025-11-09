@@ -4,7 +4,8 @@ import { EmbedBuilder, Colors } from 'discord.js';
 import cron from 'node-schedule';
 
 const tiktok_username = 'pokenonii';
-const streamer_avatar = 'https://p19-common-sign-useastred.tiktokcdn-eu.com/tos-useast2a-avt-0068-euttp/ab8fb67e6366564545d1519484e2b2f0~tplv-tiktokx-cropcenter:1080:1080.jpeg?dr=10399&refresh_token=4d76bc58&x-expires=1762650000&x-signature=Zmkwn4lhOimtFRVXmVBNYvj3y0A%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=81f88b70&idc=no1a';
+// Avatar URL should be stored in environment variable to avoid exposing authentication tokens
+const streamer_avatar = process.env.TIKTOK_STREAMER_AVATAR_URL || 'https://www.tiktok.com/@pokenonii';
 export default class TikTokLiveNotifier {
     #client: ExtendedClient
     #logger;
@@ -61,19 +62,19 @@ export default class TikTokLiveNotifier {
                 this.#logger.log('Error: No Channel Ids found in environment variable TIKTOK_LIVE_CHANNEL_IDS.');
                 return;
             }
-            this.#channels?.forEach(async (channelId) => {
+            for (const channelId of this.#channels ?? []) {
                 const channel = await this.#client.channels.fetch(channelId);
                 if (!channel || !channel.isTextBased()) {
                     this.#logger.log('Error: Channel not found or is not a text-based channel.');
-                    return;
+                    continue;
                 }
                 if (!('send' in channel && typeof channel.send === 'function')) {
                     this.#logger.log('Error: Bot does not have permission to send messages in the channel.');
-                    return;
+                    continue;
                 }
                 this.#card.setTimestamp();
                 await channel.send({ embeds: [this.#card] });
-            });
+            }
 
         } catch (err) {
             this.#logger.log(err);

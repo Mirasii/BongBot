@@ -3,11 +3,14 @@ import type { Message, MessageReplyOptions, InteractionReplyOptions, CommandInte
 import type { ExtendedClient } from './helpers/interfaces.ts';
 import LOGGER from './helpers/logging.js';
 import crypto from 'crypto';
-import config from './config/index.js';
+import config, { validateRequiredConfig } from './config/index.js';
 import { buildUnknownError } from './helpers/errorBuilder.js';
 import { generateCard } from './helpers/infoCard.js';
 import buildCommands from './commands/buildCommands.js';
 import TikTok from './commands/naniko.js';
+
+// Validate required environment variables early to fail fast
+validateRequiredConfig();
 
 let tiktok_client;
 const token: string = config.discord.apikey!;

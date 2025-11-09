@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { jest, describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 
 describe('config/index.js', () => {
     let originalEnv: NodeJS.ProcessEnv;
@@ -113,5 +113,81 @@ describe('config/index.js', () => {
         if (savedJestWorkerId !== undefined) {
             process.env.JEST_WORKER_ID = savedJestWorkerId;
         }
+    });
+});
+
+describe('validateRequiredConfig', () => {
+    let originalEnv: NodeJS.ProcessEnv;
+
+    beforeEach(() => {
+        originalEnv = process.env;
+        process.env = { ...originalEnv };
+        jest.resetModules();
+    });
+
+    afterEach(() => {
+        process.env = originalEnv;
+        jest.resetModules();
+    });
+
+    test('should throw error when DISCORD_API_KEY is missing', async () => {
+        delete process.env.DISCORD_API_KEY;
+
+        const { validateRequiredConfig } = await import('../../src/config/index.js');
+
+        expect(() => validateRequiredConfig()).toThrow('DISCORD_API_KEY is required');
+    });
+
+    test('should throw error when OPENAI_API_KEY is missing but OPENAI_ACTIVE=true', async () => {
+        process.env.DISCORD_API_KEY = 'test_key';
+        process.env.OPENAI_ACTIVE = 'true';
+        delete process.env.OPENAI_API_KEY;
+
+        const { validateRequiredConfig } = await import('../../src/config/index.js');
+
+        expect(() => validateRequiredConfig()).toThrow('OPENAI_API_KEY is required when OPENAI_ACTIVE=true');
+    });
+
+    test('should throw error when GOOGLEAI_API_KEY is missing but GOOGLEAI_ACTIVE=true', async () => {
+        process.env.DISCORD_API_KEY = 'test_key';
+        process.env.GOOGLEAI_ACTIVE = 'true';
+        delete process.env.GOOGLEAI_API_KEY;
+
+        const { validateRequiredConfig } = await import('../../src/config/index.js');
+
+        expect(() => validateRequiredConfig()).toThrow('GOOGLEAI_API_KEY is required when GOOGLEAI_ACTIVE=true');
+    });
+
+    test('should throw error with multiple missing keys', async () => {
+        delete process.env.DISCORD_API_KEY;
+        process.env.OPENAI_ACTIVE = 'true';
+        delete process.env.OPENAI_API_KEY;
+
+        const { validateRequiredConfig } = await import('../../src/config/index.js');
+
+        expect(() => validateRequiredConfig()).toThrow('DISCORD_API_KEY is required');
+        expect(() => validateRequiredConfig()).toThrow('OPENAI_API_KEY is required');
+    });
+
+    test('should not throw when all required keys are present', async () => {
+        process.env.DISCORD_API_KEY = 'test_discord_key';
+        process.env.OPENAI_ACTIVE = 'false';
+        process.env.GOOGLEAI_ACTIVE = 'false';
+
+        const { validateRequiredConfig } = await import('../../src/config/index.js');
+
+        expect(() => validateRequiredConfig()).not.toThrow();
+    });
+
+    test('should not throw when optional AI keys are missing if not active', async () => {
+        process.env.DISCORD_API_KEY = 'test_discord_key';
+        delete process.env.OPENAI_API_KEY;
+        delete process.env.GOOGLEAI_API_KEY;
+        process.env.OPENAI_ACTIVE = 'false';
+        process.env.GOOGLEAI_ACTIVE = 'false';
+
+        const { validateRequiredConfig } = await import('../../src/config/index.js');
+
+        expect(() => validateRequiredConfig()).not.toThrow();
     });
 });
