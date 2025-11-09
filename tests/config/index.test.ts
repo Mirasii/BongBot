@@ -94,4 +94,24 @@ describe('config/index.js', () => {
         expect(config.apis.openai.active).toBe(false);
         expect(config.apis.googleai.active).toBe(true);
     });
+
+    test('should use ./dist/ as file_root in production (when JEST_WORKER_ID is undefined)', async () => {
+        // Save the current JEST_WORKER_ID
+        const savedJestWorkerId = process.env.JEST_WORKER_ID;
+
+        // Temporarily delete JEST_WORKER_ID to simulate production
+        delete process.env.JEST_WORKER_ID;
+
+        // Clear module cache to force re-import
+        jest.resetModules();
+
+        const { default: config } = await import('../../src/config/index.js');
+
+        expect(config.media.file_root).toBe('./dist/');
+
+        // Restore JEST_WORKER_ID
+        if (savedJestWorkerId !== undefined) {
+            process.env.JEST_WORKER_ID = savedJestWorkerId;
+        }
+    });
 });

@@ -161,7 +161,7 @@ describe('EMBED_BUILDER class', () => {
 
         test('should handle errors from selectRandomFile', async () => {
             const mockError = new Error('File selection error');
-            mockSelectRandomFile.mockImplementationOnce((dir: any, callback: any) => 
+            mockSelectRandomFile.mockImplementationOnce((dir: any, callback: any) =>
                 callback(mockError)
             );
 
@@ -171,6 +171,21 @@ describe('EMBED_BUILDER class', () => {
             await expect(builder.constructEmbedWithRandomFile(description)).rejects.toThrow(
                 'File selection error'
             );
+        });
+
+        test('should handle null file from selectRandomFile', async () => {
+            mockSelectRandomFile.mockImplementationOnce((dir: any, callback: any) =>
+                callback(null, null)
+            );
+
+            const builder = new EMBED_BUILDER();
+            const description = 'Random Description';
+            const result = await builder.constructEmbedWithRandomFile(description);
+
+            expect(builder.embed.setDescription).toHaveBeenCalledWith(description);
+            expect(mockSelectRandomFile).toHaveBeenCalledTimes(1);
+            expect(AttachmentBuilder).toHaveBeenCalledWith('./dist/responses/');
+            expect(builder.embed.setThumbnail).toHaveBeenCalledWith('attachment://');
         });
     });
 

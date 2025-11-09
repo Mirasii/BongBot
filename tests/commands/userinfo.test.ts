@@ -126,4 +126,75 @@ describe('userinfo command execution', () => {
 
     expect(result).toBe('This command can only be used in a server.');
   });
+
+  test('should show "Yes" when user is a bot', async () => {
+    const botUser = createMockUser('botuser', 'botuser#0000', '9999999999', true);
+    const botMember = createMockMember(['@everyone', '@bot']);
+
+    const mockInteraction = {
+      inGuild: jest.fn(() => true),
+      guild: {
+        members: {
+          fetch: jest.fn<(id: string) => Promise<GuildMember>>(async (id: string) => {
+            if (id === botUser.id) return botMember;
+            throw new Error('Member not found');
+          }),
+        },
+      } as unknown as Guild,
+      user: mockUser,
+      options: {
+        getUser: jest.fn(() => botUser),
+      },
+    } as unknown as ChatInputCommandInteraction<CacheType>;
+
+    const result = await userinfoCommand.execute(mockInteraction);
+
+    const embed = (result as any).embeds[0];
+    expect(embed.data.fields[2]).toEqual({ name: 'Bot?', value: 'Yes', inline: true });
+  });
+
+  test('should show "None" when member has no roles', async () => {
+    const noRolesMember = createMockMember([]);
+
+    const mockInteraction = {
+      inGuild: jest.fn(() => true),
+      guild: {
+        members: {
+          fetch: jest.fn<(id: string) => Promise<GuildMember>>(async () => noRolesMember),
+        },
+      } as unknown as Guild,
+      user: mockUser,
+      options: {
+        getUser: jest.fn(() => null),
+      },
+    } as unknown as ChatInputCommandInteraction<CacheType>;
+
+    const result = await userinfoCommand.execute(mockInteraction);
+
+    const embed = (result as any).embeds[0];
+    expect(embed.data.fields[5]).toEqual({ name: 'Roles', value: 'None', inline: false });
+  });
+
+  test('should handle errors and return error response', async () => {
+    const mockInteraction = {
+      inGuild: jest.fn(() => true),
+      guild: {
+        members: {
+          fetch: jest.fn<(id: string) => Promise<GuildMember>>(async () => {
+            throw new Error('Failed to fetch member');
+          }),
+        },
+      } as unknown as Guild,
+      user: mockUser,
+      options: {
+        getUser: jest.fn(() => null),
+      },
+      commandName: 'usercard',
+    } as unknown as ChatInputCommandInteraction<CacheType>;
+
+    const result = await userinfoCommand.execute(mockInteraction);
+
+    // The error handler should be called and return an error response
+    expect(result).toHaveProperty('isError', true);
+  });
 });

@@ -100,15 +100,33 @@ describe('TikTokLiveNotifier', () => {
 
         test('should create embed card with correct properties', () => {
             process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
-            
+
             notifier = new TikTokLiveNotifier(mockClient, mockLogger);
-            
+
             expect(mockEmbedBuilder).toHaveBeenCalled();
             expect(mockSetTitle).toHaveBeenCalledWith('🎵 Live Notification');
             expect(mockSetColor).toHaveBeenCalledWith(10181046);
             expect(mockSetThumbnail).toHaveBeenCalled();
             expect(mockAddFields).toHaveBeenCalled();
             expect(mockSetFooter).toHaveBeenCalled();
+        });
+
+        test('should include Twitch link when TWITCH_STREAM is set', () => {
+            process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
+            process.env.TWITCH_STREAM = 'true';
+
+            mockAddFields.mockClear();
+
+            notifier = new TikTokLiveNotifier(mockClient, mockLogger);
+
+            expect(mockAddFields).toHaveBeenCalled();
+            // addFields is called with a field object containing the value
+            const firstArg = mockAddFields.mock.calls[0][0];
+            expect(firstArg).toBeDefined();
+            expect(firstArg.value).toBeDefined();
+            expect(firstArg.value).toContain('Twitch');
+
+            delete process.env.TWITCH_STREAM;
         });
 
         test('should schedule cron job', () => {
@@ -202,23 +220,38 @@ describe('TikTokLiveNotifier', () => {
 
         test('should not send notification if already sent today', async () => {
             process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
+
+            const mockChannel = {
+                isTextBased: jest.fn(() => true),
+                send: jest.fn<() => Promise<any>>().mockResolvedValue({} as any),
+            };
+
+            (mockClient.channels.fetch as jest.Mock<(id: string) => Promise<any>>).mockResolvedValue(mockChannel as any);
             mockConnect.mockResolvedValue({ connected: true });
-            
+
             notifier = new TikTokLiveNotifier(mockClient, mockLogger);
             const callback = scheduledCallbacks[scheduledCallbacks.length - 1];
-            
-            // First call
+
+            // First call - should send notification
             await callback();
-            
+            // Give async operations time to complete
+            await new Promise(resolve => setImmediate(resolve));
+
+            const firstCallCount = mockConnect.mock.calls.length;
+
             // Clear mocks
             mockConnect.mockClear();
             mockTikTokLiveConnection.mockClear();
-            
-            // Second call same day
+            mockChannel.send.mockClear();
+
+            // Second call same day - should return early without checking
             await callback();
-            
-            // Should still check but return early
-            expect(mockTikTokLiveConnection).toHaveBeenCalled();
+            // Give async operations time to complete
+            await new Promise(resolve => setImmediate(resolve));
+
+            // Should return early without calling connect again
+            expect(mockConnect).not.toHaveBeenCalled();
+            expect(mockChannel.send).not.toHaveBeenCalled();
         });
 
         test('should send notification to configured channels when live', async () => {

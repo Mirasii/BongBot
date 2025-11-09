@@ -266,4 +266,116 @@ describe('chat_ai command execution', () => {
       'No response from AI - potentially malicious prompt?'
     );
   });
+
+  it('should use globalName when nickname is null', async () => {
+    apis.openai.active = true;
+    apis.googleai.active = false;
+
+    const mockGuildMemberManager = {
+      fetch: jest.fn<() => Promise<GuildMember>>().mockResolvedValue({
+        nickname: null,
+        user: { globalName: 'GlobalUserName' }
+      } as unknown as GuildMember),
+    } as unknown as GuildMemberManager;
+
+    const mockInteractionWithNoNickname = {
+      ...mockInteraction,
+      guild: {
+        members: mockGuildMemberManager,
+        id: 'test_server',
+      } as Partial<Guild>,
+    } as unknown as ChatInputCommandInteraction<CacheType>;
+
+    const result = await chatAiCommand.execute(mockInteractionWithNoNickname, mockClient);
+    expect(result).toBe('mocked embed');
+  });
+
+  it('should use globalName in legacy message when nickname is null', async () => {
+    apis.openai.active = true;
+    apis.googleai.active = false;
+
+    const mockGuildMemberManager = {
+      fetch: jest.fn<() => Promise<GuildMember>>().mockResolvedValue({
+        nickname: null,
+        user: { globalName: 'GlobalUserName' }
+      } as unknown as GuildMember),
+    } as unknown as GuildMemberManager;
+
+    const mockMsg = {
+      content: '<@123456789> test input',
+      guild: {
+        members: mockGuildMemberManager,
+        id: 'test_server',
+      } as Partial<Guild>,
+      author: {
+        id: 'test_user_id',
+      } as Partial<User>,
+    } as Partial<Message>;
+
+    const result = await chatAiCommand.executeLegacy(mockMsg as Message, mockClient);
+    expect(result).toBe('mocked embed');
+  });
+
+  it('should throw error when input is null', async () => {
+    const mockGuildMemberManager = {
+      fetch: jest.fn<() => Promise<GuildMember>>().mockResolvedValue({ nickname: 'test_user' } as GuildMember),
+    } as unknown as GuildMemberManager;
+
+    const mockInteractionNoInput = {
+      ...mockInteraction,
+      options: {
+        getString: jest.fn().mockReturnValue(null),
+      },
+      guild: {
+        members: mockGuildMemberManager,
+        id: 'test_server',
+      } as Partial<Guild>,
+    } as unknown as ChatInputCommandInteraction<CacheType>;
+
+    await expect(chatAiCommand.execute(mockInteractionNoInput, mockClient)).rejects.toThrow('No input provided');
+  });
+
+  it('should throw error when serverId is null', async () => {
+    const mockGuildMemberManager = {
+      fetch: jest.fn<() => Promise<GuildMember>>().mockResolvedValue({ nickname: 'test_user' } as GuildMember),
+    } as unknown as GuildMemberManager;
+
+    const mockInteractionNoServer = {
+      ...mockInteraction,
+      guildId: null,
+      guild: {
+        members: mockGuildMemberManager,
+        id: null,
+      } as Partial<Guild>,
+    } as unknown as ChatInputCommandInteraction<CacheType>;
+
+    await expect(chatAiCommand.execute(mockInteractionNoServer, mockClient)).rejects.toThrow('No server ID available');
+  });
+
+  it('should throw error when authorId is null', async () => {
+    const mockGuildMemberManager = {
+      fetch: jest.fn<() => Promise<GuildMember>>().mockResolvedValue({
+        nickname: null,
+        user: { globalName: null }
+      } as unknown as GuildMember),
+    } as unknown as GuildMemberManager;
+
+    const mockInteractionNoAuthor = {
+      ...mockInteraction,
+      guild: {
+        members: mockGuildMemberManager,
+        id: 'test_server',
+      } as Partial<Guild>,
+    } as unknown as ChatInputCommandInteraction<CacheType>;
+
+    await expect(chatAiCommand.execute(mockInteractionNoAuthor, mockClient)).rejects.toThrow('No author ID available');
+  });
+
+  it('should throw error when Google AI API key is not set', async () => {
+    apis.googleai.active = true;
+    apis.googleai.apikey = null;
+    apis.openai.active = false;
+
+    await expect(chatAiCommand.execute(mockInteraction, mockClient)).rejects.toThrow('Google API key not set');
+  });
 });

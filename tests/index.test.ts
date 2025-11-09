@@ -23,8 +23,13 @@ jest.unstable_mockModule('discord.js', () => {
     class MockCollection extends Map {
         constructor(entries?: [string, any][]) {
             super();
+            if (entries) {
+                for (const [key, value] of entries) {
+                    this.set(key, value);
+                }
+            }
         }
-        
+
         filter(predicate: (value: any, key: string, map: Map<string, any>) => boolean) {
             const filteredEntries: [string, any][] = [];
             for (const [key, value] of this.entries()) {
@@ -198,6 +203,22 @@ describe('BongBot', () => {
             expect(ERROR_BUILDER.buildUnknownError).toHaveBeenCalled();
         });
 
+        it('handles command execution errors when interaction not replied', async () => {
+            mockExecute.mockImplementationOnce(() => { throw new Error('boom'); });
+
+            const interaction = {
+                isCommand: () => true,
+                commandName: 'ping',
+                deferReply: jest.fn(),
+                followUp: jest.fn(),
+                deleteReply: jest.fn(),
+                replied: false
+            };
+            await handler(interaction);
+            expect(interaction.deleteReply).not.toHaveBeenCalled();
+            expect(ERROR_BUILDER.buildUnknownError).toHaveBeenCalled();
+        });
+
         it('handles command response with isError flag and deletes reply', async () => {
             mockExecute.mockImplementationOnce(() => ({ isError: true, content: 'Error response' }));
 
@@ -327,11 +348,12 @@ describe('BongBot', () => {
 
         it('sets commands, presence, and sends deployment card', async () => {
             process.env.DISCORD_CHANNEL_ID = 'test-channel-id';
-            
+
+            const mockDeleteFn = jest.fn().mockResolvedValue(undefined);
             const mockMessages = new (Discord.Collection as any)([
-                ['1', { author: { id: 'bot123' }, delete: jest.fn() }]
+                ['1', { author: { id: 'bot123' }, delete: mockDeleteFn }]
             ]);
-            
+
             const fakeChannel = {
                 isTextBased: () => true,
                 messages: {
@@ -343,9 +365,14 @@ describe('BongBot', () => {
 
             await handler();
             await flushPromises();
+            // Give async delete operations time to complete
+            await new Promise(resolve => setImmediate(resolve));
+            await flushPromises();
+
             expect(mockClient.application.commands.set).toHaveBeenCalled();
             expect(mockClient.user.setPresence).toHaveBeenCalled();
             expect(fakeChannel.send).toHaveBeenCalledWith({ embeds: [{ title: 'Fake Card' }] });
+            expect(mockDeleteFn).toHaveBeenCalled();
         });
 
         it('warns if missing manage messages permission', async () => {
@@ -362,6 +389,32 @@ describe('BongBot', () => {
             await flushPromises();
             expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Warning: Could not delete messages'));
             warnSpy.mockRestore();
+        });
+
+        it('logs when DISCORD_CHANNEL_ID is not set', async () => {
+            delete process.env.DISCORD_CHANNEL_ID;
+
+            LOGGER.log.mockClear();
+            await handler();
+            await flushPromises();
+
+            expect(LOGGER.log).toHaveBeenCalledWith('DISCORD_CHANNEL_ID not set');
+        });
+
+        it('handles channel without send method', async () => {
+            process.env.DISCORD_CHANNEL_ID = 'test-channel-id';
+            const fakeChannel = {
+                isTextBased: () => true,
+                messages: { fetch: jest.fn(async () => new (Discord.Collection as any)()) },
+                // No send method
+            };
+            mockClient.channels.fetch.mockResolvedValueOnce(fakeChannel);
+
+            await handler();
+            await flushPromises();
+
+            // Should handle gracefully without throwing
+            expect(mockClient.user.setPresence).toHaveBeenCalled();
         });
     });
 });

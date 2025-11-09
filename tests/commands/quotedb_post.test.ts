@@ -236,12 +236,49 @@ describe('quotedb_post command execution', () => {
         },
       }),
     } as unknown as Message;
-    
+
     const mockError = new Error('API Error');
     mockCallerPost.mockRejectedValueOnce(mockError);
 
     await quotedbPostCommand.executeReply(mockRepliedMessage, mockClient);
 
     expect(mockBuildUnknownError).toHaveBeenCalledWith(mockError);
+  });
+
+  test('should use username when member is null in reply', async () => {
+    const mockRepliedMessage = {
+      reference: true,
+      content: 'Replied Quote Content',
+      fetchReference: jest.fn<() => Promise<any>>().mockResolvedValueOnce({
+        content: 'Replied Quote Content',
+        member: null,
+        author: {
+          username: 'AuthorUsername',
+        },
+      }),
+    } as unknown as Message;
+
+    mockCallerPost.mockResolvedValueOnce({
+      quote: {
+        quote: 'Replied Quote Content',
+        author: 'AuthorUsername',
+        user_id: 'mock_user_id',
+        date: 'mock_date',
+      },
+    });
+
+    const result = await quotedbPostCommand.executeReply(mockRepliedMessage, mockClient);
+
+    expect(mockCallerPost).toHaveBeenCalledWith(
+      'https://quotes.elmu.dev',
+      '/api/v1/quotes',
+      { 'Content-Type': 'application/json', 'Authorization': 'Bearer mock_api_key' },
+      expect.objectContaining({
+        quote: 'Replied Quote Content',
+        author: 'AuthorUsername',
+        user_id: 'mock_user_id',
+      })
+    );
+    expect(result).toBe('Mocked Quote Embed');
   });
 });
