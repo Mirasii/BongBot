@@ -51,9 +51,7 @@ export default class TikTokLiveNotifier {
         if (this.#dayCheck!.get(today)) { return; }
         try {
             const connector = new TikTokLiveConnection(tiktok_username!);
-            const state = await connector.connect().catch(e => {
-                if (!e.message.includes("The requested user isn't online")) { throw e; }
-            });
+            const state = await connector.connect().catch(e => {});
             if (!state) { return; }
             this.#dayCheck!.set(today, true);
 
@@ -77,6 +75,7 @@ export default class TikTokLiveNotifier {
             }
 
         } catch (err) {
+            this.#logger!.log('Error Ocurred attempting to get Live Status');
             this.#logger!.log(err);
             this.#dayCheck!.set(today, true); /** Assume all other attempts today will error and skip posting until tomorrow to save processing. */
         }
