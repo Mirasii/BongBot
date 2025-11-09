@@ -56,12 +56,9 @@ export default class TikTokLiveNotifier {
             if (!state) { return; }
             this.#dayCheck.set(today, true);
 
-            if ((this.#channels?.length ?? 0) === 0) {
-                this.#logger.log('Error: No Channel Ids found in environment variable TIKTOK_LIVE_CHANNEL_IDS.');
-                return;
-            }
+            if ((this.#channels?.length ?? 0) === 0) { throw Error('Fatal Error: No Channel Ids found in environment variable TIKTOK_LIVE_CHANNEL_IDS.'); }
             const avatarUrl = await fetchAvatarFromProfile(tiktok_username)
-            if (!avatarUrl) { throw Error('avatarUrl not returned from fetchAvatar method'); }
+            if (!avatarUrl) { throw Error('Fatal Error: avatarUrl not returned from fetchAvatar method.'); }
             this.#card.setThumbnail(avatarUrl); 
 
             for (const channelId of this.#channels ?? []) {
