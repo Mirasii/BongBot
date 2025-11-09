@@ -27,15 +27,6 @@ export default class TikTokLiveNotifier {
                     .setFooter({ text: `BongBot • ${this.#client.version}`, iconURL: this.#client.user?.displayAvatarURL() })
         this.lockImmutables();
         this.#dayCheck = new Map<string, boolean>();
-
-        // Fetch fresh avatar from TikTok profile (async - won't block startup)
-        fetchAvatarFromProfile(tiktok_username).then(avatarUrl => {
-            if (!avatarUrl) { throw Error('avatarUrl not returned from fetchAvatar method'); }
-            this.#card.setThumbnail(avatarUrl); 
-        }).catch(err => {
-            this.#logger.log(`Failed to fetch TikTok avatar: ${err.message}`);
-        });
-
         cron.scheduleJob('*/1 15-18 * * *', () => {
             this.#checkLive();
         });
@@ -69,6 +60,10 @@ export default class TikTokLiveNotifier {
                 this.#logger.log('Error: No Channel Ids found in environment variable TIKTOK_LIVE_CHANNEL_IDS.');
                 return;
             }
+            const avatarUrl = await fetchAvatarFromProfile(tiktok_username)
+            if (!avatarUrl) { throw Error('avatarUrl not returned from fetchAvatar method'); }
+            this.#card.setThumbnail(avatarUrl); 
+
             for (const channelId of this.#channels ?? []) {
                 const channel = await this.#client.channels.fetch(channelId);
                 if (!channel || !channel.isTextBased()) {
@@ -85,6 +80,7 @@ export default class TikTokLiveNotifier {
 
         } catch (err) {
             this.#logger.log(err);
+            this.#dayCheck.set(today, true); /** Assume all other attempts today will error and skip posting until tomorrow to save processing. */
         }
     }
 }
