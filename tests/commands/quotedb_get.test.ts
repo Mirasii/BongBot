@@ -16,13 +16,9 @@ jest.unstable_mockModule('../../src/config/index.js', () => ({
 }));
 
 // Mock functions
-const mockSetTitle = jest.fn<any>().mockReturnThis();
-const mockAddQuotes = jest.fn<any>().mockReturnThis();
-const mockBuild = jest.fn<any>().mockReturnValue('Mocked Quote Embed');
+const mockGetQuote = jest.fn<any>();
 const mockQuoteBuilder = jest.fn().mockImplementation(() => ({
-  setTitle: mockSetTitle,
-  addQuotes: mockAddQuotes,
-  build: mockBuild,
+  getQuote: mockGetQuote,
 }));
 
 const mockCallerGet = jest.fn<() => Promise<any>>();
@@ -74,6 +70,10 @@ describe('quotedb_get command execution', () => {
   const mockInteraction = {
     options: {
       getInteger: jest.fn(),
+      getBoolean: jest.fn(),
+    },
+    guild: {
+      id: 'mock_server_id',
     },
     reply: jest.fn(),
   } as unknown as ChatInputCommandInteraction<CacheType>;
@@ -99,93 +99,78 @@ describe('quotedb_get command execution', () => {
 
   test('should return a single recent quote by default', async () => {
     (mockInteraction.options.getInteger as jest.Mock).mockReturnValueOnce(null);
-    mockCallerGet.mockResolvedValueOnce({
-      quotes: [{
-        quote: 'Recent Quote 1',
-        author: 'Author 1',
-      }],
-    });
+    (mockInteraction.options.getBoolean as jest.Mock).mockReturnValueOnce(null);
+    mockGetQuote.mockResolvedValueOnce('Mocked Quote Embed');
 
     const result = await quotedbGetCommand.execute(mockInteraction, mockClient);
 
-    expect(mockCallerGet).toHaveBeenCalledWith(
-      'https://quotes.elmu.dev',
-      '/api/v1/quotes/search/user/mock_user_id',
-      'max_quotes=1',
-      { 'Content-Type': 'application/json', 'Authorization': 'Bearer mock_api_key' }
-    );
     expect(mockQuoteBuilder).toHaveBeenCalledTimes(1);
-    expect(mockSetTitle).toHaveBeenCalledWith('Recent Quotes');
-    expect(mockAddQuotes).toHaveBeenCalledWith([{
-      quote: 'Recent Quote 1',
-      author: 'Author 1',
-    }]);
-    expect(mockBuild).toHaveBeenCalledWith(mockClient);
+    expect(mockGetQuote).toHaveBeenCalledWith(
+      '/api/v1/quotes/search',
+      'Recent Quotes',
+      mockClient,
+      mockInteraction
+    );
     expect(result).toBe('Mocked Quote Embed');
   });
 
   test('should return the specified number of recent quotes', async () => {
     (mockInteraction.options.getInteger as jest.Mock).mockReturnValueOnce(3);
-    mockCallerGet.mockResolvedValueOnce({
-      quotes: [
-        { quote: 'Recent Quote 1', author: 'Author 1' },
-        { quote: 'Recent Quote 2', author: 'Author 2' },
-        { quote: 'Recent Quote 3', author: 'Author 3' },
-      ],
-    });
+    (mockInteraction.options.getBoolean as jest.Mock).mockReturnValueOnce(null);
+    mockGetQuote.mockResolvedValueOnce('Mocked Quote Embed');
 
     const result = await quotedbGetCommand.execute(mockInteraction, mockClient);
 
-    expect(mockCallerGet).toHaveBeenCalledWith(
-      'https://quotes.elmu.dev',
-      '/api/v1/quotes/search/user/mock_user_id',
-      'max_quotes=3',
-      { 'Content-Type': 'application/json', 'Authorization': 'Bearer mock_api_key' }
-    );
     expect(mockQuoteBuilder).toHaveBeenCalledTimes(1);
-    expect(mockAddQuotes).toHaveBeenCalledWith([
-      { quote: 'Recent Quote 1', author: 'Author 1' },
-      { quote: 'Recent Quote 2', author: 'Author 2' },
-      { quote: 'Recent Quote 3', author: 'Author 3' },
-    ]);
+    expect(mockGetQuote).toHaveBeenCalledWith(
+      '/api/v1/quotes/search',
+      'Recent Quotes',
+      mockClient,
+      mockInteraction
+    );
     expect(result).toBe('Mocked Quote Embed');
   });
 
   test('should return an error if more than 5 quotes are requested', async () => {
     (mockInteraction.options.getInteger as jest.Mock).mockReturnValueOnce(6);
+    (mockInteraction.options.getBoolean as jest.Mock).mockReturnValueOnce(null);
+    mockGetQuote.mockResolvedValueOnce('Mocked Error Embed');
 
-    await quotedbGetCommand.execute(mockInteraction, mockClient);
+    const result = await quotedbGetCommand.execute(mockInteraction, mockClient);
 
-    expect(mockBuildError).toHaveBeenCalledWith(
-      mockInteraction,
-      new Error("You can only request up to 5 quotes at a time.")
+    expect(mockQuoteBuilder).toHaveBeenCalledTimes(1);
+    expect(mockGetQuote).toHaveBeenCalledWith(
+      '/api/v1/quotes/search',
+      'Recent Quotes',
+      mockClient,
+      mockInteraction
     );
-    expect(mockCallerGet).not.toHaveBeenCalled();
+    expect(result).toBe('Mocked Error Embed');
   });
 
   test('should return an empty quote embed if no quotes are found', async () => {
     (mockInteraction.options.getInteger as jest.Mock).mockReturnValueOnce(1);
-    mockCallerGet.mockResolvedValueOnce({ quotes: [] });
+    (mockInteraction.options.getBoolean as jest.Mock).mockReturnValueOnce(null);
+    mockGetQuote.mockResolvedValueOnce('Mocked Error Embed');
 
     const result = await quotedbGetCommand.execute(mockInteraction, mockClient);
 
-    expect(mockBuildError).toHaveBeenCalledWith(
-      mockInteraction,
-      expect.objectContaining({ message: "No quotes found." })
+    expect(mockQuoteBuilder).toHaveBeenCalledTimes(1);
+    expect(mockGetQuote).toHaveBeenCalledWith(
+      '/api/v1/quotes/search',
+      'Recent Quotes',
+      mockClient,
+      mockInteraction
     );
     expect(result).toBe('Mocked Error Embed');
   });
 
   test('should handle API errors', async () => {
     (mockInteraction.options.getInteger as jest.Mock).mockReturnValueOnce(1);
+    (mockInteraction.options.getBoolean as jest.Mock).mockReturnValueOnce(null);
     const mockError = new Error('API Error');
-    mockCallerGet.mockRejectedValueOnce(mockError);
+    mockGetQuote.mockRejectedValueOnce(mockError);
 
-    await quotedbGetCommand.execute(mockInteraction, mockClient);
-
-    expect(mockBuildError).toHaveBeenCalledWith(
-      mockInteraction,
-      mockError
-    );
+    await expect(quotedbGetCommand.execute(mockInteraction, mockClient)).rejects.toThrow('API Error');
   });
 });
