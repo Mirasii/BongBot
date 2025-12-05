@@ -52,7 +52,16 @@ jest.unstable_mockModule('discord.js', () => ({
     EmbedBuilder: mockEmbedBuilderConstructor,
     Colors: {
         Purple: 10181046,
+        Red: 16711680,
     },
+    MessageFlags: {
+        Ephemeral: 1 << 6,
+    },
+    AttachmentBuilder: jest.fn(),
+    Client: jest.fn(),
+    Collection: jest.fn(),
+    ChatInputCommandInteraction: jest.fn(),
+    CommandInteraction: jest.fn(),
 }));
 
 // Import after mocks are set up
@@ -120,5 +129,176 @@ describe('QuoteBuilder class', () => {
             embeds: [expect.any(MockEmbedBuilder)],
         });
         expect(mockClient.user?.displayAvatarURL).toHaveBeenCalled();
+    });
+});
+
+describe('QuoteBuilder getQuote method', () => {
+    // Mock the config module
+    const mockApis = {
+        quotedb: {
+            url: 'https://quotes.elmu.dev',
+            apikey: 'test_api_key',
+            user_id: 'test_user_id',
+        },
+    };
+
+    const mockCallerGet = jest.fn<() => Promise<any>>();
+    const mockBuildError = jest.fn<() => Promise<string>>().mockResolvedValue('Mocked Error Embed');
+
+    beforeEach(() => {
+        mockEmbedBuilderConstructor.mockClear();
+        mockCallerGet.mockClear();
+        mockBuildError.mockClear();
+    });
+
+    test('should return error when more than 5 quotes requested', async () => {
+        // Need to re-import with mocked dependencies
+        jest.unstable_mockModule('../../src/config/index.js', () => ({
+            apis: mockApis,
+        }));
+
+        jest.unstable_mockModule('../../src/helpers/caller.js', () => ({
+            default: {
+                get: mockCallerGet,
+            },
+        }));
+
+        jest.unstable_mockModule('../../src/helpers/errorBuilder.js', () => ({
+            buildError: mockBuildError,
+        }));
+
+        const { default: QuoteBuilderWithMocks } = await import('../../src/helpers/quoteBuilder.js?cacheBust=1');
+
+        const builder = new QuoteBuilderWithMocks();
+        const mockInteraction = {
+            options: {
+                getInteger: jest.fn(() => 6),
+                getBoolean: jest.fn(() => null),
+            },
+            guild: {
+                id: 'test_guild_id',
+            },
+        } as any;
+
+        const mockClient = {
+            user: {
+                displayAvatarURL: jest.fn(() => 'http://example.com/bot_avatar.jpg'),
+            },
+        } as unknown as ExtendedClient;
+
+        const result = await builder.getQuote('/api/v1/quotes/random', 'Random Quotes', mockClient, mockInteraction);
+
+        expect(mockBuildError).toHaveBeenCalledWith(
+            mockInteraction,
+            expect.objectContaining({ message: 'You can only request up to 5 quotes at a time.' })
+        );
+        expect(mockCallerGet).not.toHaveBeenCalled();
+        expect(result).toBe('Mocked Error Embed');
+    });
+
+    test('should return error when no quotes found', async () => {
+        mockCallerGet.mockResolvedValueOnce({ quotes: [] });
+
+        const { default: QuoteBuilderWithMocks } = await import('../../src/helpers/quoteBuilder.js?cacheBust=2');
+
+        const builder = new QuoteBuilderWithMocks();
+        const mockInteraction = {
+            options: {
+                getInteger: jest.fn(() => 1),
+                getBoolean: jest.fn(() => null),
+            },
+            guild: {
+                id: 'test_guild_id',
+            },
+        } as any;
+
+        const mockClient = {
+            user: {
+                displayAvatarURL: jest.fn(() => 'http://example.com/bot_avatar.jpg'),
+            },
+        } as unknown as ExtendedClient;
+
+        const result = await builder.getQuote('/api/v1/quotes/random', 'Random Quotes', mockClient, mockInteraction);
+
+        expect(mockBuildError).toHaveBeenCalledWith(
+            mockInteraction,
+            expect.objectContaining({ message: 'No quotes found.' })
+        );
+        expect(result).toBe('Mocked Error Embed');
+    });
+
+    test('should successfully fetch and build quotes for server', async () => {
+        mockCallerGet.mockResolvedValueOnce({
+            quotes: [
+                { quote: 'Test Quote 1', author: 'Author 1' },
+                { quote: 'Test Quote 2', author: 'Author 2' },
+            ],
+        });
+
+        const { default: QuoteBuilderWithMocks } = await import('../../src/helpers/quoteBuilder.js?cacheBust=3');
+
+        const builder = new QuoteBuilderWithMocks();
+        const mockInteraction = {
+            options: {
+                getInteger: jest.fn(() => 2),
+                getBoolean: jest.fn(() => true),
+            },
+            guild: {
+                id: 'test_guild_id',
+            },
+        } as any;
+
+        const mockClient = {
+            user: {
+                displayAvatarURL: jest.fn(() => 'http://example.com/bot_avatar.jpg'),
+            },
+        } as unknown as ExtendedClient;
+
+        const result = await builder.getQuote('/api/v1/quotes/random', 'Random Quotes', mockClient, mockInteraction);
+
+        expect(mockCallerGet).toHaveBeenCalledWith(
+            'https://quotes.elmu.dev',
+            '/api/v1/quotes/random/server/test_guild_id',
+            'max_quotes=2',
+            { 'Content-Type': 'application/json', 'Authorization': 'Bearer test_api_key' }
+        );
+        expect(result).toHaveProperty('embeds');
+    });
+
+    test('should successfully fetch and build quotes for user', async () => {
+        mockCallerGet.mockResolvedValueOnce({
+            quotes: [
+                { quote: 'User Quote', author: 'User Author' },
+            ],
+        });
+
+        const { default: QuoteBuilderWithMocks } = await import('../../src/helpers/quoteBuilder.js?cacheBust=4');
+
+        const builder = new QuoteBuilderWithMocks();
+        const mockInteraction = {
+            options: {
+                getInteger: jest.fn(() => null),
+                getBoolean: jest.fn(() => false),
+            },
+            guild: {
+                id: 'test_guild_id',
+            },
+        } as any;
+
+        const mockClient = {
+            user: {
+                displayAvatarURL: jest.fn(() => 'http://example.com/bot_avatar.jpg'),
+            },
+        } as unknown as ExtendedClient;
+
+        const result = await builder.getQuote('/api/v1/quotes/search', 'Recent Quotes', mockClient, mockInteraction);
+
+        expect(mockCallerGet).toHaveBeenCalledWith(
+            'https://quotes.elmu.dev',
+            '/api/v1/quotes/search/user/test_user_id',
+            'max_quotes=1',
+            { 'Content-Type': 'application/json', 'Authorization': 'Bearer test_api_key' }
+        );
+        expect(result).toHaveProperty('embeds');
     });
 });

@@ -6,24 +6,6 @@ import { buildError, buildUnknownError } from '../helpers/errorBuilder.js';
 
 const API = apis.quotedb;
 
-async function createQuote(quote: string, author: string, client: Client) {
-    const response = await CALLER.post(
-        API.url,
-        '/api/v1/quotes',
-        { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API.apikey}` },
-        {
-            quote: quote,
-            author: author,
-            user_id: API.user_id,
-            date: new Date().toLocaleString()
-        }
-    );
-    return new QuoteBuilder()
-        .setTitle(`New Quote Created`)
-        .addQuotes([response.quote])
-        .build(client);
-}
-
 export default {
     data: new SlashCommandBuilder()
         .setName('create_quote')
@@ -34,7 +16,8 @@ export default {
         try {
             const quote = interaction.options.getString('quote', true);
             const author = interaction.options.getString('author', true);
-            return await createQuote(quote, author, client);
+            const server: Server = { id: interaction?.guild?.id, name: interaction?.guild?.name };
+            return await createQuote(quote, author, client, server);
         } catch (error) {
             return await buildError(interaction, error);
         }
@@ -47,7 +30,8 @@ export default {
 
             const quoteText = repliedToMessage.content;
             const authorDisplayName = repliedToMessage.member?.displayName ?? repliedToMessage.author.username;
-            return await createQuote(quoteText, authorDisplayName, client);
+            const server: Server = { id: message?.guild?.id, name: message?.guild?.name }
+            return await createQuote(quoteText, authorDisplayName, client, server);
         } catch (error) {
             return await buildUnknownError(error);
         }
@@ -56,4 +40,28 @@ export default {
         options: [],
         description: "Adds a Quote to quotes.elmu.dev."
     }
+}
+
+async function createQuote(quote: string, author: string, client: Client, server: Server) {
+    const response = await CALLER.post(
+        API.url,
+        '/api/v1/quotes',
+        { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API.apikey}` },
+        {
+            quote: quote,
+            author: author,
+            user_id: API.user_id,
+            date: new Date().toLocaleString(),
+            server: server
+        }
+    );
+    return new QuoteBuilder()
+        .setTitle(`New Quote Created`)
+        .addQuotes([response.quote])
+        .build(client);
+}
+
+interface Server {
+    id?: string,
+    name?: string
 }
