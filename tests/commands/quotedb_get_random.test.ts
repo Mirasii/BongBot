@@ -171,7 +171,10 @@ describe('quotedb_get_random command execution', () => {
     const mockError = new Error('API Error');
     mockGetQuote.mockRejectedValueOnce(mockError);
 
-    await expect(quotedbGetRandomCommand.execute(mockInteraction, mockClient)).rejects.toThrow('API Error');
+    const result = await quotedbGetRandomCommand.execute(mockInteraction, mockClient);
+
+    expect(mockBuildError).toHaveBeenCalledWith(mockInteraction, mockError);
+    expect(result).toBe('Mocked Error Embed');
   });
 
   test('should handle errors from QuoteBuilder constructor', async () => {
