@@ -173,4 +173,16 @@ describe('quotedb_get command execution', () => {
 
     await expect(quotedbGetCommand.execute(mockInteraction, mockClient)).rejects.toThrow('API Error');
   });
+
+  test('should handle errors from QuoteBuilder constructor', async () => {
+    const mockError = new Error('Constructor Error');
+    mockQuoteBuilder.mockImplementationOnce(() => {
+      throw mockError;
+    });
+
+    const result = await quotedbGetCommand.execute(mockInteraction, mockClient);
+
+    expect(mockBuildError).toHaveBeenCalledWith(mockInteraction, mockError);
+    expect(result).toBe('Mocked Error Embed');
+  });
 });

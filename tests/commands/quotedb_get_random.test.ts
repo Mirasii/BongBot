@@ -173,4 +173,16 @@ describe('quotedb_get_random command execution', () => {
 
     await expect(quotedbGetRandomCommand.execute(mockInteraction, mockClient)).rejects.toThrow('API Error');
   });
+
+  test('should handle errors from QuoteBuilder constructor', async () => {
+    const mockError = new Error('Constructor Error');
+    mockQuoteBuilder.mockImplementationOnce(() => {
+      throw mockError;
+    });
+
+    const result = await quotedbGetRandomCommand.execute(mockInteraction, mockClient);
+
+    expect(mockBuildError).toHaveBeenCalledWith(mockInteraction, mockError);
+    expect(result).toBe('Mocked Error Embed');
+  });
 });
