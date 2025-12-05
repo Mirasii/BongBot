@@ -11,7 +11,7 @@ export default {
         .setContexts([InteractionContextType.Guild]),
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
         try {
-            return new QuoteBuilder().getQuote('/api/v1/quotes/random', 'Random Quotes', client, interaction);
+            return await new QuoteBuilder().getQuote('/api/v1/quotes/random', 'Random Quotes', client, interaction);
         } catch (error) {
             return await buildError(interaction, error);
         }
