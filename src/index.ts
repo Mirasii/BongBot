@@ -1,5 +1,5 @@
 import { Client, GatewayIntentBits, Collection, ActivityType } from 'discord.js';
-import type { Message, MessageReplyOptions, InteractionReplyOptions, CommandInteraction, Interaction, ApplicationCommandDataResolvable, ButtonInteraction } from 'discord.js';
+import type { Message, MessageReplyOptions, InteractionReplyOptions, CommandInteraction, Interaction, ApplicationCommandDataResolvable } from 'discord.js';
 import type { ExtendedClient } from './helpers/interfaces.ts';
 import LOGGER from './helpers/logging.js';
 import crypto from 'crypto';
@@ -23,12 +23,12 @@ const commands: Array<ApplicationCommandDataResolvable> = buildCommands(bot);
 
 /** respond to slash commands */
 bot.on('interactionCreate', async (interaction: Interaction) => {
-    if (!interaction.isCommand() && !interaction.isButton()) { return; }
-    interaction as CommandInteraction;
+    if (!interaction.isCommand() && !interaction.isMessageComponent()) { return; }
     try {
-        if (interaction.isButton()) {
-            return await handleButtons(interaction as ButtonInteraction);
+        if (interaction.isMessageComponent()) {
+            return await handleButtons(interaction);
         }
+        interaction as CommandInteraction;
         const command = bot.commands!.get(interaction.commandName);
         if (!command) return;
         await interaction.deferReply();
@@ -38,6 +38,7 @@ bot.on('interactionCreate', async (interaction: Interaction) => {
         }
         await interaction.followUp(response);
     } catch (error) {
+        interaction as CommandInteraction;
         if (interaction.replied) { await interaction.deleteReply(); }
         await interaction.followUp(await buildUnknownError(error) as InteractionReplyOptions);
     }
