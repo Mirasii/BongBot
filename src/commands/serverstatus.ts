@@ -148,7 +148,7 @@ export default {
         embed.addFields({ 
           name: server.attributes.name, 
           value: value, 
-          inline: true 
+          inline: false 
         });
       });
 
