@@ -23,9 +23,17 @@ const commands: Array<ApplicationCommandDataResolvable> = buildCommands(bot);
 
 /** respond to slash commands */
 bot.on('interactionCreate', async (interaction: Interaction) => {
-    if (!interaction.isCommand()) { return; }
-    interaction as CommandInteraction;
     try {
+        if (interaction.isButton() && interaction.customId.startsWith('server_control:')) {
+            const command = bot.commands!.get('serverstatus');
+            if (!command || !('handleButton' in command)) return;
+            await interaction.deferReply({ ephemeral: true });
+            const response = await (command as any).handleButton(interaction);
+            if (response) { await interaction.followUp(response); }
+            return;
+        }
+        if (!interaction.isCommand()) { return; }
+        interaction as CommandInteraction;
         const command = bot.commands!.get(interaction.commandName);
         if (!command) return;
         await interaction.deferReply();
