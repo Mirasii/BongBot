@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder, ChatInputCommandInteraction } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, ChatInputCommandInteraction, InteractionReplyOptions } from 'discord.js';
 
 // Configuration
 const PTERODACTYL_URL = process.env.PTERODACTYL_URL || 'http://localhost';
@@ -102,20 +102,18 @@ export default {
     .setName('serverstatus')
     .setDescription('Check the status of all game servers'),
 
-  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    await interaction.deferReply();
+  async execute(interaction: ChatInputCommandInteraction): Promise<InteractionReplyOptions> {
+    // Note: deferReply is called in the main bot file, so we don't call it here
 
     if (!PTERODACTYL_API_KEY) {
-      await interaction.editReply('❌ Pterodactyl API key is not configured.');
-      return;
+      return { content: '❌ Pterodactyl API key is not configured.' };
     }
 
     try {
       const servers = await fetchServers();
 
       if (!servers || servers.length === 0) {
-        await interaction.editReply('No servers found on the panel.');
-        return;
+        return { content: 'No servers found on the panel.' };
       }
 
       // Fetch resources for all servers in parallel
@@ -154,11 +152,11 @@ export default {
         });
       });
 
-      await interaction.editReply({ embeds: [embed] });
+      return { embeds: [embed] };
 
     } catch (error) {
       console.error('Error fetching server status:', error);
-      await interaction.editReply('❌ Failed to fetch server status. Please check the bot logs.');
+      return { content: '❌ Failed to fetch server status. Please check the bot logs.' };
     }
   }
 };
