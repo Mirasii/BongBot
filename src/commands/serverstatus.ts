@@ -29,7 +29,7 @@ interface ApiResponse<T> {
 }
 
 async function fetchServers(): Promise<PterodactylServer[]> {
-  const response = await fetch(`${PTERODACTYL_URL}/api/application/servers`, {
+  const response = await fetch(`${PTERODACTYL_URL}/api/client`, {
     headers: {
       'Authorization': `Bearer ${PTERODACTYL_API_KEY}`,
       'Content-Type': 'application/json',
