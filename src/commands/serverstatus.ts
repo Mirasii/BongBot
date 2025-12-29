@@ -1,4 +1,14 @@
-import { SlashCommandBuilder, EmbedBuilder, ChatInputCommandInteraction, InteractionReplyOptions } from 'discord.js';
+import { 
+  SlashCommandBuilder, 
+  EmbedBuilder, 
+  ChatInputCommandInteraction, 
+  InteractionReplyOptions,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ButtonInteraction,
+  ComponentType
+} from 'discord.js';
 
 // Configuration
 const PTERODACTYL_URL = process.env.PTERODACTYL_URL || 'http://localhost';
@@ -68,6 +78,27 @@ async function fetchServerResources(identifier: string): Promise<ServerResources
   }
 }
 
+async function sendServerCommand(identifier: string, signal: 'start' | 'stop' | 'restart'): Promise<boolean> {
+  try {
+    const response = await fetch(
+      `${PTERODACTYL_URL}/api/client/servers/${identifier}/power`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${PTERODACTYL_API_KEY}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ signal })
+      }
+    );
+
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 function formatBytes(bytes: number): string {
   return (bytes / 1024 / 1024).toFixed(0);
 }
@@ -95,6 +126,64 @@ function getStatusEmoji(state: string): string {
     default:
       return '⚪';
   }
+}
+
+function createControlButtons(servers: PterodactylServer[], resources: (ServerResources | null)[]): ActionRowBuilder<ButtonBuilder>[] {
+  const rows: ActionRowBuilder<ButtonBuilder>[] = [];
+  
+  for (let i = 0; i < servers.length; i += 5) {
+    const row = new ActionRowBuilder<ButtonBuilder>();
+    const chunk = servers.slice(i, i + 5);
+    
+    chunk.forEach((server, index) => {
+      const globalIndex = i + index;
+      const state = resources[globalIndex]?.attributes.current_state || 'unknown';
+      const serverName = server.attributes.name.length > 20 
+        ? server.attributes.name.substring(0, 17) + '...'
+        : server.attributes.name;
+      
+      // Different button based on state
+      if (state === 'running') {
+        row.addComponents(
+          new ButtonBuilder()
+            .setCustomId(`server_control:${server.attributes.identifier}:restart`)
+            .setLabel(`🔄 ${serverName}`)
+            .setStyle(ButtonStyle.Primary)
+        );
+      } else if (state === 'offline') {
+        row.addComponents(
+          new ButtonBuilder()
+            .setCustomId(`server_control:${server.attributes.identifier}:start`)
+            .setLabel(`▶️ ${serverName}`)
+            .setStyle(ButtonStyle.Success)
+        );
+      } else {
+        row.addComponents(
+          new ButtonBuilder()
+            .setCustomId(`server_control:${server.attributes.identifier}:${state}`)
+            .setLabel(`⏸️ ${serverName}`)
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(true)
+        );
+      }
+    });
+    
+    rows.push(row);
+  }
+  
+  // Add stop all button if any servers are running
+  const anyRunning = resources.some(r => r?.attributes.current_state === 'running');
+  if (anyRunning) {
+    const stopRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setCustomId('server_control:all:stop')
+        .setLabel('⏹️ Stop All Servers')
+        .setStyle(ButtonStyle.Danger)
+    );
+    rows.push(stopRow);
+  }
+  
+  return rows;
 }
 
 export default {
@@ -152,11 +241,106 @@ export default {
         });
       });
 
-      return { embeds: [embed] };
+      // Create control buttons
+      const buttons = createControlButtons(servers, resources);
+
+      return { 
+        embeds: [embed],
+        components: buttons
+      };
 
     } catch (error) {
       console.error('Error fetching server status:', error);
       return { content: '❌ Failed to fetch server status. Please check the bot logs.' };
     }
+  },
+
+  // Handle button interactions
+  async handleButton(interaction: ButtonInteraction): Promise<void> {
+    const [, identifier, action] = interaction.customId.split(':');
+    
+    await interaction.deferUpdate();
+
+    if (identifier === 'all' && action === 'stop') {
+      // Stop all servers
+      const servers = await fetchServers();
+      const stopPromises = servers.map(server => 
+        sendServerCommand(server.attributes.identifier, 'stop')
+      );
+      await Promise.all(stopPromises);
+      
+      await interaction.followUp({ 
+        content: '⏹️ Stopping all servers...', 
+        ephemeral: true 
+      });
+    } else {
+      // Single server control
+      const success = await sendServerCommand(identifier, action as 'start' | 'stop' | 'restart');
+      
+      if (success) {
+        const actionText = action === 'start' ? '▶️ Starting' : 
+                          action === 'stop' ? '⏹️ Stopping' : 
+                          '🔄 Restarting';
+        await interaction.followUp({ 
+          content: `${actionText} server...`, 
+          ephemeral: true 
+        });
+      } else {
+        await interaction.followUp({ 
+          content: '❌ Failed to control server.', 
+          ephemeral: true 
+        });
+      }
+    }
+
+    // Refresh the status after a short delay
+    setTimeout(async () => {
+      try {
+        const servers = await fetchServers();
+        const resourcePromises = servers.map(server => 
+          fetchServerResources(server.attributes.identifier)
+        );
+        const resources = await Promise.all(resourcePromises);
+
+        const embed = new EmbedBuilder()
+          .setColor('#0099ff')
+          .setTitle('🎮 Game Server Status')
+          .setTimestamp();
+
+        servers.forEach((server, index) => {
+          const resource = resources[index];
+          const state = resource?.attributes.current_state || 'unknown';
+          const statusEmoji = getStatusEmoji(state);
+          
+          let value = `${statusEmoji} **Status:** ${state}`;
+          
+          if (resource && state === 'running') {
+            const res = resource.attributes.resources;
+            const memoryMB = formatBytes(res.memory_bytes);
+            const cpuPercent = res.cpu_absolute.toFixed(1);
+            const uptime = formatUptime(res.uptime);
+            
+            value += `\n💾 **Memory:** ${memoryMB} MB`;
+            value += `\n⚡ **CPU:** ${cpuPercent}%`;
+            value += `\n⏱️ **Uptime:** ${uptime}`;
+          }
+          
+          embed.addFields({ 
+            name: server.attributes.name, 
+            value: value, 
+            inline: false 
+          });
+        });
+
+        const buttons = createControlButtons(servers, resources);
+
+        await interaction.editReply({ 
+          embeds: [embed],
+          components: buttons
+        });
+      } catch (error) {
+        console.error('Error refreshing status:', error);
+      }
+    }, 3000);
   }
 };
