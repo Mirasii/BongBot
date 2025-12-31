@@ -143,30 +143,23 @@ function createControlButtons(servers: PterodactylServer[], resources: (ServerRe
         ? server.attributes.name.substring(0, 17) + '...'
         : server.attributes.name;
 
-      // Different button based on state
-      if (state === 'running') {
-        row.addComponents(
-          new ButtonBuilder()
-            .setCustomId(`server_control:${server.attributes.identifier}:restart`)
-            .setLabel(`🔄 ${serverName}`)
-            .setStyle(ButtonStyle.Primary)
-        );
-      } else if (state === 'offline') {
-        row.addComponents(
-          new ButtonBuilder()
-            .setCustomId(`server_control:${server.attributes.identifier}:start`)
-            .setLabel(`▶️ ${serverName}`)
-            .setStyle(ButtonStyle.Success)
-        );
-      } else {
-        row.addComponents(
-          new ButtonBuilder()
-            .setCustomId(`server_control:${server.attributes.identifier}:${state}`)
-            .setLabel(`⏸️ ${serverName}`)
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(true)
-        );
-      }
+      const idType = {
+        'running': 'restart',
+        'offline': 'start'
+      }[state] || state;
+      
+      const bStyle = {
+        'running': ButtonStyle.Primary,
+        'offline': ButtonStyle.Success,
+      }[state] || ButtonStyle.Secondary;
+
+      row.addComponents(
+        new ButtonBuilder()
+          .setCustomId(`server_control:${server.attributes.identifier}:${idType}`)
+          .setLabel(`${serverName} Status`)
+          .setStyle(bStyle)
+          .setDisabled(state !== 'running' && state !== 'offline')
+      );
     });
 
     rows.push(row);
