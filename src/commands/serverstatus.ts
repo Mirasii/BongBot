@@ -312,7 +312,10 @@ const command = {
           }
         }
 
-        // Refresh the status after a short delay
+        // Refresh the status after a delay to allow Pterodactyl to update
+        // Use longer delay for stop/start actions as they take time to propagate
+        const delay = (action === 'stop' || action === 'start') ? 8000 : 5000;
+        
         setTimeout(async () => {
           try {
             const servers = await fetchServers();
@@ -324,6 +327,7 @@ const command = {
             const embed = new EmbedBuilder()
               .setColor('#0099ff')
               .setTitle('🎮 Game Server Status')
+              .setDescription('*Last updated: ' + new Date().toLocaleTimeString() + '*')
               .setTimestamp();
 
             servers.forEach((server, index) => {
@@ -360,7 +364,7 @@ const command = {
           } catch (error) {
             console.error('Error refreshing status:', error);
           }
-        }, 3000);
+        }, delay);
       } catch (error) {
         console.error('Button interaction error:', error);
         await buttonInteraction.followUp({
