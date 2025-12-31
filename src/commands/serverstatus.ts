@@ -1,7 +1,7 @@
-import { 
-  SlashCommandBuilder, 
-  EmbedBuilder, 
-  ChatInputCommandInteraction, 
+import {
+  SlashCommandBuilder,
+  EmbedBuilder,
+  ChatInputCommandInteraction,
   InteractionReplyOptions,
   ActionRowBuilder,
   ButtonBuilder,
@@ -106,7 +106,7 @@ function formatBytes(bytes: number): string {
 function formatUptime(milliseconds: number): string {
   const minutes = Math.floor(milliseconds / 60000);
   const hours = Math.floor(minutes / 60);
-  
+
   if (hours > 0) {
     return `${hours}h ${minutes % 60}m`;
   }
@@ -130,18 +130,18 @@ function getStatusEmoji(state: string): string {
 
 function createControlButtons(servers: PterodactylServer[], resources: (ServerResources | null)[]): ActionRowBuilder<ButtonBuilder>[] {
   const rows: ActionRowBuilder<ButtonBuilder>[] = [];
-  
+
   for (let i = 0; i < servers.length; i += 5) {
     const row = new ActionRowBuilder<ButtonBuilder>();
     const chunk = servers.slice(i, i + 5);
-    
+
     chunk.forEach((server, index) => {
       const globalIndex = i + index;
       const state = resources[globalIndex]?.attributes.current_state || 'unknown';
-      const serverName = server.attributes.name.length > 20 
+      const serverName = server.attributes.name.length > 20
         ? server.attributes.name.substring(0, 17) + '...'
         : server.attributes.name;
-      
+
       // Different button based on state
       if (state === 'running') {
         row.addComponents(
@@ -167,10 +167,10 @@ function createControlButtons(servers: PterodactylServer[], resources: (ServerRe
         );
       }
     });
-    
+
     rows.push(row);
   }
-  
+
   // Add stop all button if any servers are running
   const anyRunning = resources.some(r => r?.attributes.current_state === 'running');
   if (anyRunning) {
@@ -182,7 +182,7 @@ function createControlButtons(servers: PterodactylServer[], resources: (ServerRe
     );
     rows.push(stopRow);
   }
-  
+
   return rows;
 }
 
@@ -206,7 +206,7 @@ export default {
       }
 
       // Fetch resources for all servers in parallel
-      const resourcePromises = servers.map(server => 
+      const resourcePromises = servers.map(server =>
         fetchServerResources(server.attributes.identifier)
       );
       const resources = await Promise.all(resourcePromises);
@@ -220,31 +220,40 @@ export default {
         const resource = resources[index];
         const state = resource?.attributes.current_state || 'unknown';
         const statusEmoji = getStatusEmoji(state);
-        
+
         let value = `${statusEmoji} **Status:** ${state}`;
-        
+
         if (resource && state === 'running') {
           const res = resource.attributes.resources;
           const memoryMB = formatBytes(res.memory_bytes);
           const cpuPercent = res.cpu_absolute.toFixed(1);
           const uptime = formatUptime(res.uptime);
-          
+
           value += `\n💾 **Memory:** ${memoryMB} MB`;
           value += `\n⚡ **CPU:** ${cpuPercent}%`;
           value += `\n⏱️ **Uptime:** ${uptime}`;
         }
-        
-        embed.addFields({ 
-          name: server.attributes.name, 
-          value: value, 
-          inline: false 
+
+        embed.addFields({
+          name: server.attributes.name,
+          value: value,
+          inline: false
         });
       });
 
       // Create control buttons
       const buttons = createControlButtons(servers, resources);
+      const collector = interaction.channel?.createMessageComponentCollector({ time: 3500 });
+      collector?.on('collect', async (i: ButtonInteraction) => {
+        if (i.user.id !== interaction.user.id) {
+          await i.reply({ content: '❌ You cannot control servers for another user.', ephemeral: true });
+          return;
+        }
+        await this.handleButton(i);
+      });
 
-      return { 
+
+      return {
         embeds: [embed],
         components: buttons
       };
@@ -258,37 +267,37 @@ export default {
   // Handle button interactions
   async handleButton(interaction: ButtonInteraction): Promise<void> {
     const [, identifier, action] = interaction.customId.split(':');
-    
+
     await interaction.deferUpdate();
 
     if (identifier === 'all' && action === 'stop') {
       // Stop all servers
       const servers = await fetchServers();
-      const stopPromises = servers.map(server => 
+      const stopPromises = servers.map(server =>
         sendServerCommand(server.attributes.identifier, 'stop')
       );
       await Promise.all(stopPromises);
-      
-      await interaction.followUp({ 
-        content: '⏹️ Stopping all servers...', 
-        ephemeral: true 
+
+      await interaction.followUp({
+        content: '⏹️ Stopping all servers...',
+        ephemeral: true
       });
     } else {
       // Single server control
       const success = await sendServerCommand(identifier, action as 'start' | 'stop' | 'restart');
-      
+
       if (success) {
-        const actionText = action === 'start' ? '▶️ Starting' : 
-                          action === 'stop' ? '⏹️ Stopping' : 
-                          '🔄 Restarting';
-        await interaction.followUp({ 
-          content: `${actionText} server...`, 
-          ephemeral: true 
+        const actionText = action === 'start' ? '▶️ Starting' :
+          action === 'stop' ? '⏹️ Stopping' :
+            '🔄 Restarting';
+        await interaction.followUp({
+          content: `${actionText} server...`,
+          ephemeral: true
         });
       } else {
-        await interaction.followUp({ 
-          content: '❌ Failed to control server.', 
-          ephemeral: true 
+        await interaction.followUp({
+          content: '❌ Failed to control server.',
+          ephemeral: true
         });
       }
     }
@@ -297,7 +306,7 @@ export default {
     setTimeout(async () => {
       try {
         const servers = await fetchServers();
-        const resourcePromises = servers.map(server => 
+        const resourcePromises = servers.map(server =>
           fetchServerResources(server.attributes.identifier)
         );
         const resources = await Promise.all(resourcePromises);
@@ -311,30 +320,30 @@ export default {
           const resource = resources[index];
           const state = resource?.attributes.current_state || 'unknown';
           const statusEmoji = getStatusEmoji(state);
-          
+
           let value = `${statusEmoji} **Status:** ${state}`;
-          
+
           if (resource && state === 'running') {
             const res = resource.attributes.resources;
             const memoryMB = formatBytes(res.memory_bytes);
             const cpuPercent = res.cpu_absolute.toFixed(1);
             const uptime = formatUptime(res.uptime);
-            
+
             value += `\n💾 **Memory:** ${memoryMB} MB`;
             value += `\n⚡ **CPU:** ${cpuPercent}%`;
             value += `\n⏱️ **Uptime:** ${uptime}`;
           }
-          
-          embed.addFields({ 
-            name: server.attributes.name, 
-            value: value, 
-            inline: false 
+
+          embed.addFields({
+            name: server.attributes.name,
+            value: value,
+            inline: false
           });
         });
 
         const buttons = createControlButtons(servers, resources);
 
-        await interaction.editReply({ 
+        await interaction.editReply({
           embeds: [embed],
           components: buttons
         });
