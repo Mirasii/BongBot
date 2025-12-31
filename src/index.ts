@@ -95,18 +95,6 @@ const postDeploymentMessage = async () => {
     
 };
 
-async function handleButtons(interaction: Interaction) {
-    if (!interaction.isButton()) { return; }
-    if (!interaction.customId.startsWith('server_control:')) { return; }
-    const command = bot.commands!.get('serverstatus');
-    if (!command || !('handleButton' in command)) return;
-    await interaction.deferReply({ ephemeral: true });
-    const response = await (command as any).handleButton(interaction);
-    if (response) { await interaction.followUp(response); }
-    return true;
-}
-
-
 /** login to bot */
 bot.login(token);
 console.log('BongBot Online!');
