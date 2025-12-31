@@ -187,6 +187,108 @@ function createControlButtons(servers: PterodactylServer[], resources: (ServerRe
   return rows;
 }
 
+// Poll server status until expected state is reached
+async function pollUntilStateChange(
+  buttonInteraction: ButtonInteraction,
+  identifiers: string[],
+  expectedState: string,
+  maxAttempts: number = 30, // 30 attempts = up to 60 seconds
+  interval: number = 2000 // check every 2 seconds
+): Promise<void> {
+  let attempts = 0;
+
+  const checkStatus = async (): Promise<boolean> => {
+    attempts++;
+    
+    const resourcePromises = identifiers.map(id => fetchServerResources(id));
+    const resources = await Promise.all(resourcePromises);
+
+    // Check if all servers have reached expected state
+    const allReached = resources.every(r => {
+      if (!r) return false;
+      const state = r.attributes.current_state;
+      
+      // For restart, we consider it complete when it's running
+      // For stop, we want offline
+      // For start, we want running
+      return state === expectedState;
+    });
+
+    if (allReached || attempts >= maxAttempts) {
+      // Refresh the full status display
+      await refreshStatus(buttonInteraction);
+      return true;
+    }
+
+    return false;
+  };
+
+  // Poll at intervals
+  const pollInterval = setInterval(async () => {
+    const done = await checkStatus();
+    if (done) {
+      clearInterval(pollInterval);
+    }
+  }, interval);
+
+  // Also check immediately
+  const done = await checkStatus();
+  if (done) {
+    clearInterval(pollInterval);
+  }
+}
+
+// Refresh the entire status display
+async function refreshStatus(buttonInteraction: ButtonInteraction): Promise<void> {
+  try {
+    const servers = await fetchServers();
+    const resourcePromises = servers.map(server =>
+      fetchServerResources(server.attributes.identifier)
+    );
+    const resources = await Promise.all(resourcePromises);
+
+    const embed = new EmbedBuilder()
+      .setColor('#0099ff')
+      .setTitle('🎮 Game Server Status')
+      .setDescription('*Last updated: ' + new Date().toLocaleTimeString() + '*')
+      .setTimestamp();
+
+    servers.forEach((server, index) => {
+      const resource = resources[index];
+      const state = resource?.attributes.current_state || 'unknown';
+      const statusEmoji = getStatusEmoji(state);
+
+      let value = `${statusEmoji} **Status:** ${state}`;
+
+      if (resource && state === 'running') {
+        const res = resource.attributes.resources;
+        const memoryMB = formatBytes(res.memory_bytes);
+        const cpuPercent = res.cpu_absolute.toFixed(1);
+        const uptime = formatUptime(res.uptime);
+
+        value += `\n💾 **Memory:** ${memoryMB} MB`;
+        value += `\n⚡ **CPU:** ${cpuPercent}%`;
+        value += `\n⏱️ **Uptime:** ${uptime}`;
+      }
+
+      embed.addFields({
+        name: server.attributes.name,
+        value: value,
+        inline: false
+      });
+    });
+
+    const buttons = createControlButtons(servers, resources);
+
+    await buttonInteraction.editReply({
+      embeds: [embed],
+      components: buttons
+    });
+  } catch (error) {
+    console.error('Error refreshing status:', error);
+  }
+}
+
 const command = {
   data: new SlashCommandBuilder()
     .setName('serverstatus')
@@ -280,6 +382,23 @@ const command = {
       const [, identifier, action] = buttonInteraction.customId.split(':');
 
       try {
+        // Disable all buttons while processing
+        const disabledButtons = message.components.map(row => {
+          const newRow = new ActionRowBuilder<ButtonBuilder>();
+          row.components.forEach(component => {
+            if (component.type === ComponentType.Button) {
+              newRow.addComponents(
+                ButtonBuilder.from(component).setDisabled(true)
+              );
+            }
+          });
+          return newRow;
+        });
+
+        await buttonInteraction.editReply({
+          components: disabledButtons
+        });
+
         if (identifier === 'all' && action === 'stop') {
           // Stop all servers
           const servers = await fetchServers();
@@ -289,88 +408,50 @@ const command = {
           await Promise.all(stopPromises);
 
           await buttonInteraction.followUp({
-            content: '⏹️ Stopping all servers...',
+            content: '⏹️ Stopping all servers... Status will update automatically.',
             ephemeral: true
           });
+
+          // Poll until all servers are offline
+          await pollUntilStateChange(buttonInteraction, servers.map(s => s.attributes.identifier), 'offline');
         } else {
           // Single server control
           const success = await sendServerCommand(identifier, action as 'start' | 'stop' | 'restart');
 
-          if (success) {
-            const actionText = action === 'start' ? '▶️ Starting' :
-              action === 'stop' ? '⏹️ Stopping' :
-                '🔄 Restarting';
-            await buttonInteraction.followUp({
-              content: `${actionText} server...`,
-              ephemeral: true
-            });
-          } else {
+          if (!success) {
             await buttonInteraction.followUp({
               content: '❌ Failed to control server.',
               ephemeral: true
             });
+            // Re-enable buttons
+            await refreshStatus(buttonInteraction);
+            return;
           }
+
+          const actionText = action === 'start' ? '▶️ Starting' :
+            action === 'stop' ? '⏹️ Stopping' :
+              '🔄 Restarting';
+          
+          const expectedState = action === 'start' ? 'running' :
+            action === 'stop' ? 'offline' :
+              'running'; // restart ends in running
+
+          await buttonInteraction.followUp({
+            content: `${actionText} server... Status will update automatically.`,
+            ephemeral: true
+          });
+
+          // Poll until the expected state is reached
+          await pollUntilStateChange(buttonInteraction, [identifier], expectedState);
         }
-
-        // Refresh the status after a delay to allow Pterodactyl to update
-        // Use longer delay for stop/start actions as they take time to propagate
-        const delay = (action === 'stop' || action === 'start') ? 8000 : 5000;
-        
-        setTimeout(async () => {
-          try {
-            const servers = await fetchServers();
-            const resourcePromises = servers.map(server =>
-              fetchServerResources(server.attributes.identifier)
-            );
-            const resources = await Promise.all(resourcePromises);
-
-            const embed = new EmbedBuilder()
-              .setColor('#0099ff')
-              .setTitle('🎮 Game Server Status')
-              .setDescription('*Last updated: ' + new Date().toLocaleTimeString() + '*')
-              .setTimestamp();
-
-            servers.forEach((server, index) => {
-              const resource = resources[index];
-              const state = resource?.attributes.current_state || 'unknown';
-              const statusEmoji = getStatusEmoji(state);
-
-              let value = `${statusEmoji} **Status:** ${state}`;
-
-              if (resource && state === 'running') {
-                const res = resource.attributes.resources;
-                const memoryMB = formatBytes(res.memory_bytes);
-                const cpuPercent = res.cpu_absolute.toFixed(1);
-                const uptime = formatUptime(res.uptime);
-
-                value += `\n💾 **Memory:** ${memoryMB} MB`;
-                value += `\n⚡ **CPU:** ${cpuPercent}%`;
-                value += `\n⏱️ **Uptime:** ${uptime}`;
-              }
-
-              embed.addFields({
-                name: server.attributes.name,
-                value: value,
-                inline: false
-              });
-            });
-
-            const buttons = createControlButtons(servers, resources);
-
-            await buttonInteraction.editReply({
-              embeds: [embed],
-              components: buttons
-            });
-          } catch (error) {
-            console.error('Error refreshing status:', error);
-          }
-        }, delay);
       } catch (error) {
         console.error('Button interaction error:', error);
         await buttonInteraction.followUp({
           content: '❌ An error occurred processing your request.',
           ephemeral: true
         }).catch(() => { });
+        // Try to re-enable buttons
+        await refreshStatus(buttonInteraction);
       }
     });
 
