@@ -23,12 +23,10 @@ const commands: Array<ApplicationCommandDataResolvable> = buildCommands(bot);
 
 /** respond to slash commands */
 bot.on('interactionCreate', async (interaction: Interaction) => {
-    if (!interaction.isCommand() && !interaction.isMessageComponent()) { return; }
+    if (!interaction.isCommand()) { return; }
+    interaction as CommandInteraction;
+
     try {
-        if (interaction.isMessageComponent()) {
-            return await handleButtons(interaction);
-        }
-        interaction as CommandInteraction;
         const command = bot.commands!.get(interaction.commandName);
         if (!command) return;
         await interaction.deferReply();
@@ -38,7 +36,6 @@ bot.on('interactionCreate', async (interaction: Interaction) => {
         }
         await interaction.followUp(response);
     } catch (error) {
-        interaction as CommandInteraction;
         if (interaction.replied) { await interaction.deleteReply(); }
         await interaction.followUp(await buildUnknownError(error) as InteractionReplyOptions);
     }
