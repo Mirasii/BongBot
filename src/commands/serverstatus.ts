@@ -153,11 +153,15 @@ function createControlButtons(servers: PterodactylServer[], resources: (ServerRe
         'running': ButtonStyle.Primary,
         'offline': ButtonStyle.Success,
       }[state] || ButtonStyle.Secondary;
+      const buttonSymbol = {
+        'running': '🔄',
+        'offline': '▶️'
+      }[state] || '⏸️';
 
       row.addComponents(
         new ButtonBuilder()
           .setCustomId(`server_control:${server.attributes.identifier}:${idType}`)
-          .setLabel(`${serverName} Status`)
+          .setLabel(`${buttonSymbol} ${serverName}`)
           .setStyle(bStyle)
           .setDisabled(state !== 'running' && state !== 'offline')
       );
