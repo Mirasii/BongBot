@@ -186,8 +186,8 @@ async function pollUntilStateChange(
   buttonInteraction: ButtonInteraction,
   identifiers: string[],
   expectedState: string,
-  maxAttempts: number = 30, // 30 attempts = up to 60 seconds
-  interval: number = 2000 // check every 2 seconds
+  maxAttempts: number = 120, // 120 attempts = up to 60 seconds
+  interval: number = 500 // check every 0.5 seconds
 ): Promise<void> {
   let attempts = 0;
 
