@@ -376,8 +376,17 @@ const command = {
 
       // Defer the button update
       await buttonInteraction.deferUpdate();
-
       const [, identifier, action] = buttonInteraction.customId.split(':');
+      const actionText = action === 'start' ? '▶️ Starting' : '🔄 Restarting';
+      const replyMessage = {
+        'stop': '⏹️ Stopping all servers... Status will update automatically.',
+        'start': `${actionText} server... Status will update automatically.`,
+        'restart': `${actionText} server... Status will update automatically.`
+      }[action] || 'Processing your request...';
+      await buttonInteraction.followUp({
+          content: replyMessage,
+          ephemeral: true
+      });
 
       try {
         // Disable all buttons while processing
@@ -405,11 +414,6 @@ const command = {
           );
           await Promise.all(stopPromises);
 
-          await buttonInteraction.followUp({
-            content: '⏹️ Stopping all servers... Status will update automatically.',
-            ephemeral: true
-          });
-
           // Poll until all servers are offline
           await pollUntilStateChange(buttonInteraction, servers.map(s => s.attributes.identifier), 'offline');
         } else {
@@ -425,19 +429,10 @@ const command = {
             await refreshStatus(buttonInteraction);
             return;
           }
-
-          const actionText = action === 'start' ? '▶️ Starting' :
-            action === 'stop' ? '⏹️ Stopping' :
-              '🔄 Restarting';
           
           const expectedState = action === 'start' ? 'running' :
             action === 'stop' ? 'offline' :
               'running'; // restart ends in running
-
-          await buttonInteraction.followUp({
-            content: `${actionText} server... Status will update automatically.`,
-            ephemeral: true
-          });
 
           // Poll until the expected state is reached
           await pollUntilStateChange(buttonInteraction, [identifier], expectedState);
