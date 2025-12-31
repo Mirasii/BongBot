@@ -8,6 +8,7 @@ import {
   ButtonStyle,
   ButtonInteraction,
   ComponentType,
+  APIButtonComponent,
   Message
 } from 'discord.js';
 
@@ -378,7 +379,7 @@ const command = {
         // Disable all buttons while processing
         const disabledButtons = message.components.map(row => {
           const newRow = new ActionRowBuilder<ButtonBuilder>();
-          row.components.forEach(component => {
+          (row as any).components.forEach((component: APIButtonComponent) => {
             if (component.type === ComponentType.Button) {
               newRow.addComponents(
                 ButtonBuilder.from(component).setDisabled(true)
