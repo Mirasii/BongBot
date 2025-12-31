@@ -7,7 +7,8 @@ import {
   ButtonBuilder,
   ButtonStyle,
   ButtonInteraction,
-  ComponentType
+  ComponentType,
+  Message
 } from 'discord.js';
 
 // Configuration
@@ -186,7 +187,7 @@ function createControlButtons(servers: PterodactylServer[], resources: (ServerRe
   return rows;
 }
 
-export default {
+const command = {
   data: new SlashCommandBuilder()
     .setName('serverstatus')
     .setDescription('Check the status of all game servers'),
@@ -243,15 +244,6 @@ export default {
 
       // Create control buttons
       const buttons = createControlButtons(servers, resources);
-      const collector = interaction.channel?.createMessageComponentCollector({ time: 3500 });
-      collector?.on('collect', async (i: ButtonInteraction) => {
-        if (i.user.id !== interaction.user.id) {
-          await i.reply({ content: '❌ You cannot control servers for another user.', ephemeral: true });
-          return;
-        }
-        await this.handleButton(i);
-      });
-
 
       return {
         embeds: [embed],
@@ -264,92 +256,124 @@ export default {
     }
   },
 
-  // Handle button interactions
-  async handleButton(interaction: ButtonInteraction): Promise<void> {
-    const [, identifier, action] = interaction.customId.split(':');
+  // This is called AFTER the message is sent
+  async setupCollector(interaction: ChatInputCommandInteraction, message: Message): Promise<void> {
+    // Create collector on the specific message that was sent
+    const collector = message.createMessageComponentCollector({
+      componentType: ComponentType.Button,
+      time: 600000 // 10 minutes
+    });
 
-    await interaction.deferUpdate();
-
-    if (identifier === 'all' && action === 'stop') {
-      // Stop all servers
-      const servers = await fetchServers();
-      const stopPromises = servers.map(server =>
-        sendServerCommand(server.attributes.identifier, 'stop')
-      );
-      await Promise.all(stopPromises);
-
-      await interaction.followUp({
-        content: '⏹️ Stopping all servers...',
-        ephemeral: true
-      });
-    } else {
-      // Single server control
-      const success = await sendServerCommand(identifier, action as 'start' | 'stop' | 'restart');
-
-      if (success) {
-        const actionText = action === 'start' ? '▶️ Starting' :
-          action === 'stop' ? '⏹️ Stopping' :
-            '🔄 Restarting';
-        await interaction.followUp({
-          content: `${actionText} server...`,
-          ephemeral: true
+    collector.on('collect', async (buttonInteraction: ButtonInteraction) => {
+      // Check if the user clicking is the same as who ran the command
+      if (buttonInteraction.user.id !== interaction.user.id) {
+        await buttonInteraction.reply({ 
+          content: '❌ You cannot control servers for another user.', 
+          ephemeral: true 
         });
-      } else {
-        await interaction.followUp({
-          content: '❌ Failed to control server.',
-          ephemeral: true
-        });
+        return;
       }
-    }
 
-    // Refresh the status after a short delay
-    setTimeout(async () => {
+      // Defer the button update
+      await buttonInteraction.deferUpdate();
+
+      const [, identifier, action] = buttonInteraction.customId.split(':');
+
       try {
-        const servers = await fetchServers();
-        const resourcePromises = servers.map(server =>
-          fetchServerResources(server.attributes.identifier)
-        );
-        const resources = await Promise.all(resourcePromises);
+        if (identifier === 'all' && action === 'stop') {
+          // Stop all servers
+          const servers = await fetchServers();
+          const stopPromises = servers.map(server =>
+            sendServerCommand(server.attributes.identifier, 'stop')
+          );
+          await Promise.all(stopPromises);
 
-        const embed = new EmbedBuilder()
-          .setColor('#0099ff')
-          .setTitle('🎮 Game Server Status')
-          .setTimestamp();
-
-        servers.forEach((server, index) => {
-          const resource = resources[index];
-          const state = resource?.attributes.current_state || 'unknown';
-          const statusEmoji = getStatusEmoji(state);
-
-          let value = `${statusEmoji} **Status:** ${state}`;
-
-          if (resource && state === 'running') {
-            const res = resource.attributes.resources;
-            const memoryMB = formatBytes(res.memory_bytes);
-            const cpuPercent = res.cpu_absolute.toFixed(1);
-            const uptime = formatUptime(res.uptime);
-
-            value += `\n💾 **Memory:** ${memoryMB} MB`;
-            value += `\n⚡ **CPU:** ${cpuPercent}%`;
-            value += `\n⏱️ **Uptime:** ${uptime}`;
-          }
-
-          embed.addFields({
-            name: server.attributes.name,
-            value: value,
-            inline: false
+          await buttonInteraction.followUp({
+            content: '⏹️ Stopping all servers...',
+            ephemeral: true
           });
-        });
+        } else {
+          // Single server control
+          const success = await sendServerCommand(identifier, action as 'start' | 'stop' | 'restart');
 
-        const buttons = createControlButtons(servers, resources);
+          if (success) {
+            const actionText = action === 'start' ? '▶️ Starting' :
+              action === 'stop' ? '⏹️ Stopping' :
+                '🔄 Restarting';
+            await buttonInteraction.followUp({
+              content: `${actionText} server...`,
+              ephemeral: true
+            });
+          } else {
+            await buttonInteraction.followUp({
+              content: '❌ Failed to control server.',
+              ephemeral: true
+            });
+          }
+        }
 
-        await interaction.editReply({
-          embeds: [embed],
-          components: buttons
-        });
+        // Refresh the status after a short delay
+        setTimeout(async () => {
+          try {
+            const servers = await fetchServers();
+            const resourcePromises = servers.map(server =>
+              fetchServerResources(server.attributes.identifier)
+            );
+            const resources = await Promise.all(resourcePromises);
+
+            const embed = new EmbedBuilder()
+              .setColor('#0099ff')
+              .setTitle('🎮 Game Server Status')
+              .setTimestamp();
+
+            servers.forEach((server, index) => {
+              const resource = resources[index];
+              const state = resource?.attributes.current_state || 'unknown';
+              const statusEmoji = getStatusEmoji(state);
+
+              let value = `${statusEmoji} **Status:** ${state}`;
+
+              if (resource && state === 'running') {
+                const res = resource.attributes.resources;
+                const memoryMB = formatBytes(res.memory_bytes);
+                const cpuPercent = res.cpu_absolute.toFixed(1);
+                const uptime = formatUptime(res.uptime);
+
+                value += `\n💾 **Memory:** ${memoryMB} MB`;
+                value += `\n⚡ **CPU:** ${cpuPercent}%`;
+                value += `\n⏱️ **Uptime:** ${uptime}`;
+              }
+
+              embed.addFields({
+                name: server.attributes.name,
+                value: value,
+                inline: false
+              });
+            });
+
+            const buttons = createControlButtons(servers, resources);
+
+            await buttonInteraction.editReply({
+              embeds: [embed],
+              components: buttons
+            });
+          } catch (error) {
+            console.error('Error refreshing status:', error);
+          }
+        }, 3000);
       } catch (error) {
-        console.error('Error refreshing status:', error);
+        console.error('Button interaction error:', error);
+        await buttonInteraction.followUp({
+          content: '❌ An error occurred processing your request.',
+          ephemeral: true
+        }).catch(() => { });
       }
-    }, 3000);
+    });
+
+    collector.on('end', () => {
+      console.log('Server status button collector ended after 10 minutes');
+    });
   }
 };
+
+export default command;
