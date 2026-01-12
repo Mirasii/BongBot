@@ -1,123 +1,85 @@
-import {
-    SlashCommandBuilder,
-    EmbedBuilder,
-    ChatInputCommandInteraction,
-    InteractionReplyOptions,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    ButtonInteraction,
-    ComponentType,
-    APIButtonComponent,
-    Message,
-    StringSelectMenuBuilder,
-    StringSelectMenuInteraction,
-} from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, ChatInputCommandInteraction, ActionRowBuilder, ButtonBuilder, ButtonStyle, ButtonInteraction, ComponentType, APIButtonComponent, Message, StringSelectMenuBuilder, StringSelectMenuInteraction } from 'discord.js';
 import Database from '../../helpers/database.js';
 import { buildError } from '../../helpers/errorBuilder.js';
 
-interface PterodactylServer {
-    attributes: {
-        identifier: string;
-        name: string;
-        description: string;
-    };
-}
-
-interface ServerResources {
-    attributes: {
-        current_state: string;
-        resources: {
-            memory_bytes: number;
-            cpu_absolute: number;
-            disk_bytes: number;
-            uptime: number;
-        };
-    };
-}
-
-interface ApiResponse<T> {
-    data: T[];
-}
-
-const command = {
+export default {
     data: new SlashCommandBuilder()
         .setName('server_status')
-        .setDescription('Check the status of all game servers'),
-
-    async execute(
-        interaction: ChatInputCommandInteraction,
-    ): Promise<InteractionReplyOptions> {
+        .setDescription('Check the status of all game servers')
+        .addStringOption(option => option.setName('server_name').setDescription('Specify which Pterodactyl server to query (required if you have multiple registered)').setRequired(false)),
+    async execute(interaction: ChatInputCommandInteraction) {
         const db = new Database(
             process.env.SERVER_DATABASE || 'pterodactyl.db',
         );
 
         try {
             const userServers = db.getServersByUserId(interaction.user.id);
-
+            db.close();
             if (!userServers || userServers.length === 0) {
-                db.close();
-                return {
-                    content: '❌ You have no registered servers. Use `/register_server` to add one.',
-                    ephemeral: true,
-                };
+                throw new Error('You have no registered servers. Use `/register_server` to add one.');
             }
 
-            // Fetch resources for all registered servers in parallel
-            const serverDataPromises = userServers.map(async (dbServer) => {
-                const servers = await fetchServers(
-                    dbServer.serverUrl,
-                    dbServer.apiKey,
-                );
-                const resourcePromises = servers.map((server) =>
+            const serverName = interaction.options.getString('server_name');
+            if (userServers.length > 1 && !serverName) {
+                const serverList = userServers.map(s => `• ${s.serverName}`).join('\n');
+                throw new Error(`You have multiple registered servers. Please specify which one to query using the \`server_name\` option. Your registered servers:\n\n${serverList}`);
+            }
+
+            // Determine which server to use
+            let selectedServer = userServers.length === 1 ? userServers[0] : userServers.find(s => s.serverName === serverName); 
+            if (!selectedServer) {
+                const serverList = userServers.map(s => `• ${s.serverName}`).join('\n');
+                throw new Error(`No server found with name "${serverName}". Your registered servers:\n\n${serverList}`);
+            }
+
+            // Fetch game servers from the Pterodactyl server
+            const servers = await fetchServers(
+                selectedServer.serverUrl,
+                selectedServer.apiKey,
+            );
+
+            // Fetch resources for all game servers in parallel
+            const resources = await Promise.all(
+                servers.map((server) =>
                     fetchServerResources(
                         server.attributes.identifier,
-                        dbServer.serverUrl,
-                        dbServer.apiKey,
+                        selectedServer.serverUrl,
+                        selectedServer.apiKey,
                     ),
-                );
-                const resources = await Promise.all(resourcePromises);
-                return { servers, resources, dbServer };
-            });
-
-            const allServerData = await Promise.all(serverDataPromises);
-            db.close();
+                ),
+            );
 
             const embed = new EmbedBuilder()
                 .setColor('#0099ff')
                 .setTitle('🎮 Game Server Status')
                 .setTimestamp();
 
-            allServerData.forEach(({ servers, resources, dbServer }) => {
-                servers.forEach((server, index) => {
-                    const resource = resources[index];
-                    const state =
-                        resource?.attributes.current_state || 'unknown';
-                    const statusEmoji = getStatusEmoji(state);
+            servers.forEach((server, index) => {
+                const resource = resources[index];
+                const state = resource?.attributes.current_state || 'unknown';
+                const statusEmoji = getStatusEmoji(state);
 
-                    let value = `${statusEmoji} **Status:** ${state}`;
+                let value = `${statusEmoji} **Status:** ${state}`;
 
-                    if (resource && state === 'running') {
-                        const res = resource.attributes.resources;
-                        const memoryMB = formatBytes(res.memory_bytes);
-                        const cpuPercent = res.cpu_absolute.toFixed(1);
-                        const uptime = formatUptime(res.uptime);
+                if (resource && state === 'running') {
+                    const res = resource.attributes.resources;
+                    const memoryMB = formatBytes(res.memory_bytes);
+                    const cpuPercent = res.cpu_absolute.toFixed(1);
+                    const uptime = formatUptime(res.uptime);
 
-                        value += `\n💾 **Memory:** ${memoryMB} MB`;
-                        value += `\n⚡ **CPU:** ${cpuPercent}%`;
-                        value += `\n⏱️ **Uptime:** ${uptime}`;
-                    }
+                    value += `\n💾 **Memory:** ${memoryMB} MB`;
+                    value += `\n⚡ **CPU:** ${cpuPercent}%`;
+                    value += `\n⏱️ **Uptime:** ${uptime}`;
+                }
 
-                    embed.addFields({
-                        name: `${dbServer.serverName} - ${server.attributes.name}`,
-                        value: value,
-                        inline: false,
-                    });
+                embed.addFields({
+                    name: `${selectedServer.serverName} - ${server.attributes.name}`,
+                    value: value,
+                    inline: false,
                 });
             });
 
-            // Create control components
-            const components = createControlComponents(allServerData);
+            const components = createControlComponents(servers, resources, selectedServer);
 
             return {
                 embeds: [embed],
@@ -125,18 +87,11 @@ const command = {
             };
         } catch (error) {
             db.close();
-            console.error('Error fetching server status:', error);
-            return {
-                content:
-                    '❌ Failed to fetch server status. Please check your registered servers.',
-            };
+            return await buildError(interaction, error);
         }
     },
 
-    async setupCollector(
-        interaction: ChatInputCommandInteraction,
-        message: Message,
-    ): Promise<void> {
+    async setupCollector(interaction: ChatInputCommandInteraction, message: Message): Promise<void> {
         const collector = message.createMessageComponentCollector({
             time: 600000,
         });
@@ -146,8 +101,7 @@ const command = {
             async (componentInteraction: ButtonInteraction | StringSelectMenuInteraction) => {
                 if (componentInteraction.user.id !== interaction.user.id) {
                     await componentInteraction.reply({
-                        content:
-                            '❌ You cannot control servers for another user.',
+                        content: '❌ You cannot control servers for another user.',
                         ephemeral: true,
                     });
                     return;
@@ -160,21 +114,17 @@ const command = {
                 let action: string;
 
                 if (componentInteraction.isStringSelectMenu()) {
-                    // Parse select menu value: dbServerId:identifier:action
                     [dbServerId, identifier, action] = componentInteraction.values[0].split(':');
                 } else {
-                    // Parse button customId (for "Stop All" button)
                     [, dbServerId, identifier, action] = componentInteraction.customId.split(':');
                 }
 
-                const actionText =
-                    action === 'start' ? '▶️ Starting' : '🔄 Restarting';
-                const replyMessage =
-                    {
-                        stop: '⏹️ Stopping all servers... Status will update automatically.',
-                        start: `${actionText} server... Status will update automatically.`,
-                        restart: `${actionText} server... Status will update automatically.`,
-                    }[action] || 'Processing your request...';
+                const actionText = action === 'start' ? '▶️ Starting' : '🔄 Restarting';
+                const replyMessage = {
+                    stop: '⏹️ Stopping all servers... Status will update automatically.',
+                    start: `${actionText} server... Status will update automatically.`,
+                    restart: `${actionText} server... Status will update automatically.`,
+                }[action] || 'Processing your request...';
 
                 await componentInteraction.followUp({
                     content: replyMessage,
@@ -214,7 +164,7 @@ const command = {
                     const dbServer = db.getServerById(parseInt(dbServerId));
                     db.close();
 
-                    if (!dbServer) {
+                    if (!dbServer || !dbServer.id) {
                         await componentInteraction.followUp({
                             content: '❌ Server configuration not found.',
                             ephemeral: true,
@@ -243,6 +193,7 @@ const command = {
                             'offline',
                             dbServer.serverUrl,
                             dbServer.apiKey,
+                            dbServer.id,
                         );
                     } else {
                         const success = await sendServerCommand(
@@ -259,17 +210,12 @@ const command = {
                             });
                             await refreshStatus(
                                 componentInteraction,
-                                interaction.user.id,
+                                dbServer.id,
                             );
                             return;
                         }
 
-                        const expectedState =
-                            action === 'start'
-                                ? 'running'
-                                : action === 'stop'
-                                  ? 'offline'
-                                  : 'running';
+                        const expectedState = action === 'start' ? 'running' : action === 'stop' ? 'offline' : 'running';
 
                         await pollUntilStateChange(
                             componentInteraction,
@@ -277,6 +223,7 @@ const command = {
                             expectedState,
                             dbServer.serverUrl,
                             dbServer.apiKey,
+                            dbServer.id,
                         );
                     }
                 } catch (error) {
@@ -287,23 +234,20 @@ const command = {
                             ephemeral: true,
                         })
                         .catch(() => {});
-                    await refreshStatus(componentInteraction, interaction.user.id);
+                    if (dbServerId) {
+                        await refreshStatus(componentInteraction, parseInt(dbServerId));
+                    }
                 }
             },
         );
 
         collector.on('end', () => {
-            console.log(
-                'Server status button collector ended after 10 minutes',
-            );
+            console.log('Server status button collector ended after 10 minutes');
         });
     },
 };
 
-async function fetchServers(
-    serverUrl: string,
-    apiKey: string,
-): Promise<PterodactylServer[]> {
+async function fetchServers(serverUrl: string, apiKey: string): Promise<PterodactylServer[]> {
     const response = await fetch(`${serverUrl}/api/client`, {
         headers: {
             Authorization: `Bearer ${apiKey}`,
@@ -320,11 +264,7 @@ async function fetchServers(
     return json.data;
 }
 
-async function fetchServerResources(
-    identifier: string,
-    serverUrl: string,
-    apiKey: string,
-): Promise<ServerResources | null> {
+async function fetchServerResources(identifier: string, serverUrl: string, apiKey: string): Promise<ServerResources | null> {
     try {
         const response = await fetch(
             `${serverUrl}/api/client/servers/${identifier}/resources`,
@@ -347,12 +287,7 @@ async function fetchServerResources(
     }
 }
 
-async function sendServerCommand(
-    identifier: string,
-    signal: 'start' | 'stop' | 'restart',
-    serverUrl: string,
-    apiKey: string,
-): Promise<boolean> {
+async function sendServerCommand(identifier: string, signal: 'start' | 'stop' | 'restart', serverUrl: string, apiKey: string): Promise<boolean> {
     try {
         const response = await fetch(
             `${serverUrl}/api/client/servers/${identifier}/power`,
@@ -379,6 +314,7 @@ async function pollUntilStateChange(
     expectedState: string,
     serverUrl: string,
     apiKey: string,
+    dbServerId: number,
     maxAttempts: number = 120,
     interval: number = 500,
 ): Promise<void> {
@@ -399,7 +335,7 @@ async function pollUntilStateChange(
         });
 
         if (allReached || attempts >= maxAttempts) {
-            await refreshStatus(componentInteraction, componentInteraction.user.id);
+            await refreshStatus(componentInteraction, dbServerId);
             return true;
         }
 
@@ -419,75 +355,65 @@ async function pollUntilStateChange(
     }
 }
 
-async function refreshStatus(
-    componentInteraction: ButtonInteraction | StringSelectMenuInteraction,
-    userId: string,
-): Promise<void> {
+async function refreshStatus(componentInteraction: ButtonInteraction | StringSelectMenuInteraction, dbServerId: number): Promise<void> {
     try {
         const db = new Database(
             process.env.SERVER_DATABASE || 'pterodactyl.db',
         );
-        const userServers = db.getServersByUserId(userId);
+        const dbServer = db.getServerById(dbServerId);
         db.close();
 
-        if (!userServers || userServers.length === 0) {
+        if (!dbServer) {
             return;
         }
 
-        const serverDataPromises = userServers.map(async (dbServer) => {
-            const servers = await fetchServers(
-                dbServer.serverUrl,
-                dbServer.apiKey,
-            );
-            const resourcePromises = servers.map((server) =>
+        const servers = await fetchServers(
+            dbServer.serverUrl,
+            dbServer.apiKey,
+        );
+
+        const resources = await Promise.all(
+            servers.map((server) =>
                 fetchServerResources(
                     server.attributes.identifier,
                     dbServer.serverUrl,
                     dbServer.apiKey,
                 ),
-            );
-            const resources = await Promise.all(resourcePromises);
-            return { servers, resources, dbServer };
-        });
-
-        const allServerData = await Promise.all(serverDataPromises);
+            ),
+        );
 
         const embed = new EmbedBuilder()
             .setColor('#0099ff')
             .setTitle('🎮 Game Server Status')
-            .setDescription(
-                '*Last updated: ' + new Date().toLocaleTimeString() + '*',
-            )
+            .setDescription('*Last updated: ' + new Date().toLocaleTimeString() + '*')
             .setTimestamp();
 
-        allServerData.forEach(({ servers, resources, dbServer }) => {
-            servers.forEach((server, index) => {
-                const resource = resources[index];
-                const state = resource?.attributes.current_state || 'unknown';
-                const statusEmoji = getStatusEmoji(state);
+        servers.forEach((server, index) => {
+            const resource = resources[index];
+            const state = resource?.attributes.current_state || 'unknown';
+            const statusEmoji = getStatusEmoji(state);
 
-                let value = `${statusEmoji} **Status:** ${state}`;
+            let value = `${statusEmoji} **Status:** ${state}`;
 
-                if (resource && state === 'running') {
-                    const res = resource.attributes.resources;
-                    const memoryMB = formatBytes(res.memory_bytes);
-                    const cpuPercent = res.cpu_absolute.toFixed(1);
-                    const uptime = formatUptime(res.uptime);
+            if (resource && state === 'running') {
+                const res = resource.attributes.resources;
+                const memoryMB = formatBytes(res.memory_bytes);
+                const cpuPercent = res.cpu_absolute.toFixed(1);
+                const uptime = formatUptime(res.uptime);
 
-                    value += `\n💾 **Memory:** ${memoryMB} MB`;
-                    value += `\n⚡ **CPU:** ${cpuPercent}%`;
-                    value += `\n⏱️ **Uptime:** ${uptime}`;
-                }
+                value += `\n💾 **Memory:** ${memoryMB} MB`;
+                value += `\n⚡ **CPU:** ${cpuPercent}%`;
+                value += `\n⏱️ **Uptime:** ${uptime}`;
+            }
 
-                embed.addFields({
-                    name: `${dbServer.serverName} - ${server.attributes.name}`,
-                    value: value,
-                    inline: false,
-                });
+            embed.addFields({
+                name: `${dbServer.serverName} - ${server.attributes.name}`,
+                value: value,
+                inline: false,
             });
         });
 
-        const components = createControlComponents(allServerData);
+        const components = createControlComponents(servers, resources, dbServer);
 
         await componentInteraction.editReply({
             embeds: [embed],
@@ -499,87 +425,70 @@ async function refreshStatus(
 }
 
 function createControlComponents(
-    allServerData: Array<{
-        servers: PterodactylServer[];
-        resources: (ServerResources | null)[];
-        dbServer: any;
-    }>,
+    servers: PterodactylServer[],
+    resources: (ServerResources | null)[],
+    dbServer: any,
 ): (ActionRowBuilder<StringSelectMenuBuilder> | ActionRowBuilder<ButtonBuilder>)[] {
     const rows: (ActionRowBuilder<StringSelectMenuBuilder> | ActionRowBuilder<ButtonBuilder>)[] = [];
+    const allOptions: { label: string; description: string; value: string }[] = [];
 
-    allServerData.forEach(({ servers, resources, dbServer }) => {
-        const allOptions: { label: string; description: string; value: string }[] = [];
+    servers.forEach((server, index) => {
+        const state = resources[index]?.attributes.current_state || 'unknown';
+        const serverName = server.attributes.name.length > 80 ? server.attributes.name.substring(0, 77) + '...' : server.attributes.name;
 
-        servers.forEach((server, index) => {
-            const state = resources[index]?.attributes.current_state || 'unknown';
-            const serverName =
-                server.attributes.name.length > 80
-                    ? server.attributes.name.substring(0, 77) + '...'
-                    : server.attributes.name;
-
-            // Add Start option if server is offline
-            if (state === 'offline') {
-                allOptions.push({
-                    label: `▶️ Start ${serverName}`,
-                    description: 'Start the server',
-                    value: `${dbServer.id}:${server.attributes.identifier}:start`,
-                });
-            }
-
-            // Add Restart option if server is running
-            if (state === 'running') {
-                allOptions.push({
-                    label: `🔄 Restart ${serverName}`,
-                    description: 'Restart the server',
-                    value: `${dbServer.id}:${server.attributes.identifier}:restart`,
-                });
-            }
-
-            // Add Stop option if server is running
-            if (state === 'running') {
-                allOptions.push({
-                    label: `⏹️ Stop ${serverName}`,
-                    description: 'Stop the server',
-                    value: `${dbServer.id}:${server.attributes.identifier}:stop`,
-                });
-            }
-        });
-
-        // Discord allows max 25 options per select menu, so split if needed
-        // We'll use up to 3 rows for select menus, leaving room for "Stop All" button
-        const maxRowsForSelects = 3;
-        const optionsPerMenu = Math.ceil(allOptions.length / Math.min(maxRowsForSelects, Math.ceil(allOptions.length / 25)));
-
-        for (let i = 0; i < allOptions.length; i += optionsPerMenu) {
-            const menuOptions = allOptions.slice(i, i + optionsPerMenu);
-            if (menuOptions.length > 0) {
-                const selectMenu = new StringSelectMenuBuilder()
-                    .setCustomId(`server_control:${dbServer.id}:menu${i}`)
-                    .setPlaceholder(`Server Actions (${i / optionsPerMenu + 1}/${Math.ceil(allOptions.length / optionsPerMenu)})`)
-                    .addOptions(menuOptions);
-
-                const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
-                rows.push(row);
-
-                // Respect Discord's 5 row limit (leave room for Stop All button)
-                if (rows.length >= 4) break;
-            }
+        if (state === 'offline') {
+            allOptions.push({
+                label: `▶️ Start ${serverName}`,
+                description: 'Start the server',
+                value: `${dbServer.id}:${server.attributes.identifier}:start`,
+            });
         }
 
-        // Keep "Stop All" button for convenience
-        const anyRunning = resources.some(
-            (r) => r?.attributes.current_state === 'running',
-        );
-        if (anyRunning && rows.length < 5) {
-            const stopRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-                new ButtonBuilder()
-                    .setCustomId(`server_control:${dbServer.id}:all:stop`)
-                    .setLabel('⏹️ Stop All Servers')
-                    .setStyle(ButtonStyle.Danger),
-            );
-            rows.push(stopRow);
+        if (state === 'running') {
+            allOptions.push({
+                label: `🔄 Restart ${serverName}`,
+                description: 'Restart the server',
+                value: `${dbServer.id}:${server.attributes.identifier}:restart`,
+            });
+        }
+
+        if (state === 'running') {
+            allOptions.push({
+                label: `⏹️ Stop ${serverName}`,
+                description: 'Stop the server',
+                value: `${dbServer.id}:${server.attributes.identifier}:stop`,
+            });
         }
     });
+
+    const maxRowsForSelects = 3;
+    const optionsPerMenu = Math.ceil(allOptions.length / Math.min(maxRowsForSelects, Math.ceil(allOptions.length / 25)));
+
+    for (let i = 0; i < allOptions.length; i += optionsPerMenu) {
+        const menuOptions = allOptions.slice(i, i + optionsPerMenu);
+        if (menuOptions.length > 0) {
+            const selectMenu = new StringSelectMenuBuilder()
+                .setCustomId(`server_control:${dbServer.id}:menu${i}`)
+                .setPlaceholder(`Server Actions (${i / optionsPerMenu + 1}/${Math.ceil(allOptions.length / optionsPerMenu)})`)
+                .addOptions(menuOptions);
+
+            const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
+            rows.push(row);
+
+            if (rows.length >= 4) break;
+        }
+    }
+
+    const anyRunning = resources.some((r) => r?.attributes.current_state === 'running');
+    if (anyRunning && rows.length < 5) {
+        const stopRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`server_control:${dbServer.id}:all:stop`)
+                .setLabel('⏹️ Stop All Servers')
+                .setStyle(ButtonStyle.Danger),
+        );
+        rows.push(stopRow);
+    }
 
     return rows;
 }
@@ -613,4 +522,26 @@ function getStatusEmoji(state: string): string {
     }
 }
 
-export default command;
+interface PterodactylServer {
+    attributes: {
+        identifier: string;
+        name: string;
+        description: string;
+    };
+}
+
+interface ServerResources {
+    attributes: {
+        current_state: string;
+        resources: {
+            memory_bytes: number;
+            cpu_absolute: number;
+            disk_bytes: number;
+            uptime: number;
+        };
+    };
+}
+
+interface ApiResponse<T> {
+    data: T[];
+}
