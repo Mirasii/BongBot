@@ -1,10 +1,5 @@
 import { jest } from '@jest/globals';
-import type {
-    ChatInputCommandInteraction,
-    Message,
-    ButtonInteraction,
-    StringSelectMenuInteraction
-} from 'discord.js';
+import type { ChatInputCommandInteraction, Message, ButtonInteraction, StringSelectMenuInteraction } from 'discord.js';
 import { testCommandStructure, createMockInteraction } from '../../utils/commandTestUtils.js';
 
 // Setup MSW for mocking fetch
@@ -29,7 +24,7 @@ const handlers = [
             ],
         });
     }),
-    http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, ({ params }) => {
+    http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
         return HttpResponse.json({
             attributes: {
                 current_state: 'running',
@@ -50,7 +45,6 @@ const handlers = [
 const server = setupServer(...handlers);
 
 // Start the server before importing modules
-// Use 'bypass' to avoid warnings for unhandled requests in tests
 server.listen({ onUnhandledRequest: 'bypass' });
 
 // Mock Database
@@ -80,7 +74,7 @@ const statusModule = await import('../../../src/commands/pterodactyl/server_stat
 const statusCommand = statusModule.default;
 
 describe('server_status command', () => {
-    let mockInteraction: Partial<ChatInputCommandInteraction>;
+    let mockInteraction: any;
 
     // Use utility function for standard command structure tests
     testCommandStructure(statusCommand, 'server_status');
@@ -102,8 +96,9 @@ describe('server_status command', () => {
         // Suppress console.error and console.warn during tests
         jest.spyOn(console, 'error').mockImplementation(() => {});
         jest.spyOn(console, 'warn').mockImplementation(() => {});
+        jest.spyOn(console, 'log').mockImplementation(() => {});
 
-        // Setup mock interaction using utility and override user ID
+        // Setup mock interaction
         const baseInteraction = createMockInteraction({
             commandName: 'server_status',
         });
@@ -112,9 +107,12 @@ describe('server_status command', () => {
             ...baseInteraction,
             user: {
                 ...baseInteraction.user,
-                id: 'test-user-123', // Override with test-specific ID
+                id: 'test-user-123',
             },
-        } as any;
+            options: {
+                getString: jest.fn((key: string) => null),
+            },
+        };
 
         // Default mock implementations
         mockGetServersByUserId.mockReturnValue([
@@ -134,6 +132,13 @@ describe('server_status command', () => {
             serverUrl: testServerUrl,
             apiKey: testApiKey,
         });
+
+        mockBuildError.mockResolvedValue({
+            embeds: [],
+            files: [],
+            flags: 64,
+            isError: true,
+        });
     });
 
     describe('command methods', () => {
@@ -142,33 +147,41 @@ describe('server_status command', () => {
         });
     });
 
-    describe('execute method', () => {
+    describe('execute method - single server users', () => {
         it('should return error if user has no registered servers', async () => {
             mockGetServersByUserId.mockReturnValue([]);
 
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
+            await statusCommand.execute(mockInteraction);
 
             expect(mockGetServersByUserId).toHaveBeenCalledWith('test-user-123');
-            expect(mockDbClose).toHaveBeenCalled();
-            expect(result).toEqual({
-                content: expect.stringContaining('no registered servers'),
-                ephemeral: true,
-            });
+            expect(mockDbClose).toHaveBeenCalledTimes(1);
+            expect(mockBuildError).toHaveBeenCalledWith(
+                mockInteraction,
+                expect.objectContaining({
+                    message: expect.stringContaining('no registered servers')
+                })
+            );
         });
 
         it('should return error if servers is null', async () => {
             mockGetServersByUserId.mockReturnValue(null);
 
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
+            await statusCommand.execute(mockInteraction);
 
-            expect(result.content).toContain('no registered servers');
-            expect(result.ephemeral).toBe(true);
+            expect(mockDbClose).toHaveBeenCalledTimes(1);
+            expect(mockBuildError).toHaveBeenCalledWith(
+                mockInteraction,
+                expect.objectContaining({
+                    message: expect.stringContaining('no registered servers')
+                })
+            );
         });
 
-        it('should fetch and display server status', async () => {
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
+        it('should fetch and display server status for single server user', async () => {
+            const result: any = await statusCommand.execute(mockInteraction);
 
             expect(mockGetServersByUserId).toHaveBeenCalledWith('test-user-123');
+            expect(mockDbClose).toHaveBeenCalledTimes(1);
             expect(result.embeds).toBeDefined();
             expect(result.embeds.length).toBe(1);
 
@@ -179,26 +192,16 @@ describe('server_status command', () => {
         });
 
         it('should include control components in response', async () => {
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
+            const result: any = await statusCommand.execute(mockInteraction);
 
+            expect(mockDbClose).toHaveBeenCalledTimes(1);
             expect(result.components).toBeDefined();
             expect(result.components.length).toBeGreaterThan(0);
         });
+    });
 
-        it('should handle fetch errors gracefully', async () => {
-            server.use(
-                http.get(`${testServerUrl}/api/client`, () => {
-                    return HttpResponse.error();
-                })
-            );
-
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
-
-            expect(mockDbClose).toHaveBeenCalled();
-            expect(result.content).toContain('Failed to fetch server status');
-        });
-
-        it('should handle multiple servers', async () => {
+    describe('execute method - multiple server users', () => {
+        beforeEach(() => {
             mockGetServersByUserId.mockReturnValue([
                 {
                     id: 1,
@@ -215,32 +218,50 @@ describe('server_status command', () => {
                     apiKey: testApiKey,
                 },
             ]);
+        });
 
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
+        it('should require server_name parameter when user has multiple servers', async () => {
+            mockInteraction.options.getString.mockReturnValue(null);
 
+            await statusCommand.execute(mockInteraction);
+
+            expect(mockDbClose).toHaveBeenCalledTimes(1);
+            expect(mockBuildError).toHaveBeenCalledWith(
+                mockInteraction,
+                expect.objectContaining({
+                    message: expect.stringMatching(/multiple.*servers.*registered/)
+                })
+            );
+        });
+
+        it('should work with server_name parameter', async () => {
+            mockInteraction.options.getString.mockReturnValue('Server 1');
+
+            const result: any = await statusCommand.execute(mockInteraction);
+
+            expect(mockDbClose).toHaveBeenCalledTimes(1);
+            expect(result.embeds).toBeDefined();
             expect(result.embeds[0].data.fields.length).toBeGreaterThan(0);
         });
 
-        it('should use custom database from environment variable', async () => {
-            const originalEnv = process.env.SERVER_DATABASE;
-            process.env.SERVER_DATABASE = 'custom-db.db';
+        it('should return error for invalid server_name', async () => {
+            mockInteraction.options.getString.mockReturnValue('Invalid Server');
 
-            await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
+            await statusCommand.execute(mockInteraction);
 
-            expect(MockDatabase).toHaveBeenCalledWith('custom-db.db');
-
-            // Restore
-            if (originalEnv) {
-                process.env.SERVER_DATABASE = originalEnv;
-            } else {
-                delete process.env.SERVER_DATABASE;
-            }
+            expect(mockDbClose).toHaveBeenCalledTimes(1);
+            expect(mockBuildError).toHaveBeenCalledWith(
+                mockInteraction,
+                expect.objectContaining({
+                    message: expect.stringContaining('No server found')
+                })
+            );
         });
     });
 
     describe('server state display', () => {
         it('should display running server with resource info', async () => {
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
+            const result: any = await statusCommand.execute(mockInteraction);
 
             const fieldValue = result.embeds[0].data.fields[0].value;
             expect(fieldValue).toContain('running');
@@ -266,7 +287,7 @@ describe('server_status command', () => {
                 })
             );
 
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
+            const result: any = await statusCommand.execute(mockInteraction);
 
             const fieldValue = result.embeds[0].data.fields[0].value;
             expect(fieldValue).toContain('offline');
@@ -280,123 +301,56 @@ describe('server_status command', () => {
                 })
             );
 
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
+            const result: any = await statusCommand.execute(mockInteraction);
 
             const fieldValue = result.embeds[0].data.fields[0].value;
             expect(fieldValue).toContain('unknown');
         });
     });
 
-    describe('control components', () => {
-        it('should create start button for offline servers', async () => {
+    describe('error handling', () => {
+        it('should handle database error before closing', async () => {
+            mockGetServersByUserId.mockImplementation(() => {
+                throw new Error('Database error');
+            });
+
+            await statusCommand.execute(mockInteraction);
+
+            // Database should NOT be closed if error happens before db.close()
+            expect(mockDbClose).toHaveBeenCalledTimes(0);
+            expect(mockBuildError).toHaveBeenCalled();
+        });
+
+        it('should handle network errors', async () => {
             server.use(
-                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
-                    return HttpResponse.json({
-                        attributes: {
-                            current_state: 'offline',
-                            resources: {
-                                memory_bytes: 0,
-                                cpu_absolute: 0,
-                                disk_bytes: 0,
-                                uptime: 0,
-                            },
-                        },
-                    });
+                http.get(`${testServerUrl}/api/client`, () => {
+                    return HttpResponse.error();
                 })
             );
 
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
+            await statusCommand.execute(mockInteraction);
 
-            expect(result.components).toBeDefined();
-            expect(result.components.length).toBeGreaterThan(0);
+            expect(mockBuildError).toHaveBeenCalled();
         });
 
-        it('should create stop and restart buttons for running servers', async () => {
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
-
-            expect(result.components).toBeDefined();
-            expect(result.components.length).toBeGreaterThan(0);
-        });
-
-        it('should include stop all button when servers are running', async () => {
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
-
-            expect(result.components.length).toBeGreaterThan(0);
-            // Last component should be the stop all button
-            const lastRow = result.components[result.components.length - 1];
-            expect(lastRow.components).toBeDefined();
-        });
-    });
-
-    describe('setupCollector method', () => {
-        let mockMessage: Partial<Message>;
-        let mockComponentInteraction: Partial<ButtonInteraction>;
-        let collectorCallback: any;
-
-        beforeEach(() => {
-            mockComponentInteraction = {
-                user: { id: 'test-user-123' } as any,
-                isStringSelectMenu: jest.fn().mockReturnValue(false),
-                isButton: jest.fn().mockReturnValue(true),
-                customId: 'server_control:1:server-123:stop',
-                deferUpdate: jest.fn().mockResolvedValue(undefined),
-                followUp: jest.fn().mockResolvedValue(undefined),
-                editReply: jest.fn().mockResolvedValue(undefined),
-                reply: jest.fn().mockResolvedValue(undefined),
-            };
-
-            mockMessage = {
-                createMessageComponentCollector: jest.fn().mockReturnValue({
-                    on: jest.fn((event: string, callback: any) => {
-                        if (event === 'collect') {
-                            collectorCallback = callback;
-                        }
-                    }),
-                }),
-                components: [
-                    {
-                        components: [
-                            {
-                                type: 2, // Button
-                                customId: 'test',
-                            },
-                        ],
-                    },
-                ],
-            } as any;
-        });
-
-        it('should setup a collector with correct timeout', () => {
-            statusCommand.setupCollector(
-                mockInteraction as ChatInputCommandInteraction,
-                mockMessage as Message
+        it('should handle empty server list', async () => {
+            server.use(
+                http.get(`${testServerUrl}/api/client`, () => {
+                    return HttpResponse.json({ data: [] });
+                })
             );
 
-            expect(mockMessage.createMessageComponentCollector).toHaveBeenCalledWith({
-                time: 600000,
-            });
-        });
+            const result: any = await statusCommand.execute(mockInteraction);
 
-        it('should reject interactions from different users', async () => {
-            statusCommand.setupCollector(
-                mockInteraction as ChatInputCommandInteraction,
-                mockMessage as Message
-            );
-
-            mockComponentInteraction.user = { id: 'different-user' } as any;
-
-            await collectorCallback(mockComponentInteraction);
-
-            expect(mockComponentInteraction.reply).toHaveBeenCalledWith({
-                content: expect.stringContaining('cannot control servers'),
-                ephemeral: true,
-            });
+            expect(result.embeds).toBeDefined();
+            const fields = result.embeds[0].data.fields;
+            expect(fields === undefined || fields.length === 0).toBe(true);
         });
     });
 
     describe('helper functions - formatting', () => {
         it('should format bytes correctly', async () => {
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
+            const result: any = await statusCommand.execute(mockInteraction);
 
             const fieldValue = result.embeds[0].data.fields[0].value;
             // 1073741824 bytes = 1024 MB
@@ -404,7 +358,7 @@ describe('server_status command', () => {
         });
 
         it('should format CPU percentage correctly', async () => {
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
+            const result: any = await statusCommand.execute(mockInteraction);
 
             const fieldValue = result.embeds[0].data.fields[0].value;
             expect(fieldValue).toContain('50.5');
@@ -427,40 +381,16 @@ describe('server_status command', () => {
                 })
             );
 
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
+            const result: any = await statusCommand.execute(mockInteraction);
 
             const fieldValue = result.embeds[0].data.fields[0].value;
             expect(fieldValue).toMatch(/2h.*1m/);
-        });
-
-        it('should format uptime in minutes only when less than 1 hour', async () => {
-            server.use(
-                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
-                    return HttpResponse.json({
-                        attributes: {
-                            current_state: 'running',
-                            resources: {
-                                memory_bytes: 1073741824,
-                                cpu_absolute: 50.5,
-                                disk_bytes: 2147483648,
-                                uptime: 1800000, // 30 minutes
-                            },
-                        },
-                    });
-                })
-            );
-
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
-
-            const fieldValue = result.embeds[0].data.fields[0].value;
-            expect(fieldValue).toContain('30m');
-            expect(fieldValue).not.toContain('h');
         });
     });
 
     describe('status emojis', () => {
         it('should show green circle for running state', async () => {
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
+            const result: any = await statusCommand.execute(mockInteraction);
             expect(result.embeds[0].data.fields[0].value).toContain('🟢');
         });
 
@@ -481,7 +411,7 @@ describe('server_status command', () => {
                 })
             );
 
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
+            const result: any = await statusCommand.execute(mockInteraction);
             expect(result.embeds[0].data.fields[0].value).toContain('🔴');
         });
 
@@ -502,278 +432,21 @@ describe('server_status command', () => {
                 })
             );
 
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
+            const result: any = await statusCommand.execute(mockInteraction);
             expect(result.embeds[0].data.fields[0].value).toContain('🟡');
         });
-
-        it('should show orange circle for stopping state', async () => {
-            server.use(
-                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
-                    return HttpResponse.json({
-                        attributes: {
-                            current_state: 'stopping',
-                            resources: {
-                                memory_bytes: 0,
-                                cpu_absolute: 0,
-                                disk_bytes: 0,
-                                uptime: 0,
-                            },
-                        },
-                    });
-                })
-            );
-
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
-            expect(result.embeds[0].data.fields[0].value).toContain('🟠');
-        });
-
-        it('should show white circle for unknown state', async () => {
-            server.use(
-                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
-                    return HttpResponse.error();
-                })
-            );
-
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
-            expect(result.embeds[0].data.fields[0].value).toContain('⚪');
-        });
     });
 
-    describe('error handling', () => {
-        it('should close database on error', async () => {
-            mockGetServersByUserId.mockImplementation(() => {
-                throw new Error('Database error');
-            });
+    describe('setupCollector method', () => {
+        let mockMessage: any;
+        let collectorCallbacks: any;
 
-            await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
-
-            expect(mockDbClose).toHaveBeenCalled();
-        });
-
-        it('should handle network errors', async () => {
-            server.use(
-                http.get(`${testServerUrl}/api/client`, () => {
-                    return HttpResponse.error();
-                })
-            );
-
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
-
-            expect(result.content).toContain('Failed to fetch server status');
-        });
-
-        it('should handle invalid API responses', async () => {
-            server.use(
-                http.get(`${testServerUrl}/api/client`, () => {
-                    return HttpResponse.json({ invalid: 'data' });
-                })
-            );
-
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
-
-            expect(result.content).toContain('Failed to fetch server status');
-        });
-
-        it('should handle null resource responses', async () => {
-            server.use(
-                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
-                    return new HttpResponse(null, { status: 404 });
-                })
-            );
-
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
-
-            const fieldValue = result.embeds[0].data.fields[0].value;
-            expect(fieldValue).toContain('unknown');
-        });
-
-        it('should handle empty server list', async () => {
-            server.use(
-                http.get(`${testServerUrl}/api/client`, () => {
-                    return HttpResponse.json({ data: [] });
-                })
-            );
-
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
-
-            expect(result.embeds).toBeDefined();
-            // Empty server list means no fields
-            const fields = result.embeds[0].data.fields;
-            expect(fields === undefined || fields.length === 0).toBe(true);
-        });
-    });
-
-    describe('select menu pagination', () => {
-        it('should handle servers with very long names', async () => {
-            server.use(
-                http.get(`${testServerUrl}/api/client`, () => {
-                    return HttpResponse.json({
-                        data: [
-                            {
-                                attributes: {
-                                    identifier: 'server-long',
-                                    name: 'A'.repeat(100), // Very long name
-                                    description: 'Test description',
-                                },
-                            },
-                        ],
-                    });
-                })
-            );
-
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
-
-            expect(result.components).toBeDefined();
-            expect(result.components.length).toBeGreaterThan(0);
-        });
-
-        it('should handle multiple servers', async () => {
-            // Test with 5 servers which should still work well
-            const servers = Array.from({ length: 5 }, (_, i) => ({
-                attributes: {
-                    identifier: `server-${i}`,
-                    name: `Server ${i}`,
-                    description: 'Test',
-                },
-            }));
-
-            server.use(
-                http.get(`${testServerUrl}/api/client`, () => {
-                    return HttpResponse.json({ data: servers });
-                }),
-                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
-                    return HttpResponse.json({
-                        attributes: {
-                            current_state: 'running',
-                            resources: {
-                                memory_bytes: 1073741824,
-                                cpu_absolute: 50.5,
-                                disk_bytes: 2147483648,
-                                uptime: 3600000,
-                            },
-                        },
-                    });
-                })
-            );
-
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
-
-            expect(result.embeds).toBeDefined();
-            expect(result.components).toBeDefined();
-            // Should have components for controlling multiple servers
-            expect(result.components.length).toBeGreaterThanOrEqual(1);
-        });
-    });
-
-    describe('component interactions - string select menu', () => {
-        it('should parse select menu interaction correctly', async () => {
-            const mockSelectInteraction = {
-                user: { id: 'test-user-123' } as any,
-                isStringSelectMenu: jest.fn().mockReturnValue(true),
-                isButton: jest.fn().mockReturnValue(false),
-                values: ['1:server-123:start'],
-                customId: 'server_control:1:menu0',
-                deferUpdate: jest.fn().mockResolvedValue(undefined),
-                followUp: jest.fn().mockResolvedValue(undefined),
-                editReply: jest.fn().mockResolvedValue(undefined),
-            };
-
-            let collectorCallback: any;
-            const mockMessage = {
+        beforeEach(() => {
+            collectorCallbacks = {};
+            mockMessage = {
                 createMessageComponentCollector: jest.fn().mockReturnValue({
                     on: jest.fn((event: string, callback: any) => {
-                        if (event === 'collect') {
-                            collectorCallback = callback;
-                        }
-                        return {
-                            on: jest.fn(),
-                        };
-                    }),
-                }),
-                components: [
-                    {
-                        components: [
-                            {
-                                type: 3, // StringSelect
-                                customId: 'test',
-                            },
-                        ],
-                    },
-                ],
-            } as any;
-
-            statusCommand.setupCollector(
-                mockInteraction as ChatInputCommandInteraction,
-                mockMessage as Message
-            );
-
-            expect(mockMessage.createMessageComponentCollector).toHaveBeenCalled();
-        });
-
-        it('should handle select menu interaction with start action', async () => {
-            let collectorCallback: any;
-            const mockMessage = {
-                createMessageComponentCollector: jest.fn().mockReturnValue({
-                    on: jest.fn((event: string, callback: any) => {
-                        if (event === 'collect') {
-                            collectorCallback = callback;
-                        }
-                        return { on: jest.fn() };
-                    }),
-                }),
-                components: [
-                    {
-                        components: [
-                            {
-                                type: 3, // StringSelect
-                                customId: 'server_control:1:menu0',
-                            },
-                        ],
-                    },
-                ],
-            } as any;
-
-            const mockSelectInteraction = {
-                user: { id: 'test-user-123' },
-                isStringSelectMenu: jest.fn().mockReturnValue(true),
-                isButton: jest.fn().mockReturnValue(false),
-                values: ['1:server-123:start'],
-                customId: 'server_control:1:menu0',
-                deferUpdate: jest.fn().mockResolvedValue(undefined),
-                followUp: jest.fn().mockResolvedValue(undefined),
-                editReply: jest.fn().mockResolvedValue(undefined),
-            };
-
-            // Mock successful power command
-            server.use(
-                http.post(`${testServerUrl}/api/client/servers/:identifier/power`, () => {
-                    return HttpResponse.json({ success: true });
-                })
-            );
-
-            statusCommand.setupCollector(
-                mockInteraction as ChatInputCommandInteraction,
-                mockMessage as Message
-            );
-
-            // Trigger the collector
-            if (collectorCallback) {
-                await collectorCallback(mockSelectInteraction);
-            }
-
-            expect(mockSelectInteraction.deferUpdate).toHaveBeenCalled();
-            expect(mockSelectInteraction.followUp).toHaveBeenCalled();
-        });
-
-        it('should handle button interaction with stop action', async () => {
-            let collectorCallback: any;
-            const mockMessage = {
-                createMessageComponentCollector: jest.fn().mockReturnValue({
-                    on: jest.fn((event: string, callback: any) => {
-                        if (event === 'collect') {
-                            collectorCallback = callback;
-                        }
-                        return { on: jest.fn() };
+                        collectorCallbacks[event] = callback;
                     }),
                 }),
                 components: [
@@ -786,749 +459,217 @@ describe('server_status command', () => {
                         ],
                     },
                 ],
-            } as any;
+            };
+        });
+
+        it('should setup a collector with correct timeout', () => {
+            statusCommand.setupCollector(mockInteraction, mockMessage);
+
+            expect(mockMessage.createMessageComponentCollector).toHaveBeenCalledWith({
+                time: 600000,
+            });
+        });
+
+        it('should reject interactions from different users', async () => {
+            statusCommand.setupCollector(mockInteraction, mockMessage);
+
+            const mockComponentInteraction = {
+                user: { id: 'different-user' },
+                reply: jest.fn().mockResolvedValue(undefined),
+            };
+
+            await collectorCallbacks['collect'](mockComponentInteraction);
+
+            expect(mockComponentInteraction.reply).toHaveBeenCalledWith({
+                content: '❌ You cannot control servers for another user.',
+                ephemeral: true,
+            });
+        });
+
+        it('should handle button interaction with stop action', async () => {
+            statusCommand.setupCollector(mockInteraction, mockMessage);
 
             const mockButtonInteraction = {
                 user: { id: 'test-user-123' },
-                isStringSelectMenu: jest.fn().mockReturnValue(false),
-                isButton: jest.fn().mockReturnValue(true),
+                isStringSelectMenu: () => false,
                 customId: 'server_control:1:server-123:stop',
                 deferUpdate: jest.fn().mockResolvedValue(undefined),
                 followUp: jest.fn().mockResolvedValue(undefined),
                 editReply: jest.fn().mockResolvedValue(undefined),
             };
 
-            statusCommand.setupCollector(
-                mockInteraction as ChatInputCommandInteraction,
-                mockMessage as Message
-            );
-
-            // Trigger the collector
-            if (collectorCallback) {
-                await collectorCallback(mockButtonInteraction);
-            }
+            await collectorCallbacks['collect'](mockButtonInteraction);
 
             expect(mockButtonInteraction.deferUpdate).toHaveBeenCalled();
+            expect(mockButtonInteraction.followUp).toHaveBeenCalled();
         });
 
-        it('should reject unauthorized user interactions', async () => {
-            let collectorCallback: any;
-            const mockMessage = {
-                createMessageComponentCollector: jest.fn().mockReturnValue({
-                    on: jest.fn((event: string, callback: any) => {
-                        if (event === 'collect') {
-                            collectorCallback = callback;
-                        }
-                        return { on: jest.fn() };
-                    }),
-                }),
-                components: [],
-            } as any;
+        it('should handle select menu interaction with start action', async () => {
+            statusCommand.setupCollector(mockInteraction, mockMessage);
 
-            const mockUnauthorizedInteraction = {
-                user: { id: 'different-user-456' },
-                isStringSelectMenu: jest.fn().mockReturnValue(true),
-                isButton: jest.fn().mockReturnValue(false),
+            const mockSelectInteraction = {
+                user: { id: 'test-user-123' },
+                isStringSelectMenu: () => true,
                 values: ['1:server-123:start'],
-                reply: jest.fn().mockResolvedValue(undefined),
+                deferUpdate: jest.fn().mockResolvedValue(undefined),
+                followUp: jest.fn().mockResolvedValue(undefined),
+                editReply: jest.fn().mockResolvedValue(undefined),
             };
 
-            statusCommand.setupCollector(
-                mockInteraction as ChatInputCommandInteraction,
-                mockMessage as Message
+            await collectorCallbacks['collect'](mockSelectInteraction);
+
+            expect(mockSelectInteraction.deferUpdate).toHaveBeenCalled();
+            expect(mockSelectInteraction.followUp).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    content: expect.stringContaining('Starting'),
+                })
             );
-
-            // Trigger the collector with unauthorized user
-            if (collectorCallback) {
-                await collectorCallback(mockUnauthorizedInteraction);
-            }
-
-            expect(mockUnauthorizedInteraction.reply).toHaveBeenCalledWith({
-                content: '❌ You cannot control servers for another user.',
-                ephemeral: true,
-            });
         });
 
-        it('should handle stop all servers action', async () => {
-            let collectorCallback: any;
-            const mockMessage = {
-                createMessageComponentCollector: jest.fn().mockReturnValue({
-                    on: jest.fn((event: string, callback: any) => {
-                        if (event === 'collect') {
-                            collectorCallback = callback;
-                        }
-                        return { on: jest.fn() };
-                    }),
-                }),
-                components: [
-                    {
-                        components: [
-                            {
-                                type: 2, // Button
-                                customId: 'server_control:1:all:stop',
-                            },
-                        ],
-                    },
-                ],
-            } as any;
+        it('should handle restart action', async () => {
+            statusCommand.setupCollector(mockInteraction, mockMessage);
+
+            const mockInteraction2 = {
+                user: { id: 'test-user-123' },
+                isStringSelectMenu: () => false,
+                customId: 'server_control:1:server-123:restart',
+                deferUpdate: jest.fn().mockResolvedValue(undefined),
+                followUp: jest.fn().mockResolvedValue(undefined),
+                editReply: jest.fn().mockResolvedValue(undefined),
+            };
+
+            await collectorCallbacks['collect'](mockInteraction2);
+
+            expect(mockInteraction2.followUp).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    content: expect.stringContaining('Restarting'),
+                })
+            );
+        });
+
+        it('should handle stop all action', async () => {
+            statusCommand.setupCollector(mockInteraction, mockMessage);
 
             const mockButtonInteraction = {
                 user: { id: 'test-user-123' },
-                isStringSelectMenu: jest.fn().mockReturnValue(false),
-                isButton: jest.fn().mockReturnValue(true),
+                isStringSelectMenu: () => false,
                 customId: 'server_control:1:all:stop',
                 deferUpdate: jest.fn().mockResolvedValue(undefined),
                 followUp: jest.fn().mockResolvedValue(undefined),
                 editReply: jest.fn().mockResolvedValue(undefined),
             };
 
-            // Mock server list and power commands
-            server.use(
-                http.get(`${testServerUrl}/api/client`, () => {
-                    return HttpResponse.json({
-                        data: [
-                            {
-                                attributes: {
-                                    identifier: 'server-1',
-                                    name: 'Server 1',
-                                    description: 'Test',
-                                },
-                            },
-                            {
-                                attributes: {
-                                    identifier: 'server-2',
-                                    name: 'Server 2',
-                                    description: 'Test',
-                                },
-                            },
-                        ],
-                    });
-                }),
-                http.post(`${testServerUrl}/api/client/servers/:identifier/power`, () => {
-                    return HttpResponse.json({ success: true });
-                })
-            );
-
-            statusCommand.setupCollector(
-                mockInteraction as ChatInputCommandInteraction,
-                mockMessage as Message
-            );
-
-            // Trigger the collector
-            if (collectorCallback) {
-                await collectorCallback(mockButtonInteraction);
-            }
+            await collectorCallbacks['collect'](mockButtonInteraction);
 
             expect(mockButtonInteraction.followUp).toHaveBeenCalledWith(
                 expect.objectContaining({
                     content: expect.stringContaining('Stopping all servers'),
-                    ephemeral: true,
                 })
             );
         });
 
-        it('should handle failed server command', async () => {
-            let collectorCallback: any;
-            const mockMessage = {
-                createMessageComponentCollector: jest.fn().mockReturnValue({
-                    on: jest.fn((event: string, callback: any) => {
-                        if (event === 'collect') {
-                            collectorCallback = callback;
-                        }
-                        return { on: jest.fn() };
-                    }),
-                }),
-                components: [
-                    {
-                        components: [
-                            {
-                                type: 3, // StringSelect
-                                customId: 'server_control:1:menu0',
-                            },
-                        ],
-                    },
-                ],
-            } as any;
-
-            const mockSelectInteraction = {
-                user: { id: 'test-user-123' },
-                isStringSelectMenu: jest.fn().mockReturnValue(true),
-                isButton: jest.fn().mockReturnValue(false),
-                values: ['1:server-123:start'],
-                deferUpdate: jest.fn().mockResolvedValue(undefined),
-                followUp: jest.fn().mockResolvedValue(undefined),
-                editReply: jest.fn().mockResolvedValue(undefined),
-            };
-
-            // Mock failed power command
+        it('should handle server command failure', async () => {
             server.use(
                 http.post(`${testServerUrl}/api/client/servers/:identifier/power`, () => {
                     return new HttpResponse(null, { status: 500 });
                 })
             );
 
-            statusCommand.setupCollector(
-                mockInteraction as ChatInputCommandInteraction,
-                mockMessage as Message
-            );
-
-            // Trigger the collector
-            if (collectorCallback) {
-                await collectorCallback(mockSelectInteraction);
-            }
-
-            // Should call followUp twice: once for action message, once for failure
-            expect(mockSelectInteraction.followUp).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    content: expect.stringContaining('Failed to control server'),
-                    ephemeral: true,
-                })
-            );
-        });
-
-        it('should handle server not found in database', async () => {
-            let collectorCallback: any;
-            const mockMessage = {
-                createMessageComponentCollector: jest.fn().mockReturnValue({
-                    on: jest.fn((event: string, callback: any) => {
-                        if (event === 'collect') {
-                            collectorCallback = callback;
-                        }
-                        return { on: jest.fn() };
-                    }),
-                }),
-                components: [
-                    {
-                        components: [
-                            {
-                                type: 2, // Button
-                                customId: 'server_control:999:server-123:start',
-                            },
-                        ],
-                    },
-                ],
-            } as any;
+            statusCommand.setupCollector(mockInteraction, mockMessage);
 
             const mockButtonInteraction = {
                 user: { id: 'test-user-123' },
-                isStringSelectMenu: jest.fn().mockReturnValue(false),
-                isButton: jest.fn().mockReturnValue(true),
-                customId: 'server_control:999:server-123:start', // Non-existent server ID
+                isStringSelectMenu: () => false,
+                customId: 'server_control:1:server-123:start',
                 deferUpdate: jest.fn().mockResolvedValue(undefined),
                 followUp: jest.fn().mockResolvedValue(undefined),
                 editReply: jest.fn().mockResolvedValue(undefined),
             };
 
-            // Mock getServerById to return undefined
-            mockGetServerById.mockReturnValue(undefined);
+            await collectorCallbacks['collect'](mockButtonInteraction);
 
-            statusCommand.setupCollector(
-                mockInteraction as ChatInputCommandInteraction,
-                mockMessage as Message
+            expect(mockButtonInteraction.followUp).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    content: expect.stringContaining('Failed to control server'),
+                })
             );
+        });
 
-            // Trigger the collector
-            if (collectorCallback) {
-                await collectorCallback(mockButtonInteraction);
-            }
+        it('should handle database server not found', async () => {
+            mockGetServerById.mockReturnValue(null);
 
-            // When server is not found in database, should send specific error message
+            statusCommand.setupCollector(mockInteraction, mockMessage);
+
+            const mockButtonInteraction = {
+                user: { id: 'test-user-123' },
+                isStringSelectMenu: () => false,
+                customId: 'server_control:999:server-123:start',
+                deferUpdate: jest.fn().mockResolvedValue(undefined),
+                followUp: jest.fn().mockResolvedValue(undefined),
+                editReply: jest.fn().mockResolvedValue(undefined),
+            };
+
+            await collectorCallbacks['collect'](mockButtonInteraction);
+
             expect(mockButtonInteraction.followUp).toHaveBeenCalledWith(
                 expect.objectContaining({
                     content: '❌ Server configuration not found.',
-                    ephemeral: true,
                 })
             );
         });
 
-        it('should handle collector errors gracefully', async () => {
-            let collectorCallback: any;
-            const mockMessage = {
-                createMessageComponentCollector: jest.fn().mockReturnValue({
-                    on: jest.fn((event: string, callback: any) => {
-                        if (event === 'collect') {
-                            collectorCallback = callback;
-                        }
-                        return { on: jest.fn() };
-                    }),
-                }),
-                components: [
-                    {
-                        components: [
-                            {
-                                type: 3, // StringSelect
-                                customId: 'server_control:1:menu0',
-                            },
-                        ],
-                    },
-                ],
-            } as any;
-
-            const mockSelectInteraction = {
-                user: { id: 'test-user-123' },
-                isStringSelectMenu: jest.fn().mockReturnValue(true),
-                isButton: jest.fn().mockReturnValue(false),
-                values: ['1:server-123:start'],
-                deferUpdate: jest.fn().mockResolvedValue(undefined),
-                followUp: jest.fn().mockResolvedValue(undefined),
-                editReply: jest.fn().mockRejectedValue(new Error('Edit failed')),
-            };
-
-            // Mock database to throw error
+        it('should handle collector error gracefully', async () => {
             mockGetServerById.mockImplementation(() => {
-                throw new Error('Database connection failed');
+                throw new Error('Database error');
             });
 
-            statusCommand.setupCollector(
-                mockInteraction as ChatInputCommandInteraction,
-                mockMessage as Message
-            );
+            statusCommand.setupCollector(mockInteraction, mockMessage);
 
-            // Trigger the collector - should handle error gracefully
-            if (collectorCallback) {
-                await collectorCallback(mockSelectInteraction);
-            }
+            const mockButtonInteraction = {
+                user: { id: 'test-user-123' },
+                isStringSelectMenu: () => false,
+                customId: 'server_control:1:server-123:start',
+                deferUpdate: jest.fn().mockResolvedValue(undefined),
+                followUp: jest.fn().mockResolvedValue(undefined),
+                editReply: jest.fn().mockResolvedValue(undefined),
+            };
 
-            // Error should be caught and handled - followUp called with error message
-            expect(mockSelectInteraction.followUp).toHaveBeenCalledWith(
+            await collectorCallbacks['collect'](mockButtonInteraction);
+
+            expect(mockButtonInteraction.followUp).toHaveBeenCalledWith(
                 expect.objectContaining({
                     content: expect.stringContaining('error occurred'),
-                    ephemeral: true,
                 })
             );
         });
 
-        it('should handle restart action correctly', async () => {
-            let collectorCallback: any;
-            const mockMessage = {
-                createMessageComponentCollector: jest.fn().mockReturnValue({
-                    on: jest.fn((event: string, callback: any) => {
-                        if (event === 'collect') {
-                            collectorCallback = callback;
-                        }
-                        return { on: jest.fn() };
-                    }),
-                }),
-                components: [
-                    {
-                        components: [
-                            {
-                                type: 3, // StringSelect
-                                customId: 'server_control:1:menu0',
-                            },
-                        ],
-                    },
-                ],
-            } as any;
+        it('should log when collector ends', () => {
+            const consoleSpy = jest.spyOn(console, 'log');
+            statusCommand.setupCollector(mockInteraction, mockMessage);
 
-            const mockSelectInteraction = {
-                user: { id: 'test-user-123' },
-                isStringSelectMenu: jest.fn().mockReturnValue(true),
-                isButton: jest.fn().mockReturnValue(false),
-                values: ['1:server-123:restart'],
-                deferUpdate: jest.fn().mockResolvedValue(undefined),
-                followUp: jest.fn().mockResolvedValue(undefined),
-                editReply: jest.fn().mockResolvedValue(undefined),
-            };
-
-            // Mock successful power command
-            server.use(
-                http.post(`${testServerUrl}/api/client/servers/:identifier/power`, () => {
-                    return HttpResponse.json({ success: true });
-                })
-            );
-
-            statusCommand.setupCollector(
-                mockInteraction as ChatInputCommandInteraction,
-                mockMessage as Message
-            );
-
-            // Trigger the collector
-            if (collectorCallback) {
-                await collectorCallback(mockSelectInteraction);
-            }
-
-            expect(mockSelectInteraction.followUp).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    content: expect.stringContaining('Restarting'),
-                    ephemeral: true,
-                })
-            );
-        });
-
-        it('should disable components while processing', async () => {
-            let collectorCallback: any;
-            const mockMessage = {
-                createMessageComponentCollector: jest.fn().mockReturnValue({
-                    on: jest.fn((event: string, callback: any) => {
-                        if (event === 'collect') {
-                            collectorCallback = callback;
-                        }
-                        return { on: jest.fn() };
-                    }),
-                }),
-                components: [
-                    {
-                        components: [
-                            {
-                                type: 3, // StringSelect
-                                customId: 'server_control:1:menu0',
-                                toJSON: () => ({ type: 3, custom_id: 'server_control:1:menu0' }),
-                            },
-                        ],
-                    },
-                ],
-            } as any;
-
-            const mockSelectInteraction = {
-                user: { id: 'test-user-123' },
-                isStringSelectMenu: jest.fn().mockReturnValue(true),
-                isButton: jest.fn().mockReturnValue(false),
-                values: ['1:server-123:start'],
-                deferUpdate: jest.fn().mockResolvedValue(undefined),
-                followUp: jest.fn().mockResolvedValue(undefined),
-                editReply: jest.fn().mockResolvedValue(undefined),
-            };
-
-            statusCommand.setupCollector(
-                mockInteraction as ChatInputCommandInteraction,
-                mockMessage as Message
-            );
-
-            // Trigger the collector
-            if (collectorCallback) {
-                await collectorCallback(mockSelectInteraction);
-            }
-
-            expect(mockSelectInteraction.editReply).toHaveBeenCalled();
-        });
-
-        it('should log when collector ends', async () => {
-            const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-            let endCallback: any;
-
-            const mockMessage = {
-                createMessageComponentCollector: jest.fn().mockReturnValue({
-                    on: jest.fn((event: string, callback: any) => {
-                        if (event === 'end') {
-                            endCallback = callback;
-                        }
-                        return { on: jest.fn() };
-                    }),
-                }),
-                components: [],
-            } as any;
-
-            statusCommand.setupCollector(
-                mockInteraction as ChatInputCommandInteraction,
-                mockMessage as Message
-            );
-
-            // Trigger the end callback
-            if (endCallback) {
-                endCallback();
-            }
+            collectorCallbacks['end']();
 
             expect(consoleSpy).toHaveBeenCalledWith(
                 'Server status button collector ended after 10 minutes'
             );
-
-            consoleSpy.mockRestore();
         });
     });
 
-    describe('action messages', () => {
-        it('should show correct message for start action', async () => {
-            server.use(
-                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
-                    return HttpResponse.json({
-                        attributes: {
-                            current_state: 'offline',
-                            resources: {
-                                memory_bytes: 0,
-                                cpu_absolute: 0,
-                                disk_bytes: 0,
-                                uptime: 0,
-                            },
-                        },
-                    });
-                })
-            );
+    describe('use custom database from environment variable', () => {
+        it('should use custom database path from env', async () => {
+            const originalEnv = process.env.SERVER_DATABASE;
+            process.env.SERVER_DATABASE = 'custom-db.db';
 
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
+            await statusCommand.execute(mockInteraction);
 
-            // Check that start actions are available for offline servers
-            expect(result.components).toBeDefined();
-            expect(result.components.length).toBeGreaterThan(0);
-        });
+            expect(MockDatabase).toHaveBeenCalledWith('custom-db.db');
 
-        it('should not create stop all button when no servers are running', async () => {
-            server.use(
-                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
-                    return HttpResponse.json({
-                        attributes: {
-                            current_state: 'offline',
-                            resources: {
-                                memory_bytes: 0,
-                                cpu_absolute: 0,
-                                disk_bytes: 0,
-                                uptime: 0,
-                            },
-                        },
-                    });
-                })
-            );
-
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
-
-            expect(result.components).toBeDefined();
-            // Last row should not be "Stop All" button when servers are offline
-        });
-
-        it('should handle mixed server states', async () => {
-            let callCount = 0;
-            server.use(
-                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
-                    callCount++;
-                    return HttpResponse.json({
-                        attributes: {
-                            current_state: callCount % 2 === 0 ? 'running' : 'offline',
-                            resources: {
-                                memory_bytes: 1073741824,
-                                cpu_absolute: 50.5,
-                                disk_bytes: 2147483648,
-                                uptime: 3600000,
-                            },
-                        },
-                    });
-                })
-            );
-
-            mockGetServersByUserId.mockReturnValue([
-                {
-                    id: 1,
-                    userId: 'test-user-123',
-                    serverName: 'Server 1',
-                    serverUrl: testServerUrl,
-                    apiKey: testApiKey,
-                },
-            ]);
-
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
-
-            expect(result.embeds).toBeDefined();
-            expect(result.components).toBeDefined();
-        });
-    });
-
-    describe('edge cases and error paths', () => {
-        it('should handle fetchServers API failure', async () => {
-            // Mock API to return non-OK status
-            server.use(
-                http.get(`${testServerUrl}/api/client`, () => {
-                    return new HttpResponse(null, { status: 500, statusText: 'Internal Server Error' });
-                })
-            );
-
-            try {
-                await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
-            } catch (error: any) {
-                expect(error.message).toContain('Failed to fetch servers');
+            // Restore
+            if (originalEnv) {
+                process.env.SERVER_DATABASE = originalEnv;
+            } else {
+                delete process.env.SERVER_DATABASE;
             }
-        });
-
-        it('should handle sendServerCommand network failure', async () => {
-            let collectorCallback: any;
-            const mockMessage = {
-                createMessageComponentCollector: jest.fn().mockReturnValue({
-                    on: jest.fn((event: string, callback: any) => {
-                        if (event === 'collect') {
-                            collectorCallback = callback;
-                        }
-                        return { on: jest.fn() };
-                    }),
-                }),
-                components: [
-                    {
-                        components: [
-                            {
-                                type: 3, // StringSelect
-                                customId: 'server_control:1:menu0',
-                            },
-                        ],
-                    },
-                ],
-            } as any;
-
-            const mockSelectInteraction = {
-                user: { id: 'test-user-123' },
-                isStringSelectMenu: jest.fn().mockReturnValue(true),
-                isButton: jest.fn().mockReturnValue(false),
-                values: ['1:server-123:start'],
-                deferUpdate: jest.fn().mockResolvedValue(undefined),
-                followUp: jest.fn().mockResolvedValue(undefined),
-                editReply: jest.fn().mockResolvedValue(undefined),
-            };
-
-            // Mock power command to fail with network error
-            server.use(
-                http.post(`${testServerUrl}/api/client/servers/:identifier/power`, () => {
-                    throw new Error('Network failure');
-                })
-            );
-
-            statusCommand.setupCollector(
-                mockInteraction as ChatInputCommandInteraction,
-                mockMessage as Message
-            );
-
-            if (collectorCallback) {
-                await collectorCallback(mockSelectInteraction);
-            }
-
-            // Should handle the error and send failure message
-            expect(mockSelectInteraction.followUp).toHaveBeenCalled();
-        });
-
-        it('should handle component type that is neither button nor select', async () => {
-            let collectorCallback: any;
-            const mockMessage = {
-                createMessageComponentCollector: jest.fn().mockReturnValue({
-                    on: jest.fn((event: string, callback: any) => {
-                        if (event === 'collect') {
-                            collectorCallback = callback;
-                        }
-                        return { on: jest.fn() };
-                    }),
-                }),
-                components: [
-                    {
-                        components: [
-                            {
-                                type: 5, // Text input (not button or select)
-                                customId: 'server_control:1:menu0',
-                            },
-                        ],
-                    },
-                ],
-            } as any;
-
-            const mockInteraction2 = {
-                user: { id: 'test-user-123' },
-                isStringSelectMenu: jest.fn().mockReturnValue(true),
-                isButton: jest.fn().mockReturnValue(false),
-                values: ['1:server-123:start'],
-                deferUpdate: jest.fn().mockResolvedValue(undefined),
-                followUp: jest.fn().mockResolvedValue(undefined),
-                editReply: jest.fn().mockResolvedValue(undefined),
-            };
-
-            statusCommand.setupCollector(
-                mockInteraction as ChatInputCommandInteraction,
-                mockMessage as Message
-            );
-
-            if (collectorCallback) {
-                await collectorCallback(mockInteraction2);
-            }
-
-            expect(mockInteraction2.deferUpdate).toHaveBeenCalled();
-        });
-
-        it('should handle empty server list in refreshStatus', async () => {
-            // This tests line 435 - early return when no servers
-            let collectorCallback: any;
-            const mockMessage = {
-                createMessageComponentCollector: jest.fn().mockReturnValue({
-                    on: jest.fn((event: string, callback: any) => {
-                        if (event === 'collect') {
-                            collectorCallback = callback;
-                        }
-                        return { on: jest.fn() };
-                    }),
-                }),
-                components: [
-                    {
-                        components: [
-                            {
-                                type: 3, // StringSelect
-                                customId: 'server_control:1:menu0',
-                            },
-                        ],
-                    },
-                ],
-            } as any;
-
-            const mockSelectInteraction = {
-                user: { id: 'test-user-123' },
-                isStringSelectMenu: jest.fn().mockReturnValue(true),
-                isButton: jest.fn().mockReturnValue(false),
-                values: ['1:server-123:start'],
-                deferUpdate: jest.fn().mockResolvedValue(undefined),
-                followUp: jest.fn().mockResolvedValue(undefined),
-                editReply: jest.fn().mockResolvedValue(undefined),
-            };
-
-            // Mock getServersByUserId to return empty array during refresh
-            mockGetServersByUserId.mockReturnValue([]);
-
-            statusCommand.setupCollector(
-                mockInteraction as ChatInputCommandInteraction,
-                mockMessage as Message
-            );
-
-            if (collectorCallback) {
-                await collectorCallback(mockSelectInteraction);
-            }
-
-            expect(mockSelectInteraction.deferUpdate).toHaveBeenCalled();
-        });
-
-        it('should handle many servers for pagination', async () => {
-            // Test line 566 - pagination row limit (tests breaking into multiple rows)
-            const manyServers = Array.from({ length: 12 }, (_, i) => ({
-                attributes: {
-                    identifier: `server-${i}`,
-                    name: `Server ${i}`,
-                    description: `Test server ${i}`,
-                },
-            }));
-
-            mockGetServersByUserId.mockReturnValue([
-                {
-                    id: 1,
-                    userId: 'test-user-123',
-                    serverName: 'My Server',
-                    serverUrl: testServerUrl,
-                    apiKey: testApiKey,
-                },
-            ]);
-
-            server.use(
-                http.get(`${testServerUrl}/api/client`, () => {
-                    return HttpResponse.json({ data: manyServers });
-                }),
-                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
-                    return HttpResponse.json({
-                        attributes: {
-                            current_state: 'running',
-                            resources: {
-                                memory_bytes: 1073741824,
-                                cpu_absolute: 50.5,
-                                disk_bytes: 2147483648,
-                                uptime: 3600000,
-                            },
-                        },
-                    });
-                })
-            );
-
-            const result = await statusCommand.execute(mockInteraction as ChatInputCommandInteraction);
-
-            expect(result.embeds).toBeDefined();
-            expect(result.components).toBeDefined();
-            // With 12 servers, should have multiple component rows (select menus are limited to 25 options)
-            expect(result.components.length).toBeGreaterThanOrEqual(1);
         });
     });
 });

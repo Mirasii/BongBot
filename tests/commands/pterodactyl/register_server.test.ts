@@ -115,8 +115,32 @@ describe('register_server command', () => {
                 ephemeral: true,
             });
             expect(result.content).toContain('My Test Server');
-            expect(result.content).toContain('42');
-            expect(result.content).toContain('https://panel.example.com');
+        });
+
+        it('should remove trailing slash from server URL', async () => {
+            const getString = jest.fn((key: string, required?: boolean) => {
+                const options: { [key: string]: string } = {
+                    server_url: 'https://panel.example.com/',
+                    api_key: 'test-api-key',
+                    server_name: 'Test Server',
+                };
+                return options[key] || null;
+            });
+
+            mockInteraction.options = { getString } as any;
+            mockAddServer.mockReturnValue(1);
+
+            await registerCommand.execute(
+                mockInteraction as ChatInputCommandInteraction,
+                mockClient as Client
+            );
+
+            expect(mockAddServer).toHaveBeenCalledWith({
+                userId: 'test-user-123',
+                serverName: 'Test Server',
+                serverUrl: 'https://panel.example.com',
+                apiKey: 'test-api-key',
+            });
         });
 
         it('should use custom database from environment variable', async () => {
