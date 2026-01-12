@@ -48,17 +48,26 @@ export default class Database {
             INSERT INTO pterodactyl_servers (userId, serverName, serverUrl, apiKey)
             VALUES (?, ?, ?, ?)
         `);
-        const result = stmt.run(server.userId, server.serverName, server.serverUrl, server.apiKey);
+        const result = stmt.run(
+            server.userId,
+            server.serverName,
+            server.serverUrl,
+            server.apiKey,
+        );
         return result.lastInsertRowid as number;
     }
 
     getServerById(id: number): PterodactylServer | undefined {
-        const stmt = this.db.prepare('SELECT * FROM pterodactyl_servers WHERE id = ?');
+        const stmt = this.db.prepare(
+            'SELECT * FROM pterodactyl_servers WHERE id = ?',
+        );
         return stmt.get(id) as PterodactylServer | undefined;
     }
 
     getServersByUserId(userId: string): PterodactylServer[] {
-        const stmt = this.db.prepare('SELECT * FROM pterodactyl_servers WHERE userId = ?');
+        const stmt = this.db.prepare(
+            'SELECT * FROM pterodactyl_servers WHERE userId = ?',
+        );
         return stmt.all(userId) as PterodactylServer[];
     }
 
