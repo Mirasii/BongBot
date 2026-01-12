@@ -1,8 +1,4 @@
-import {
-    SlashCommandBuilder,
-    ChatInputCommandInteraction,
-    Client,
-} from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, Client } from 'discord.js';
 import { buildError } from '../../helpers/errorBuilder.js';
 import Database from '../../helpers/database.js';
 
@@ -10,24 +6,9 @@ export default {
     data: new SlashCommandBuilder()
         .setName('register_server')
         .setDescription('Register a new pterodactyl server to the bot.')
-        .addStringOption((option) =>
-            option
-                .setName('server_url')
-                .setDescription('The URL of the pterodactyl panel.')
-                .setRequired(true),
-        )
-        .addStringOption((option) =>
-            option
-                .setName('api_key')
-                .setDescription('The API key for the pterodactyl panel.')
-                .setRequired(true),
-        )
-        .addStringOption((option) =>
-            option
-                .setName('server_name')
-                .setDescription('The Name of the server to register.')
-                .setRequired(true),
-        ),
+        .addStringOption(option => option.setName('server_url').setDescription('The URL of the pterodactyl panel.').setRequired(true))
+        .addStringOption(option => option.setName('api_key').setDescription('The API key for the pterodactyl panel.').setRequired(true))
+        .addStringOption(option => option.setName('server_name').setDescription('The Name of the server to register.').setRequired(true)),
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
         try {
             const db = new Database(

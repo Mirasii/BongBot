@@ -1,3 +1,3 @@
-import register from './register_server.ts';
-import status from './server_status.ts';
+import register from './register_server.js';
+import status from './server_status.js';
 export default [register, status];
