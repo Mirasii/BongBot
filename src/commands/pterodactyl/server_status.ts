@@ -8,6 +8,10 @@ export default {
         .setDescription('Check the status of all game servers')
         .addStringOption(option => option.setName('server_name').setDescription('Specify which Pterodactyl server to query (required if you have multiple registered)').setRequired(false)),
     async execute(interaction: ChatInputCommandInteraction) {
+        await this.executeCommand(interaction); /** Separate command due to complexity, reduce nesting */
+    },
+
+    async executeCommand(interaction: ChatInputCommandInteraction) {
         const db = new Database(
             process.env.SERVER_DATABASE || 'pterodactyl.db',
         );
