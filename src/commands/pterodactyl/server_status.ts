@@ -15,6 +15,7 @@ export default {
         try {
             const userServers = db.getServersByUserId(interaction.user.id);
             db.close();
+
             if (!userServers || userServers.length === 0) {
                 throw new Error('You have no registered servers. Use `/register_server` to add one.');
             }
@@ -25,20 +26,17 @@ export default {
                 throw new Error(`You have multiple registered servers. Please specify which one to query using the \`server_name\` option. Your registered servers:\n\n${serverList}`);
             }
 
-            // Determine which server to use
-            let selectedServer = userServers.length === 1 ? userServers[0] : userServers.find(s => s.serverName === serverName); 
+            let selectedServer = userServers.length === 1 ? userServers[0] : userServers.find(s => s.serverName === serverName);
             if (!selectedServer) {
                 const serverList = userServers.map(s => `• ${s.serverName}`).join('\n');
                 throw new Error(`No server found with name "${serverName}". Your registered servers:\n\n${serverList}`);
             }
 
-            // Fetch game servers from the Pterodactyl server
             const servers = await fetchServers(
                 selectedServer.serverUrl,
                 selectedServer.apiKey,
             );
 
-            // Fetch resources for all game servers in parallel
             const resources = await Promise.all(
                 servers.map((server) =>
                     fetchServerResources(
@@ -73,7 +71,7 @@ export default {
                 }
 
                 embed.addFields({
-                    name: `${selectedServer.serverName} - ${server.attributes.name}`,
+                    name: `${server.attributes.name}`,
                     value: value,
                     inline: false,
                 });
@@ -86,7 +84,6 @@ export default {
                 components: components,
             };
         } catch (error) {
-            db.close();
             return await buildError(interaction, error);
         }
     },
