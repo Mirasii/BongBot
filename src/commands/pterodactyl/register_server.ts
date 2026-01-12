@@ -40,6 +40,6 @@ export default {
     },
     fullDesc: {
         options: [],
-        description: 'Registers a new pterodactyl server to the bot. A Full Setup Guide can be found [here](httpss://docs.google.com/document/d/1Zp2gsq3bqzJwQ6OeA4nu_3XM3is3-TM8ynA1vWxIZL8/edit?usp=sharing)',
+        description: 'Registers a new pterodactyl server to the bot. A Full Setup Guide can be found [here](https://docs.google.com/document/d/1Zp2gsq3bqzJwQ6OeA4nu_3XM3is3-TM8ynA1vWxIZL8/edit?usp=sharing).',
     },
 };
