@@ -114,7 +114,7 @@ describe('register_server command', () => {
                 content: expect.stringContaining('Successfully registered server'),
                 ephemeral: true,
             });
-            expect(result.content).toContain('My Test Server');
+            expect((result as any).content).toContain('My Test Server');
         });
 
         it('should remove trailing slash from server URL', async () => {
@@ -180,7 +180,7 @@ describe('register_server command', () => {
             );
 
             expect(mockBuildError).toHaveBeenCalledWith(mockInteraction, testError);
-            expect(result.isError).toBe(true);
+            expect((result as any).isError).toBe(true);
         });
 
         it('should handle duplicate server error', async () => {
