@@ -33,14 +33,13 @@ export default {
             const db = new Database(
                 process.env.SERVER_DATABASE || 'pterodactyl.db',
             );
-            const serverUrl = interaction.options.getString('server_url', true);
-            const apiKey = interaction.options.getString('api_key', true);
-            const serverName = interaction.options.getString(
-                'server_name',
-                true,
-            );
+            let serverUrl = interaction.options.getString('server_url', true).trim();
+            const apiKey = interaction.options.getString('api_key', true).trim();
+            const serverName = interaction.options.getString('server_name', true).trim();
             const userId = interaction.user.id;
-
+            if (serverUrl.endsWith('/')) {
+                serverUrl = serverUrl.slice(0, -1);
+            }
             const serverId = db.addServer({
                 userId,
                 serverName,
