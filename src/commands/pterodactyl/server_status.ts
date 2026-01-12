@@ -13,8 +13,8 @@ import {
     StringSelectMenuBuilder,
     StringSelectMenuInteraction,
 } from 'discord.js';
-import Database from '../helpers/database.js';
-import { buildError } from '../helpers/errorBuilder.js';
+import Database from '../../helpers/database.js';
+import { buildError } from '../../helpers/errorBuilder.js';
 
 interface PterodactylServer {
     attributes: {

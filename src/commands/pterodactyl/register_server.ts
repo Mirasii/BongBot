@@ -3,8 +3,8 @@ import {
     ChatInputCommandInteraction,
     Client,
 } from 'discord.js';
-import { buildError } from '../helpers/errorBuilder.js';
-import Database from '../helpers/database.js';
+import { buildError } from '../../helpers/errorBuilder.js';
+import Database from '../../helpers/database.js';
 
 export default {
     data: new SlashCommandBuilder()
