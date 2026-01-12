@@ -5,8 +5,8 @@
     "main": "./dist/index.js",
     "type": "module",
     "scripts": {
-        "build": "esbuild src/index.ts --platform=node --target=esnext --outdir=dist --format=esm --bundle --external:node:* --banner:js='import { createRequire } from \"module\"; const require = createRequire(import.meta.url);' --minify",
-        "dev": "esbuild src/index.ts --platform=node --target=esnext --outdir=dist --format=esm --bundle --external:node:* --banner:js='import { createRequire } from \"module\"; const require = createRequire(import.meta.url);' --sourcemap --watch",
+        "build": "node esbuild.config.mjs --minify",
+        "dev": "node esbuild.config.mjs --watch",
         "start": "node ./dist/index.js",
         "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --json --coverage --outputFile=report.json --passWithNoTests"
     },
@@ -26,5 +26,9 @@
         "ts-jest-resolver": "^2.0.1",
         "ts-node": "^10.9.2",
         "typescript": "^5.9.3"
+    },
+    "dependencies": {
+        "@types/better-sqlite3": "^7.6.13",
+        "better-sqlite3": "^12.6.0"
     }
 }
