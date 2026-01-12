@@ -58,8 +58,7 @@ const command = {
             if (!userServers || userServers.length === 0) {
                 db.close();
                 return {
-                    content:
-                        '❌ You have no registered servers. Use `/register_server` to add one.',
+                    content: '❌ You have no registered servers. Use `/register_server` to add one.',
                     ephemeral: true,
                 };
             }
@@ -216,7 +215,7 @@ const command = {
                     db.close();
 
                     if (!dbServer) {
-                        await buttonInteraction.followUp({
+                        await componentInteraction.followUp({
                             content: '❌ Server configuration not found.',
                             ephemeral: true,
                         });
@@ -284,8 +283,7 @@ const command = {
                     console.error('Component interaction error:', error);
                     await componentInteraction
                         .followUp({
-                            content:
-                                '❌ An error occurred processing your request.',
+                            content: '❌ An error occurred processing your request.',
                             ephemeral: true,
                         })
                         .catch(() => {});
