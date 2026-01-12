@@ -1,10 +1,5 @@
-import Database from 'better-sqlite3';
+import BetterSqlite3 from 'better-sqlite3';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 export interface PterodactylServer {
     id?: number;
@@ -15,12 +10,12 @@ export interface PterodactylServer {
 }
 
 export default class Database {
-    private db: Database.Database;
+    private db: BetterSqlite3.Database;
     private dbPath: string;
 
     constructor(dbFileName: string) {
-        this.dbPath = path.join(__dirname, '../../data', dbFileName);
-        this.db = new Database(this.dbPath);
+        this.dbPath = path.join(process.cwd(), 'data', dbFileName);
+        this.db = new BetterSqlite3(this.dbPath);
         this.initialize();
     }
 
@@ -39,6 +34,16 @@ export default class Database {
     }
 
     addServer(server: PterodactylServer): number {
+        const checkStmt = this.db.prepare(`
+            SELECT id FROM pterodactyl_servers
+            WHERE userId = ? AND serverUrl = ?
+        `);
+        const existing = checkStmt.get(server.userId, server.serverUrl);
+
+        if (existing) {
+            throw new Error('This server is already registered for this user.');
+        }
+
         const stmt = this.db.prepare(`
             INSERT INTO pterodactyl_servers (userId, serverName, serverUrl, apiKey)
             VALUES (?, ?, ?, ?)
@@ -55,56 +60,6 @@ export default class Database {
     getServersByUserId(userId: string): PterodactylServer[] {
         const stmt = this.db.prepare('SELECT * FROM pterodactyl_servers WHERE userId = ?');
         return stmt.all(userId) as PterodactylServer[];
-    }
-
-    getAllServers(): PterodactylServer[] {
-        const stmt = this.db.prepare('SELECT * FROM pterodactyl_servers');
-        return stmt.all() as PterodactylServer[];
-    }
-
-    updateServer(id: number, server: Partial<PterodactylServer>): boolean {
-        const updates: string[] = [];
-        const values: any[] = [];
-
-        if (server.userId !== undefined) {
-            updates.push('userId = ?');
-            values.push(server.userId);
-        }
-        if (server.serverName !== undefined) {
-            updates.push('serverName = ?');
-            values.push(server.serverName);
-        }
-        if (server.serverUrl !== undefined) {
-            updates.push('serverUrl = ?');
-            values.push(server.serverUrl);
-        }
-        if (server.apiKey !== undefined) {
-            updates.push('apiKey = ?');
-            values.push(server.apiKey);
-        }
-
-        if (updates.length === 0) return false;
-
-        values.push(id);
-        const stmt = this.db.prepare(`
-            UPDATE pterodactyl_servers
-            SET ${updates.join(', ')}
-            WHERE id = ?
-        `);
-        const result = stmt.run(...values);
-        return result.changes > 0;
-    }
-
-    deleteServer(id: number): boolean {
-        const stmt = this.db.prepare('DELETE FROM pterodactyl_servers WHERE id = ?');
-        const result = stmt.run(id);
-        return result.changes > 0;
-    }
-
-    deleteServersByUserId(userId: string): number {
-        const stmt = this.db.prepare('DELETE FROM pterodactyl_servers WHERE userId = ?');
-        const result = stmt.run(userId);
-        return result.changes;
     }
 
     close(): void {
