@@ -510,6 +510,8 @@ function createControlComponents(
     const rows: (ActionRowBuilder<StringSelectMenuBuilder> | ActionRowBuilder<ButtonBuilder>)[] = [];
 
     allServerData.forEach(({ servers, resources, dbServer }) => {
+        const allOptions: { label: string; description: string; value: string }[] = [];
+
         servers.forEach((server, index) => {
             const state = resources[index]?.attributes.current_state || 'unknown';
             const serverName =
@@ -517,11 +519,9 @@ function createControlComponents(
                     ? server.attributes.name.substring(0, 77) + '...'
                     : server.attributes.name;
 
-            const options = [];
-
             // Add Start option if server is offline
             if (state === 'offline') {
-                options.push({
+                allOptions.push({
                     label: `▶️ Start ${serverName}`,
                     description: 'Start the server',
                     value: `${dbServer.id}:${server.attributes.identifier}:start`,
@@ -530,7 +530,7 @@ function createControlComponents(
 
             // Add Restart option if server is running
             if (state === 'running') {
-                options.push({
+                allOptions.push({
                     label: `🔄 Restart ${serverName}`,
                     description: 'Restart the server',
                     value: `${dbServer.id}:${server.attributes.identifier}:restart`,
@@ -539,30 +539,40 @@ function createControlComponents(
 
             // Add Stop option if server is running
             if (state === 'running') {
-                options.push({
+                allOptions.push({
                     label: `⏹️ Stop ${serverName}`,
                     description: 'Stop the server',
                     value: `${dbServer.id}:${server.attributes.identifier}:stop`,
                 });
             }
+        });
 
-            // Only create a select menu if there are actions available
-            if (options.length > 0) {
+        // Discord allows max 25 options per select menu, so split if needed
+        // We'll use up to 3 rows for select menus, leaving room for "Stop All" button
+        const maxRowsForSelects = 3;
+        const optionsPerMenu = Math.ceil(allOptions.length / Math.min(maxRowsForSelects, Math.ceil(allOptions.length / 25)));
+
+        for (let i = 0; i < allOptions.length; i += optionsPerMenu) {
+            const menuOptions = allOptions.slice(i, i + optionsPerMenu);
+            if (menuOptions.length > 0) {
                 const selectMenu = new StringSelectMenuBuilder()
-                    .setCustomId(`server_control:${dbServer.id}:${server.attributes.identifier}`)
-                    .setPlaceholder(`Control ${serverName}`)
-                    .addOptions(options);
+                    .setCustomId(`server_control:${dbServer.id}:menu${i}`)
+                    .setPlaceholder(`Server Actions (${i / optionsPerMenu + 1}/${Math.ceil(allOptions.length / optionsPerMenu)})`)
+                    .addOptions(menuOptions);
 
                 const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
                 rows.push(row);
+
+                // Respect Discord's 5 row limit (leave room for Stop All button)
+                if (rows.length >= 4) break;
             }
-        });
+        }
 
         // Keep "Stop All" button for convenience
         const anyRunning = resources.some(
             (r) => r?.attributes.current_state === 'running',
         );
-        if (anyRunning) {
+        if (anyRunning && rows.length < 5) {
             const stopRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
                 new ButtonBuilder()
                     .setCustomId(`server_control:${dbServer.id}:all:stop`)
