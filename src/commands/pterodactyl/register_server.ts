@@ -31,7 +31,7 @@ export default {
             db.close();
 
             return {
-                content: `Successfully registered server **${serverName}** (ID: ${serverId})!\nURL: ${serverUrl}`,
+                content: `Successfully registered server **${serverName}**!`,
                 ephemeral: true
             };
         } catch (error) {

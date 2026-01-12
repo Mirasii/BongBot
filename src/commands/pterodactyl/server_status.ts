@@ -407,7 +407,7 @@ async function refreshStatus(componentInteraction: ButtonInteraction | StringSel
             }
 
             embed.addFields({
-                name: `${dbServer.serverName} - ${server.attributes.name}`,
+                name: `${server.attributes.name}`,
                 value: value,
                 inline: false,
             });
