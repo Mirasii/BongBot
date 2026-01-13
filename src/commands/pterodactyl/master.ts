@@ -108,7 +108,7 @@ export default {
     setupCollector: serverStatus.setupCollector,
 
     fullDesc: {
-        description: 'Manage your Pterodactyl panel servers. Use subcommands to register, list, view status, update, or remove servers.',
+        description: 'Manage your Pterodactyl panel servers. Use subcommands to register, list, view status, update, or remove servers. View the full guide [here](https://docs.google.com/document/d/1Zp2gsq3bqzJwQ6OeA4nu_3XM3is3-TM8ynA1vWxIZL8/edit?tab=t.0&usp=sharing).',
         options: [
             {
                 name: 'register',
