@@ -24,15 +24,11 @@ jest.unstable_mockModule('../../../src/helpers/errorBuilder.js', () => ({
 }));
 
 // Import after mocking
-const listServersModule = await import('../../../src/commands/pterodactyl/list_servers.js');
-const listServersCommand = listServersModule.default;
+const { execute: listServersExecute } = await import('../../../src/commands/pterodactyl/list_servers.js');
 
 describe('list_servers command', () => {
     let mockInteraction: Partial<ChatInputCommandInteraction>;
     let mockClient: Partial<Client>;
-
-    // Use utility function for standard command structure tests
-    testCommandStructure(listServersCommand, 'list_servers');
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -56,19 +52,7 @@ describe('list_servers command', () => {
         });
     });
 
-    describe('fullDesc property', () => {
-        it('should have a fullDesc property', () => {
-            expect(listServersCommand.fullDesc).toBeDefined();
-            expect(listServersCommand.fullDesc.description).toBeTruthy();
-        });
-
-        it('should have empty options array in fullDesc', () => {
-            expect(listServersCommand.fullDesc.options).toBeDefined();
-            expect(listServersCommand.fullDesc.options).toHaveLength(0);
-        });
-    });
-
-    describe('execute method', () => {
+    describe('execute function', () => {
         it('should successfully list servers when user has servers', async () => {
             const mockServers = [
                 {
@@ -89,7 +73,7 @@ describe('list_servers command', () => {
 
             mockGetServersByUserId.mockReturnValue(mockServers);
 
-            const result = await listServersCommand.execute(
+            const result = await listServersExecute(
                 mockInteraction as ChatInputCommandInteraction,
                 mockClient as Client
             );
@@ -111,7 +95,7 @@ describe('list_servers command', () => {
         it('should handle no registered servers', async () => {
             mockGetServersByUserId.mockReturnValue([]);
 
-            const result = await listServersCommand.execute(
+            const result = await listServersExecute(
                 mockInteraction as ChatInputCommandInteraction,
                 mockClient as Client
             );
@@ -139,7 +123,7 @@ describe('list_servers command', () => {
 
             mockGetServersByUserId.mockReturnValue(mockServers);
 
-            const result = await listServersCommand.execute(
+            const result = await listServersExecute(
                 mockInteraction as ChatInputCommandInteraction,
                 mockClient as Client
             );
@@ -156,7 +140,7 @@ describe('list_servers command', () => {
 
             mockGetServersByUserId.mockReturnValue([]);
 
-            await listServersCommand.execute(
+            await listServersExecute(
                 mockInteraction as ChatInputCommandInteraction,
                 mockClient as Client
             );
@@ -183,7 +167,7 @@ describe('list_servers command', () => {
                 isError: true,
             });
 
-            const result = await listServersCommand.execute(
+            const result = await listServersExecute(
                 mockInteraction as ChatInputCommandInteraction,
                 mockClient as Client
             );
@@ -195,7 +179,7 @@ describe('list_servers command', () => {
         it('should close database connection even on success', async () => {
             mockGetServersByUserId.mockReturnValue([]);
 
-            await listServersCommand.execute(
+            await listServersExecute(
                 mockInteraction as ChatInputCommandInteraction,
                 mockClient as Client
             );
@@ -230,7 +214,7 @@ describe('list_servers command', () => {
 
             mockGetServersByUserId.mockReturnValue(mockServers);
 
-            const result = await listServersCommand.execute(
+            const result = await listServersExecute(
                 mockInteraction as ChatInputCommandInteraction,
                 mockClient as Client
             );
@@ -244,7 +228,7 @@ describe('list_servers command', () => {
         it('should include timestamp in embed', async () => {
             mockGetServersByUserId.mockReturnValue([]);
 
-            const result = await listServersCommand.execute(
+            const result = await listServersExecute(
                 mockInteraction as ChatInputCommandInteraction,
                 mockClient as Client
             );
@@ -260,7 +244,7 @@ describe('list_servers command', () => {
 
             mockGetServersByUserId.mockReturnValue([]);
 
-            await listServersCommand.execute(
+            await listServersExecute(
                 mockInteraction as ChatInputCommandInteraction,
                 mockClient as Client
             );

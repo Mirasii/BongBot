@@ -208,6 +208,67 @@ describe('Database class', () => {
         });
     });
 
+    describe('updateServer', () => {
+        beforeEach(() => {
+            db = new Database(testDbPath);
+            jest.clearAllMocks();
+        });
+
+        it('should update server URL', () => {
+            mockGet.mockReturnValueOnce({ id: 1 }); // Server exists
+
+            db.updateServer('user123', 'Test Server', {
+                serverUrl: 'https://new-panel.example.com',
+            });
+
+            expect(mockPrepare).toHaveBeenCalledWith(expect.stringContaining('SELECT id FROM pterodactyl_servers'));
+            expect(mockGet).toHaveBeenCalledWith('user123', 'Test Server');
+            expect(mockPrepare).toHaveBeenCalledWith(expect.stringContaining('UPDATE pterodactyl_servers'));
+            expect(mockRun).toHaveBeenCalledWith('https://new-panel.example.com', 'user123', 'Test Server');
+        });
+
+        it('should update API key', () => {
+            mockGet.mockReturnValueOnce({ id: 1 }); // Server exists
+
+            db.updateServer('user123', 'Test Server', {
+                apiKey: 'new-api-key',
+            });
+
+            expect(mockPrepare).toHaveBeenCalledWith(expect.stringContaining('UPDATE pterodactyl_servers'));
+            expect(mockRun).toHaveBeenCalledWith('new-api-key', 'user123', 'Test Server');
+        });
+
+        it('should update both URL and API key', () => {
+            mockGet.mockReturnValueOnce({ id: 1 }); // Server exists
+
+            db.updateServer('user123', 'Test Server', {
+                serverUrl: 'https://new-panel.example.com',
+                apiKey: 'new-api-key',
+            });
+
+            expect(mockPrepare).toHaveBeenCalledWith(expect.stringContaining('UPDATE pterodactyl_servers'));
+            expect(mockRun).toHaveBeenCalledWith('https://new-panel.example.com', 'new-api-key', 'user123', 'Test Server');
+        });
+
+        it('should throw error when server not found', () => {
+            mockGet.mockReturnValueOnce(undefined); // Server doesn't exist
+
+            expect(() => {
+                db.updateServer('user123', 'Test Server', {
+                    serverUrl: 'https://new-panel.example.com',
+                });
+            }).toThrow('Server "Test Server" not found for this user.');
+        });
+
+        it('should throw error when no fields provided', () => {
+            mockGet.mockReturnValueOnce({ id: 1 }); // Server exists
+
+            expect(() => {
+                db.updateServer('user123', 'Test Server', {});
+            }).toThrow('No fields to update. Please provide at least one field (server_url or api_key).');
+        });
+    });
+
     describe('close', () => {
         it('should close the database connection', () => {
             db = new Database(testDbPath);

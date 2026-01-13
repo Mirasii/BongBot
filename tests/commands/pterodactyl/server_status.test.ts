@@ -70,14 +70,10 @@ jest.unstable_mockModule('../../../src/helpers/errorBuilder.js', () => ({
 }));
 
 // Import after mocking and MSW setup
-const statusModule = await import('../../../src/commands/pterodactyl/server_status.js');
-const statusCommand = statusModule.default;
+const { execute: serverStatusExecute, setupCollector } = await import('../../../src/commands/pterodactyl/server_status.js');
 
 describe('server_status command', () => {
     let mockInteraction: any;
-
-    // Use utility function for standard command structure tests
-    testCommandStructure(statusCommand, 'server_status');
 
     beforeAll(() => {
         jest.useFakeTimers();
@@ -149,7 +145,7 @@ describe('server_status command', () => {
 
     describe('command methods', () => {
         it('should have a setupCollector method', () => {
-            expect(statusCommand.setupCollector).toBeInstanceOf(Function);
+            expect(setupCollector).toBeInstanceOf(Function);
         });
     });
 
@@ -157,7 +153,7 @@ describe('server_status command', () => {
         it('should return error if user has no registered servers', async () => {
             mockGetServersByUserId.mockReturnValue([]);
 
-            await statusCommand.execute(mockInteraction);
+            await serverStatusExecute(mockInteraction);
 
             expect(mockGetServersByUserId).toHaveBeenCalledWith('test-user-123');
             expect(mockDbClose).toHaveBeenCalledTimes(1);
@@ -172,7 +168,7 @@ describe('server_status command', () => {
         it('should return error if servers is null', async () => {
             mockGetServersByUserId.mockReturnValue(null);
 
-            await statusCommand.execute(mockInteraction);
+            await serverStatusExecute(mockInteraction);
 
             expect(mockDbClose).toHaveBeenCalledTimes(1);
             expect(mockBuildError).toHaveBeenCalledWith(
@@ -184,7 +180,7 @@ describe('server_status command', () => {
         });
 
         it('should fetch and display server status for single server user', async () => {
-            const result: any = await statusCommand.execute(mockInteraction);
+            const result: any = await serverStatusExecute(mockInteraction);
 
             expect(mockGetServersByUserId).toHaveBeenCalledWith('test-user-123');
             expect(mockDbClose).toHaveBeenCalledTimes(1);
@@ -198,7 +194,7 @@ describe('server_status command', () => {
         });
 
         it('should include control components in response', async () => {
-            const result: any = await statusCommand.execute(mockInteraction);
+            const result: any = await serverStatusExecute(mockInteraction);
 
             expect(mockDbClose).toHaveBeenCalledTimes(1);
             expect(result.components).toBeDefined();
@@ -229,7 +225,7 @@ describe('server_status command', () => {
         it('should require server_name parameter when user has multiple servers', async () => {
             mockInteraction.options.getString.mockReturnValue(null);
 
-            await statusCommand.execute(mockInteraction);
+            await serverStatusExecute(mockInteraction);
 
             expect(mockDbClose).toHaveBeenCalledTimes(1);
             expect(mockBuildError).toHaveBeenCalledWith(
@@ -243,7 +239,7 @@ describe('server_status command', () => {
         it('should work with server_name parameter', async () => {
             mockInteraction.options.getString.mockReturnValue('Server 1');
 
-            const result: any = await statusCommand.execute(mockInteraction);
+            const result: any = await serverStatusExecute(mockInteraction);
 
             expect(mockDbClose).toHaveBeenCalledTimes(1);
             expect(result.embeds).toBeDefined();
@@ -253,7 +249,7 @@ describe('server_status command', () => {
         it('should return error for invalid server_name', async () => {
             mockInteraction.options.getString.mockReturnValue('Invalid Server');
 
-            await statusCommand.execute(mockInteraction);
+            await serverStatusExecute(mockInteraction);
 
             expect(mockDbClose).toHaveBeenCalledTimes(1);
             expect(mockBuildError).toHaveBeenCalledWith(
@@ -267,7 +263,7 @@ describe('server_status command', () => {
 
     describe('server state display', () => {
         it('should display running server with resource info', async () => {
-            const result: any = await statusCommand.execute(mockInteraction);
+            const result: any = await serverStatusExecute(mockInteraction);
 
             const fieldValue = result.embeds[0].data.fields[0].value;
             expect(fieldValue).toContain('running');
@@ -293,7 +289,7 @@ describe('server_status command', () => {
                 })
             );
 
-            const result: any = await statusCommand.execute(mockInteraction);
+            const result: any = await serverStatusExecute(mockInteraction);
 
             const fieldValue = result.embeds[0].data.fields[0].value;
             expect(fieldValue).toContain('offline');
@@ -307,7 +303,7 @@ describe('server_status command', () => {
                 })
             );
 
-            const result: any = await statusCommand.execute(mockInteraction);
+            const result: any = await serverStatusExecute(mockInteraction);
 
             const fieldValue = result.embeds[0].data.fields[0].value;
             expect(fieldValue).toContain('unknown');
@@ -320,7 +316,7 @@ describe('server_status command', () => {
                 throw new Error('Database error');
             });
 
-            await statusCommand.execute(mockInteraction);
+            await serverStatusExecute(mockInteraction);
 
             // Database should NOT be closed if error happens before db.close()
             expect(mockDbClose).toHaveBeenCalledTimes(0);
@@ -334,7 +330,7 @@ describe('server_status command', () => {
                 })
             );
 
-            await statusCommand.execute(mockInteraction);
+            await serverStatusExecute(mockInteraction);
 
             expect(mockBuildError).toHaveBeenCalled();
         });
@@ -346,7 +342,7 @@ describe('server_status command', () => {
                 })
             );
 
-            const result: any = await statusCommand.execute(mockInteraction);
+            const result: any = await serverStatusExecute(mockInteraction);
 
             expect(result.embeds).toBeDefined();
             const fields = result.embeds[0].data.fields;
@@ -356,7 +352,7 @@ describe('server_status command', () => {
 
     describe('helper functions - formatting', () => {
         it('should format bytes correctly', async () => {
-            const result: any = await statusCommand.execute(mockInteraction);
+            const result: any = await serverStatusExecute(mockInteraction);
 
             const fieldValue = result.embeds[0].data.fields[0].value;
             // 1073741824 bytes = 1024 MB
@@ -364,7 +360,7 @@ describe('server_status command', () => {
         });
 
         it('should format CPU percentage correctly', async () => {
-            const result: any = await statusCommand.execute(mockInteraction);
+            const result: any = await serverStatusExecute(mockInteraction);
 
             const fieldValue = result.embeds[0].data.fields[0].value;
             expect(fieldValue).toContain('50.5');
@@ -387,7 +383,7 @@ describe('server_status command', () => {
                 })
             );
 
-            const result: any = await statusCommand.execute(mockInteraction);
+            const result: any = await serverStatusExecute(mockInteraction);
 
             const fieldValue = result.embeds[0].data.fields[0].value;
             expect(fieldValue).toMatch(/2h.*1m/);
@@ -396,7 +392,7 @@ describe('server_status command', () => {
 
     describe('status emojis', () => {
         it('should show green circle for running state', async () => {
-            const result: any = await statusCommand.execute(mockInteraction);
+            const result: any = await serverStatusExecute(mockInteraction);
             expect(result.embeds[0].data.fields[0].value).toContain('🟢');
         });
 
@@ -417,7 +413,7 @@ describe('server_status command', () => {
                 })
             );
 
-            const result: any = await statusCommand.execute(mockInteraction);
+            const result: any = await serverStatusExecute(mockInteraction);
             expect(result.embeds[0].data.fields[0].value).toContain('🔴');
         });
 
@@ -438,7 +434,7 @@ describe('server_status command', () => {
                 })
             );
 
-            const result: any = await statusCommand.execute(mockInteraction);
+            const result: any = await serverStatusExecute(mockInteraction);
             expect(result.embeds[0].data.fields[0].value).toContain('🟡');
         });
     });
@@ -470,7 +466,7 @@ describe('server_status command', () => {
         });
 
         it('should setup a collector with correct timeout', () => {
-            statusCommand.setupCollector(mockInteraction, mockMessage);
+            setupCollector(mockInteraction, mockMessage);
 
             expect(mockMessage.createMessageComponentCollector).toHaveBeenCalledWith({
                 time: 600000,
@@ -478,7 +474,7 @@ describe('server_status command', () => {
         });
 
         it('should reject interactions from different users', async () => {
-            statusCommand.setupCollector(mockInteraction, mockMessage);
+            setupCollector(mockInteraction, mockMessage);
 
             const mockComponentInteraction = {
                 user: { id: 'different-user' },
@@ -494,7 +490,7 @@ describe('server_status command', () => {
         });
 
         it('should handle button interaction with stop action', async () => {
-            statusCommand.setupCollector(mockInteraction, mockMessage);
+            setupCollector(mockInteraction, mockMessage);
 
             const mockButtonInteraction = {
                 user: { id: 'test-user-123' },
@@ -512,7 +508,7 @@ describe('server_status command', () => {
         });
 
         it('should handle select menu interaction with start action', async () => {
-            statusCommand.setupCollector(mockInteraction, mockMessage);
+            setupCollector(mockInteraction, mockMessage);
 
             const mockSelectInteraction = {
                 user: { id: 'test-user-123' },
@@ -534,7 +530,7 @@ describe('server_status command', () => {
         });
 
         it('should handle restart action', async () => {
-            statusCommand.setupCollector(mockInteraction, mockMessage);
+            setupCollector(mockInteraction, mockMessage);
 
             const mockInteraction2 = {
                 user: { id: 'test-user-123' },
@@ -555,7 +551,7 @@ describe('server_status command', () => {
         });
 
         it('should handle stop all action', async () => {
-            statusCommand.setupCollector(mockInteraction, mockMessage);
+            setupCollector(mockInteraction, mockMessage);
 
             const mockButtonInteraction = {
                 user: { id: 'test-user-123' },
@@ -582,7 +578,7 @@ describe('server_status command', () => {
                 })
             );
 
-            statusCommand.setupCollector(mockInteraction, mockMessage);
+            setupCollector(mockInteraction, mockMessage);
 
             const mockButtonInteraction = {
                 user: { id: 'test-user-123' },
@@ -605,7 +601,7 @@ describe('server_status command', () => {
         it('should handle database server not found', async () => {
             mockGetServerById.mockReturnValue(null);
 
-            statusCommand.setupCollector(mockInteraction, mockMessage);
+            setupCollector(mockInteraction, mockMessage);
 
             const mockButtonInteraction = {
                 user: { id: 'test-user-123' },
@@ -630,7 +626,7 @@ describe('server_status command', () => {
                 throw new Error('Database error');
             });
 
-            statusCommand.setupCollector(mockInteraction, mockMessage);
+            setupCollector(mockInteraction, mockMessage);
 
             const mockButtonInteraction = {
                 user: { id: 'test-user-123' },
@@ -651,7 +647,7 @@ describe('server_status command', () => {
         });
 
         it('should clear components when collector ends', () => {
-            statusCommand.setupCollector(mockInteraction, mockMessage);
+            setupCollector(mockInteraction, mockMessage);
 
             collectorCallbacks['end']();
 
@@ -665,7 +661,7 @@ describe('server_status command', () => {
             const editError = new Error('Failed to edit');
             mockMessage.edit = jest.fn().mockRejectedValue(editError);
 
-            statusCommand.setupCollector(mockInteraction, mockMessage);
+            setupCollector(mockInteraction, mockMessage);
 
             collectorCallbacks['end']();
 
@@ -713,7 +709,7 @@ describe('server_status command', () => {
                 edit: jest.fn().mockResolvedValue(undefined),
             };
 
-            statusCommand.setupCollector(mockInteraction, testMockMessage);
+            setupCollector(mockInteraction, testMockMessage);
 
             const mockButtonInteraction = {
                 user: { id: 'test-user-123' },
@@ -736,7 +732,7 @@ describe('server_status command', () => {
             const originalEnv = process.env.SERVER_DATABASE;
             process.env.SERVER_DATABASE = 'custom-db.db';
 
-            await statusCommand.execute(mockInteraction);
+            await serverStatusExecute(mockInteraction);
 
             expect(MockDatabase).toHaveBeenCalledWith('custom-db.db');
 
@@ -757,7 +753,7 @@ describe('server_status command', () => {
                 })
             );
 
-            await statusCommand.execute(mockInteraction);
+            await serverStatusExecute(mockInteraction);
 
             expect(mockBuildError).toHaveBeenCalledWith(
                 mockInteraction,
@@ -774,7 +770,7 @@ describe('server_status command', () => {
                 })
             );
 
-            const result: any = await statusCommand.execute(mockInteraction);
+            const result: any = await serverStatusExecute(mockInteraction);
 
             expect(result.embeds).toBeDefined();
             expect(result.embeds[0].data.fields[0].value).toContain('unknown');
@@ -807,7 +803,7 @@ describe('server_status command', () => {
                 edit: jest.fn().mockResolvedValue(undefined),
             };
 
-            statusCommand.setupCollector(mockInteraction, testMockMessage);
+            setupCollector(mockInteraction, testMockMessage);
 
             const mockButtonInteraction = {
                 user: { id: 'test-user-123' },
@@ -844,7 +840,7 @@ describe('server_status command', () => {
                 })
             );
 
-            const result: any = await statusCommand.execute(mockInteraction);
+            const result: any = await serverStatusExecute(mockInteraction);
 
             const fieldValue = result.embeds[0].data.fields[0].value;
             expect(fieldValue).toContain('30m');
@@ -868,7 +864,7 @@ describe('server_status command', () => {
                 })
             );
 
-            const result: any = await statusCommand.execute(mockInteraction);
+            const result: any = await serverStatusExecute(mockInteraction);
             expect(result.embeds[0].data.fields[0].value).toContain('🟠');
         });
 
@@ -892,7 +888,7 @@ describe('server_status command', () => {
                 ],
             };
 
-            statusCommand.setupCollector(mockInteraction, testMockMessage);
+            setupCollector(mockInteraction, testMockMessage);
 
             const mockButtonInteraction = {
                 user: { id: 'test-user-123' },
@@ -945,7 +941,7 @@ describe('server_status command', () => {
                 edit: jest.fn().mockResolvedValue(undefined),
             };
 
-            statusCommand.setupCollector(mockInteraction, testMockMessage);
+            setupCollector(mockInteraction, testMockMessage);
 
             const mockButtonInteraction = {
                 user: { id: 'test-user-123' },
@@ -1018,7 +1014,7 @@ describe('server_status command', () => {
                 ],
             };
 
-            statusCommand.setupCollector(mockInteraction, testMockMessage);
+            setupCollector(mockInteraction, testMockMessage);
 
             const mockButtonInteraction = {
                 user: { id: 'test-user-123' },
@@ -1095,7 +1091,7 @@ describe('server_status command', () => {
                 edit: jest.fn().mockResolvedValue(undefined),
             };
 
-            statusCommand.setupCollector(mockInteraction, testMockMessage);
+            setupCollector(mockInteraction, testMockMessage);
 
             const mockButtonInteraction = {
                 user: { id: 'test-user-123' },

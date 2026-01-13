@@ -24,15 +24,11 @@ jest.unstable_mockModule('../../../src/helpers/errorBuilder.js', () => ({
 }));
 
 // Import after mocking
-const registerModule = await import('../../../src/commands/pterodactyl/register_server.js');
-const registerCommand = registerModule.default;
+const { execute: registerServerExecute } = await import('../../../src/commands/pterodactyl/register_server.js');
 
 describe('register_server command', () => {
     let mockInteraction: Partial<ChatInputCommandInteraction>;
     let mockClient: Partial<Client>;
-
-    // Use utility function for standard command structure tests
-    testCommandStructure(registerCommand, 'register_server');
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -70,34 +66,11 @@ describe('register_server command', () => {
         });
     });
 
-    describe('command options', () => {
-        it('should have required options', () => {
-            const commandData = registerCommand.data.toJSON();
-            expect(commandData.options).toBeDefined();
-            expect(commandData.options?.length).toBe(3);
-
-            const optionNames = commandData.options?.map((opt: any) => opt.name);
-            expect(optionNames).toContain('server_url');
-            expect(optionNames).toContain('api_key');
-            expect(optionNames).toContain('server_name');
-
-            // Check all options are required
-            commandData.options?.forEach((opt: any) => {
-                expect(opt.required).toBe(true);
-            });
-        });
-
-        it('should have fullDesc property', () => {
-            expect(registerCommand.fullDesc).toBeDefined();
-            expect(registerCommand.fullDesc.description).toBeTruthy();
-        });
-    });
-
-    describe('execute method', () => {
+    describe('execute function', () => {
         it('should successfully register a new server', async () => {
             mockAddServer.mockReturnValue(42);
 
-            const result = await registerCommand.execute(
+            const result = await registerServerExecute(
                 mockInteraction as ChatInputCommandInteraction,
                 mockClient as Client
             );
@@ -130,7 +103,7 @@ describe('register_server command', () => {
             mockInteraction.options = { getString } as any;
             mockAddServer.mockReturnValue(1);
 
-            await registerCommand.execute(
+            await registerServerExecute(
                 mockInteraction as ChatInputCommandInteraction,
                 mockClient as Client
             );
@@ -147,7 +120,7 @@ describe('register_server command', () => {
             const originalEnv = process.env.SERVER_DATABASE;
             process.env.SERVER_DATABASE = 'custom-db.db';
 
-            await registerCommand.execute(
+            await registerServerExecute(
                 mockInteraction as ChatInputCommandInteraction,
                 mockClient as Client
             );
@@ -174,7 +147,7 @@ describe('register_server command', () => {
                 isError: true,
             });
 
-            const result = await registerCommand.execute(
+            const result = await registerServerExecute(
                 mockInteraction as ChatInputCommandInteraction,
                 mockClient as Client
             );
@@ -191,7 +164,7 @@ describe('register_server command', () => {
                 throw duplicateError;
             });
 
-            await registerCommand.execute(
+            await registerServerExecute(
                 mockInteraction as ChatInputCommandInteraction,
                 mockClient as Client
             );
@@ -211,7 +184,7 @@ describe('register_server command', () => {
                 isError: true,
             });
 
-            await registerCommand.execute(
+            await registerServerExecute(
                 mockInteraction as ChatInputCommandInteraction,
                 mockClient as Client
             );
@@ -233,7 +206,7 @@ describe('register_server command', () => {
 
             mockInteraction.options = { getString } as any;
 
-            await registerCommand.execute(
+            await registerServerExecute(
                 mockInteraction as ChatInputCommandInteraction,
                 mockClient as Client
             );
