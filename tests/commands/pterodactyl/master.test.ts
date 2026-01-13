@@ -20,7 +20,7 @@ describe('pterodactyl master module', () => {
     });
 
     it('should export exactly 2 commands', () => {
-        expect(pterodactylCommands.length).toBe(2);
+        expect(pterodactylCommands.length).toBe(3);
     });
 
     it('should include register_server command', () => {
@@ -61,7 +61,7 @@ describe('pterodactyl master module', () => {
 
     it('should export commands that can be spread into array', () => {
         const commandArray = [...pterodactylCommands];
-        expect(commandArray.length).toBe(2);
+        expect(commandArray.length).toBe(3);
         expect(commandArray).toEqual(pterodactylCommands);
     });
 });
