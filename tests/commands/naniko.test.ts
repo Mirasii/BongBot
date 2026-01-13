@@ -587,6 +587,30 @@ describe('TikTokLiveNotifier', () => {
             expect(mockLogger.log.mock.calls[1][0]).toBe(otherError);
         });
 
+        test('should catch and log non-Error values as Error', async () => {
+            process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
+            // Throw a string instead of an Error object
+            mockConnect.mockRejectedValue('Connection string error');
+
+            notifier = new TikTokLiveNotifier(mockClient, mockLogger);
+            const callback = scheduledCallbacks[scheduledCallbacks.length - 1];
+
+            // Clear the mock from constructor calls
+            mockLogger.log.mockClear();
+
+            await callback();
+
+            // Give async operations time to complete
+            await new Promise(resolve => setImmediate(resolve));
+
+            // The error should be caught in the try-catch and logged
+            // First call is the error message string, second call should be a new Error instance
+            expect(mockLogger.log).toHaveBeenCalledTimes(2);
+            expect(mockLogger.log.mock.calls[0][0]).toBe('Error occurred attempting to get Live Status');
+            expect(mockLogger.log.mock.calls[1][0]).toBeInstanceOf(Error);
+            expect((mockLogger.log.mock.calls[1][0] as Error).message).toBe('Connection string error');
+        });
+
         test('should not send notification if already sent today', async () => {
             process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
 
@@ -788,6 +812,31 @@ describe('TikTokLiveNotifier', () => {
             // Should catch and log the send error
             expect(mockConnect).toHaveBeenCalled();
             expect(mockLogger.log).toHaveBeenCalledWith(expect.stringContaining('Error sending to channel'));
+            expect(mockLogger.log).toHaveBeenCalledWith(expect.stringContaining('Send failed'));
+        });
+
+        test('should handle channel send throwing a non-Error value', async () => {
+            process.env.TIKTOK_LIVE_CHANNEL_IDS = '123456789';
+
+            const mockChannel = {
+                isTextBased: jest.fn(() => true),
+                send: jest.fn<() => Promise<any>>().mockRejectedValue('String error'),
+            };
+
+            (mockClient.channels.fetch as jest.Mock<(id: string) => Promise<any>>).mockResolvedValue(mockChannel as any);
+            mockConnect.mockResolvedValue({ connected: true });
+
+            notifier = new TikTokLiveNotifier(mockClient, mockLogger);
+            const callback = scheduledCallbacks[scheduledCallbacks.length - 1];
+
+            mockLogger.log.mockClear();
+            await callback();
+            await new Promise(resolve => setImmediate(resolve));
+
+            // Should catch and log the send error as a string
+            expect(mockConnect).toHaveBeenCalled();
+            expect(mockLogger.log).toHaveBeenCalledWith(expect.stringContaining('Error sending to channel'));
+            expect(mockLogger.log).toHaveBeenCalledWith(expect.stringContaining('String error'));
         });
 
         test('should return early if connect returns falsy', async () => {

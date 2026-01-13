@@ -236,6 +236,34 @@ describe('BongBot', () => {
             expect(interaction.deleteReply).toHaveBeenCalled();
             expect(interaction.followUp).toHaveBeenCalledWith({ isError: true, content: 'Error response' });
         });
+
+        it('calls setupCollector when command has setupCollector method', async () => {
+            const mockSetupCollector = jest.fn();
+            const mockMessage = { id: 'message123' };
+
+            // Add a command with setupCollector
+            const commandWithCollector = {
+                data: { name: 'server_status', toJSON: jest.fn(() => ({ name: 'server_status' })) },
+                execute: jest.fn(() => ({ content: 'Server status' })),
+                setupCollector: mockSetupCollector
+            };
+            mockClient.commands.set('server_status', commandWithCollector);
+
+            const interaction = {
+                isCommand: () => true,
+                commandName: 'server_status',
+                deferReply: jest.fn(),
+                followUp: jest.fn(() => Promise.resolve(mockMessage)),
+                deleteReply: jest.fn(),
+                replied: false
+            };
+
+            await handler(interaction);
+
+            expect(commandWithCollector.execute).toHaveBeenCalledWith(interaction, mockClient);
+            expect(interaction.followUp).toHaveBeenCalledWith({ content: 'Server status' });
+            expect(mockSetupCollector).toHaveBeenCalledWith(interaction, mockMessage);
+        });
     });
 
     describe('messageCreate handler', () => {

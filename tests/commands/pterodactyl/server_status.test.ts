@@ -659,6 +659,76 @@ describe('server_status command', () => {
                 components: [],
             });
         });
+
+        it('should handle message.edit rejection on collector end', async () => {
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const editError = new Error('Failed to edit');
+            mockMessage.edit = jest.fn().mockRejectedValue(editError);
+
+            statusCommand.setupCollector(mockInteraction, mockMessage);
+
+            collectorCallbacks['end']();
+
+            // Give promise time to reject using fake timers
+            await jest.runAllTimersAsync();
+
+            expect(consoleErrorSpy).toHaveBeenCalledWith('Error clearing components after collector end:', editError);
+            consoleErrorSpy.mockRestore();
+        });
+
+        it('should handle unknown component type when disabling components', async () => {
+            mockGetServerById.mockReturnValue({
+                id: 1,
+                userId: 'test-user-123',
+                serverName: 'Test Server',
+                serverUrl: testServerUrl,
+                apiKey: testApiKey,
+            });
+
+            const collectorCallbacks: any = {};
+            const testMockMessage = {
+                createMessageComponentCollector: jest.fn().mockReturnValue({
+                    on: jest.fn((event: string, callback: any) => {
+                        collectorCallbacks[event] = callback;
+                    }),
+                }),
+                components: [
+                    {
+                        components: [
+                            {
+                                type: 2, // Button
+                                customId: 'server_control:1:server-123:stop',
+                            },
+                        ],
+                    },
+                    {
+                        components: [
+                            {
+                                type: 99, // Unknown/unsupported type
+                                customId: 'unknown_component',
+                            },
+                        ],
+                    },
+                ],
+                edit: jest.fn().mockResolvedValue(undefined),
+            };
+
+            statusCommand.setupCollector(mockInteraction, testMockMessage);
+
+            const mockButtonInteraction = {
+                user: { id: 'test-user-123' },
+                isStringSelectMenu: () => false,
+                customId: 'server_control:1:server-123:stop',
+                deferUpdate: jest.fn().mockResolvedValue(undefined),
+                followUp: jest.fn().mockResolvedValue(undefined),
+                editReply: jest.fn().mockResolvedValue(undefined),
+            };
+
+            await collectorCallbacks['collect'](mockButtonInteraction);
+
+            // Should handle unknown component type gracefully
+            expect(mockButtonInteraction.editReply).toHaveBeenCalled();
+        });
     });
 
     describe('use custom database from environment variable', () => {
@@ -713,7 +783,7 @@ describe('server_status command', () => {
         it('should handle sendServerCommand catch block', async () => {
             server.use(
                 http.post(`${testServerUrl}/api/client/servers/:identifier/power`, () => {
-                    throw new Error('Network error');
+                    return HttpResponse.error();
                 })
             );
 
@@ -734,6 +804,7 @@ describe('server_status command', () => {
                         ],
                     },
                 ],
+                edit: jest.fn().mockResolvedValue(undefined),
             };
 
             statusCommand.setupCollector(mockInteraction, testMockMessage);
@@ -838,13 +909,21 @@ describe('server_status command', () => {
         });
 
         it('should handle refreshStatus when dbServer is null', async () => {
+            // First call for performAction, second call (in error handler) returns null
             mockGetServerById.mockReturnValueOnce({
                 id: 1,
                 userId: 'test-user-123',
                 serverName: 'Test Server',
                 serverUrl: testServerUrl,
                 apiKey: 'test-api-key',
-            }).mockReturnValueOnce(null); // Second call returns null
+            }).mockReturnValueOnce(null);
+
+            // Make sendServerCommand fail to trigger the error path that calls refreshStatus
+            server.use(
+                http.post(`${testServerUrl}/api/client/servers/:identifier/power`, () => {
+                    return HttpResponse.error();
+                })
+            );
 
             const collectorCallbacks: any = {};
             const testMockMessage = {
@@ -863,6 +942,7 @@ describe('server_status command', () => {
                         ],
                     },
                 ],
+                edit: jest.fn().mockResolvedValue(undefined),
             };
 
             statusCommand.setupCollector(mockInteraction, testMockMessage);
@@ -878,8 +958,13 @@ describe('server_status command', () => {
 
             await collectorCallbacks['collect'](mockButtonInteraction);
 
-            // Should complete without error even though refreshStatus returns early
+            // Should complete without error even though refreshStatus returns early due to null dbServer
             expect(mockButtonInteraction.deferUpdate).toHaveBeenCalled();
+            expect(mockButtonInteraction.followUp).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    content: expect.stringContaining('Failed to control server'),
+                })
+            );
         });
 
         it('should poll until state changes with setInterval', async () => {
@@ -947,12 +1032,91 @@ describe('server_status command', () => {
             const collectPromise = collectorCallbacks['collect'](mockButtonInteraction);
 
             // Fast-forward time to trigger interval callbacks
-            await jest.advanceTimersByTimeAsync(1000);
-            await jest.advanceTimersByTimeAsync(1000);
+            // Need to advance by the interval time (500ms) multiple times
+            await jest.advanceTimersByTimeAsync(500);
+            await jest.advanceTimersByTimeAsync(500);
+            await jest.advanceTimersByTimeAsync(500);
 
             await collectPromise;
 
             expect(mockButtonInteraction.editReply).toHaveBeenCalled();
+        });
+
+        it('should trigger setInterval callback when polling', async () => {
+            let fetchCount = 0;
+            server.use(
+                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
+                    fetchCount++;
+                    // First call returns starting, second call (from interval) also starting, third returns running
+                    if (fetchCount < 3) {
+                        return HttpResponse.json({
+                            attributes: {
+                                current_state: 'starting',
+                                resources: {
+                                    memory_bytes: 512000000,
+                                    cpu_absolute: 10.0,
+                                    disk_bytes: 1000000000,
+                                    uptime: 0,
+                                },
+                            },
+                        });
+                    }
+                    return HttpResponse.json({
+                        attributes: {
+                            current_state: 'running',
+                            resources: {
+                                memory_bytes: 512000000,
+                                cpu_absolute: 10.0,
+                                disk_bytes: 1000000000,
+                                uptime: 600000,
+                            },
+                        },
+                    });
+                })
+            );
+
+            const collectorCallbacks: any = {};
+            const testMockMessage = {
+                createMessageComponentCollector: jest.fn().mockReturnValue({
+                    on: jest.fn((event: string, callback: any) => {
+                        collectorCallbacks[event] = callback;
+                    }),
+                }),
+                components: [
+                    {
+                        components: [
+                            {
+                                type: 2,
+                                customId: 'server_control:1:server-123:stop',
+                            },
+                        ],
+                    },
+                ],
+                edit: jest.fn().mockResolvedValue(undefined),
+            };
+
+            statusCommand.setupCollector(mockInteraction, testMockMessage);
+
+            const mockButtonInteraction = {
+                user: { id: 'test-user-123' },
+                isStringSelectMenu: () => false,
+                customId: 'server_control:1:server-123:start',
+                deferUpdate: jest.fn().mockResolvedValue(undefined),
+                followUp: jest.fn().mockResolvedValue(undefined),
+                editReply: jest.fn().mockResolvedValue(undefined),
+            };
+
+            const collectPromise = collectorCallbacks['collect'](mockButtonInteraction);
+
+            // Advance timers to trigger setInterval callback multiple times
+            await jest.advanceTimersByTimeAsync(500); // First interval tick
+            await jest.advanceTimersByTimeAsync(500); // Second interval tick
+            await jest.advanceTimersByTimeAsync(500); // Third interval tick
+
+            await collectPromise;
+
+            // The interval callback should have run, making multiple fetches
+            expect(fetchCount).toBeGreaterThanOrEqual(3);
         });
     });
 });
