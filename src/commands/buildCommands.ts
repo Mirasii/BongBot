@@ -31,9 +31,9 @@ import yes from './yes.js';
 import you from './you.js';
 import pterodactyl from './pterodactyl/master.js';
 
-const commandsArray = [ arab, callirap, chat_ai, cherry, classic, club_kid, creeper, cringe, dance, die, fubuki, funk, 
-                        help, hentai, hoe, info, mirasi, no, ping, polka, quotedb_get, quotedb_get_random, quotedb_post, 
-                        roll, seachicken, userinfo, vape, yes, you, ...pterodactyl ];
+const commandsArray = [ arab, callirap, chat_ai, cherry, classic, club_kid, creeper, cringe, dance, die, fubuki, funk,
+                        help, hentai, hoe, info, mirasi, no, ping, polka, quotedb_get, quotedb_get_random, quotedb_post,
+                        roll, seachicken, userinfo, vape, yes, you, pterodactyl ];
 
 export default function buildCommands(client: ExtendedClient) {
     const commands: Array<any> = [];

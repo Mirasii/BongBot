@@ -1,17 +1,8 @@
-import { SlashCommandBuilder, EmbedBuilder, ChatInputCommandInteraction, ActionRowBuilder, ButtonBuilder, ButtonStyle, ButtonInteraction, ComponentType, APIButtonComponent, Message, StringSelectMenuBuilder, StringSelectMenuInteraction } from 'discord.js';
+import { EmbedBuilder, ChatInputCommandInteraction, ActionRowBuilder, ButtonBuilder, ButtonStyle, ButtonInteraction, ComponentType, APIButtonComponent, Message, StringSelectMenuBuilder, StringSelectMenuInteraction, Client } from 'discord.js';
 import Database from '../../helpers/database.js';
 import { buildError } from '../../helpers/errorBuilder.js';
 
-export default {
-    data: new SlashCommandBuilder()
-        .setName('server_status')
-        .setDescription('Check the status of all game servers')
-        .addStringOption(option => option.setName('server_name').setDescription('Specify which Pterodactyl server to query (required if you have multiple registered)').setRequired(false)),
-    async execute(interaction: ChatInputCommandInteraction) {
-        return await this.executeCommand(interaction); /** Separate command due to complexity, reduce nesting */
-    },
-
-    async executeCommand(interaction: ChatInputCommandInteraction) {
+export async function execute(interaction: ChatInputCommandInteraction, client: Client) {
         const db = new Database(
             process.env.SERVER_DATABASE || 'pterodactyl.db',
         );
@@ -90,9 +81,9 @@ export default {
         } catch (error) {
             return await buildError(interaction, error);
         }
-    },
+}
 
-    async setupCollector(interaction: ChatInputCommandInteraction, message: Message): Promise<void> {
+export async function setupCollector(interaction: ChatInputCommandInteraction, message: Message): Promise<void> {
         const collector = message.createMessageComponentCollector({
             time: 600000,
         });
@@ -247,8 +238,7 @@ export default {
                 components: [],
             }).catch((error) => {console.error('Error clearing components after collector end:', error);});
         });
-    },
-};
+}
 
 async function fetchServers(serverUrl: string, apiKey: string): Promise<PterodactylServer[]> {
     const response = await fetch(`${serverUrl}/api/client`, {

@@ -7,24 +7,13 @@ export async function execute(interaction: ChatInputCommandInteraction, client: 
         const db = new Database(
             process.env.SERVER_DATABASE || 'pterodactyl.db',
         );
-        let serverUrl = interaction.options.getString('server_url', true).trim();
-        const apiKey = interaction.options.getString('api_key', true).trim();
         const serverName = interaction.options.getString('server_name', true).trim();
         const userId = interaction.user.id;
-        if (serverUrl.endsWith('/')) {
-            serverUrl = serverUrl.slice(0, -1);
-        }
-        db.addServer({
-            userId,
-            serverName,
-            serverUrl,
-            apiKey
-        });
-
+        db.deleteServer(userId, serverName);
         db.close();
 
         return {
-            content: `Successfully registered server **${serverName}**!`,
+            content: `Successfully removed server **${serverName}**!`,
             ephemeral: true
         };
     } catch (error) {

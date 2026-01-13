@@ -57,6 +57,55 @@ export default class Database {
         return result.lastInsertRowid as number;
     }
 
+    deleteServer(userId: string, serverName: string): void {
+        const stmt = this.db.prepare(`
+            DELETE FROM pterodactyl_servers
+            WHERE userId = ? AND serverName = ?
+        `);
+        stmt.run(userId, serverName);
+    }
+
+    updateServer(userId: string, serverName: string, updates: { serverUrl?: string; apiKey?: string }): void {
+        // Get the existing server to verify it exists
+        const checkStmt = this.db.prepare(`
+            SELECT id FROM pterodactyl_servers
+            WHERE userId = ? AND serverName = ?
+        `);
+        const existing = checkStmt.get(userId, serverName);
+
+        if (!existing) {
+            throw new Error(`Server "${serverName}" not found for this user.`);
+        }
+
+        // Build the update query dynamically based on provided fields
+        const updateFields: string[] = [];
+        const values: any[] = [];
+
+        if (updates.serverUrl !== undefined) {
+            updateFields.push('serverUrl = ?');
+            values.push(updates.serverUrl);
+        }
+
+        if (updates.apiKey !== undefined) {
+            updateFields.push('apiKey = ?');
+            values.push(updates.apiKey);
+        }
+
+        if (updateFields.length === 0) {
+            throw new Error('No fields to update. Please provide at least one field (server_url or api_key).');
+        }
+
+        // Add WHERE clause values
+        values.push(userId, serverName);
+
+        const stmt = this.db.prepare(`
+            UPDATE pterodactyl_servers
+            SET ${updateFields.join(', ')}
+            WHERE userId = ? AND serverName = ?
+        `);
+        stmt.run(...values);
+    }
+
     getServerById(id: number): PterodactylServer | undefined {
         const stmt = this.db.prepare(
             'SELECT * FROM pterodactyl_servers WHERE id = ?',
