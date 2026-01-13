@@ -53,6 +53,9 @@ const config: Config = {
       },
     ],
   ],
+
+  // Force exit after test completion to prevent hanging
+  forceExit: true,
 };
 
 export default config;
