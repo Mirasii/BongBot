@@ -243,7 +243,9 @@ export default {
         );
 
         collector.on('end', () => {
-            console.log('Server status button collector ended after 10 minutes');
+            message.edit({
+                components: [],
+            }).catch((error) => {console.error('Error clearing components after collector end:', error);});
         });
     },
 };
