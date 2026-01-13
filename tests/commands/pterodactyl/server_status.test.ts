@@ -465,6 +465,7 @@ describe('server_status command', () => {
                         ],
                     },
                 ],
+                edit: jest.fn().mockResolvedValue(undefined),
             };
         });
 
@@ -649,15 +650,14 @@ describe('server_status command', () => {
             );
         });
 
-        it('should log when collector ends', () => {
-            const consoleSpy = jest.spyOn(console, 'log');
+        it('should clear components when collector ends', () => {
             statusCommand.setupCollector(mockInteraction, mockMessage);
 
             collectorCallbacks['end']();
 
-            expect(consoleSpy).toHaveBeenCalledWith(
-                'Server status button collector ended after 10 minutes'
-            );
+            expect(mockMessage.edit).toHaveBeenCalledWith({
+                components: [],
+            });
         });
     });
 
