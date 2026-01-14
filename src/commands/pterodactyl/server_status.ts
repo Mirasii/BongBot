@@ -463,7 +463,7 @@ function createControlComponents(
         if (menuOptions.length > 0) {
             const selectMenu = new StringSelectMenuBuilder()
                 .setCustomId(`server_control:${dbServer.id}:menu${i}`)
-                .setPlaceholder(`Server Actions (${i / optionsPerMenu + 1}/${Math.ceil(allOptions.length / optionsPerMenu)})`)
+                .setPlaceholder(`Server Actions`)
                 .addOptions(menuOptions);
 
             const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
