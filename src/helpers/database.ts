@@ -36,9 +36,9 @@ export default class Database {
     addServer(server: PterodactylServer): number {
         const checkStmt = this.db.prepare(`
             SELECT id FROM pterodactyl_servers
-            WHERE userId = ? AND serverUrl = ?
+            WHERE userId = ? AND serverUrl = ? AND serverName = ?
         `);
-        const existing = checkStmt.get(server.userId, server.serverUrl);
+        const existing = checkStmt.get(server.userId, server.serverUrl, server.serverName);
 
         if (existing) {
             throw new Error('This server is already registered for this user.');
