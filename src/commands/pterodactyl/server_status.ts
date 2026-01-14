@@ -115,8 +115,11 @@ export default class ServerStatus {
                 }
 
                 const actionText = action === 'start' ? '▶️ Starting' : '🔄 Restarting';
+                const stopMessage = identifier === 'all'
+                    ? '⏹️ Stopping all servers... Status will update automatically.'
+                    : '⏹️ Stopping server... Status will update automatically.';
                 const replyMessage = {
-                    stop: '⏹️ Stopping all servers... Status will update automatically.',
+                    stop: stopMessage,
                     start: `${actionText} server... Status will update automatically.`,
                     restart: `${actionText} server... Status will update automatically.`,
                 }[action] || 'Processing your request...';
