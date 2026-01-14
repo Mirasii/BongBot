@@ -1,6 +1,6 @@
 import Database from '../helpers/database.js';
 
-class DatabasePool {
+export default class DatabasePool {
     private static instance: DatabasePool;
     private connections: Map<string, Database> = new Map();
 
@@ -29,5 +29,3 @@ class DatabasePool {
         this.connections.clear();
     }
 }
-
-export default DatabasePool;

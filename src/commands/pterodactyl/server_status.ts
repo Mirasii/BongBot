@@ -1,21 +1,28 @@
-import { EmbedBuilder, ChatInputCommandInteraction, ActionRowBuilder, ButtonBuilder, ButtonStyle, ButtonInteraction, ComponentType, APIButtonComponent, Message, StringSelectMenuBuilder, StringSelectMenuInteraction } from 'discord.js';
-import Database from '../../helpers/database.js';
+import { ChatInputCommandInteraction, ButtonInteraction, Message, StringSelectMenuInteraction } from 'discord.js';
+import Database, { PterodactylServer as DbPterodactylServer } from '../../helpers/database.js';
+
+type ValidatedDbServer = DbPterodactylServer & { id: number };
 import { buildError } from '../../helpers/errorBuilder.js';
 import { Caller } from '../../helpers/caller.js';
+import { fetchServers, fetchServerResources, fetchAllServerResources, sendServerCommand } from './shared/pterodactylApi.js';
+import { buildServerStatusEmbed } from './shared/serverStatusEmbed.js';
+import { buildServerControlComponents, disableAllComponents } from './shared/serverControlComponents.js';
 
 export default class ServerStatus {
-    private db : Database;
-    private caller : Caller;
+    private db: Database;
+    private caller: Caller;
+
     constructor(db: Database, caller: Caller) {
         this.db = db;
         this.caller = caller;
     }
+
     async execute(interaction: ChatInputCommandInteraction) {
         try {
             const userServers = this.db.getServersByUserId(interaction.user.id);
 
             if (!userServers || userServers.length === 0) {
-                throw new Error('You have no registered servers. Use `/register_server` to add one.');
+                throw new Error('You have no registered servers. Use `/pterodactyl register` to add one.');
             }
 
             const serverName = interaction.options.getString('server_name');
@@ -24,58 +31,20 @@ export default class ServerStatus {
                 throw new Error(`You have multiple registered servers. Please specify which one to query using the \`server_name\` option. Your registered servers:\n\n${serverList}`);
             }
 
-            let selectedServer = userServers.length === 1 ? userServers[0] : userServers.find(s => s.serverName === serverName);
+            const selectedServer = userServers.length === 1
+                ? userServers[0]
+                : userServers.find(s => s.serverName === serverName);
+
             if (!selectedServer) {
                 const serverList = userServers.map(s => `• ${s.serverName}`).join('\n');
                 throw new Error(`No server found with name "${serverName}". Your registered servers:\n\n${serverList}`);
             }
 
-            const servers = await this.fetchServers(
-                selectedServer.serverUrl,
-                selectedServer.apiKey,
-            );
+            const servers = await fetchServers(this.caller, selectedServer.serverUrl, selectedServer.apiKey);
+            const resources = await fetchAllServerResources(this.caller, servers, selectedServer.serverUrl, selectedServer.apiKey);
 
-            const resources = await Promise.all(
-                servers.map((server) =>
-                    this.fetchServerResources(
-                        server.attributes.identifier,
-                        selectedServer.serverUrl,
-                        selectedServer.apiKey,
-                    ),
-                ),
-            );
-
-            const embed = new EmbedBuilder()
-                .setColor('#0099ff')
-                .setTitle('🎮 Game Server Status')
-                .setTimestamp();
-
-            servers.forEach((server, index) => {
-                const resource = resources[index];
-                const state = resource?.attributes.current_state || 'unknown';
-                const statusEmoji = this.getStatusEmoji(state);
-
-                let value = `${statusEmoji} **Status:** ${state}`;
-
-                if (resource && state === 'running') {
-                    const res = resource.attributes.resources;
-                    const memoryMB = this.formatBytes(res.memory_bytes);
-                    const cpuPercent = res.cpu_absolute.toFixed(1);
-                    const uptime = this.formatUptime(res.uptime);
-
-                    value += `\n💾 **Memory:** ${memoryMB} MB`;
-                    value += `\n⚡ **CPU:** ${cpuPercent}%`;
-                    value += `\n⏱️ **Uptime:** ${uptime}`;
-                }
-
-                embed.addFields({
-                    name: `${server.attributes.name}`,
-                    value: value,
-                    inline: false,
-                });
-            });
-
-            const components = this.createControlComponents(servers, resources, selectedServer);
+            const embed = buildServerStatusEmbed(servers, resources);
+            const components = buildServerControlComponents(servers, resources, selectedServer.id!);
 
             return {
                 embeds: [embed],
@@ -87,204 +56,131 @@ export default class ServerStatus {
     }
 
     async setupCollector(interaction: ChatInputCommandInteraction, message: Message): Promise<void> {
-        const collector = message.createMessageComponentCollector({
-            time: 600000,
-        });
+        const collector = message.createMessageComponentCollector({ time: 600000 });
 
-        collector.on(
-            'collect',
-            async (componentInteraction: ButtonInteraction | StringSelectMenuInteraction) => {
-                if (componentInteraction.user.id !== interaction.user.id) {
-                    await componentInteraction.reply({
-                        content: '❌ You cannot control servers for another user.',
+        collector.on('collect', async (componentInteraction: ButtonInteraction | StringSelectMenuInteraction) => {
+            if (componentInteraction.user.id !== interaction.user.id) {
+                await componentInteraction.reply({
+                    content: '❌ You cannot control servers for another user.',
+                    ephemeral: true,
+                });
+                return;
+            }
+
+            await componentInteraction.deferUpdate();
+
+            const { dbServerId, identifier, action } = this.parseComponentInteraction(componentInteraction);
+            const replyMessage = this.getActionMessage(action, identifier);
+
+            await componentInteraction.followUp({ content: replyMessage, ephemeral: true });
+
+            try {
+                await componentInteraction.editReply({
+                    components: disableAllComponents(message.components),
+                });
+
+                const dbServer = this.db.getServerById(parseInt(dbServerId));
+
+                if (!dbServer || !dbServer.id) {
+                    await componentInteraction.followUp({
+                        content: '❌ Server configuration not found.',
                         ephemeral: true,
                     });
                     return;
                 }
 
-                await componentInteraction.deferUpdate();
-
-                let dbServerId: string;
-                let identifier: string;
-                let action: string;
-
-                if (componentInteraction.isStringSelectMenu()) {
-                    [dbServerId, identifier, action] = componentInteraction.values[0].split(':');
-                } else {
-                    [, dbServerId, identifier, action] = componentInteraction.customId.split(':');
-                }
-
-                const actionText = action === 'start' ? '▶️ Starting' : '🔄 Restarting';
-                const stopMessage = identifier === 'all'
-                    ? '⏹️ Stopping all servers... Status will update automatically.'
-                    : '⏹️ Stopping server... Status will update automatically.';
-                const replyMessage = {
-                    stop: stopMessage,
-                    start: `${actionText} server... Status will update automatically.`,
-                    restart: `${actionText} server... Status will update automatically.`,
-                }[action] || 'Processing your request...';
-
+                await this.handleServerAction(componentInteraction, dbServer as ValidatedDbServer, identifier, action);
+            } catch (error) {
+                console.error('Component interaction error:', error);
                 await componentInteraction.followUp({
-                    content: replyMessage,
+                    content: '❌ An error occurred processing your request.',
                     ephemeral: true,
-                });
-                try {
-                    const disabledComponents = message.components.map((row) => {
-                        const actionRow = row as any;
-                        const firstComponent = actionRow.components[0];
+                }).catch(() => {});
 
-                        if (firstComponent.type === ComponentType.StringSelect) {
-                            const newRow = new ActionRowBuilder<StringSelectMenuBuilder>();
-                            newRow.addComponents(
-                                StringSelectMenuBuilder.from(firstComponent).setDisabled(true)
-                            );
-                            return newRow;
-                        } else if (firstComponent.type === ComponentType.Button) {
-                            const newRow = new ActionRowBuilder<ButtonBuilder>();
-                            actionRow.components.forEach((component: APIButtonComponent) => {
-                                newRow.addComponents(
-                                    ButtonBuilder.from(component).setDisabled(true)
-                                );
-                            });
-                            return newRow;
-                        }
-                        return row;
-                    });
-
-                    await componentInteraction.editReply({
-                        components: disabledComponents,
-                    });
-
-                    const dbServer = this.db.getServerById(parseInt(dbServerId));
-
-                    if (!dbServer || !dbServer.id) {
-                        await componentInteraction.followUp({
-                            content: '❌ Server configuration not found.',
-                            ephemeral: true,
-                        });
-                        return;
-                    }
-
-                    if (identifier === 'all' && action === 'stop') {
-                        const servers = await this.fetchServers(
-                            dbServer.serverUrl,
-                            dbServer.apiKey,
-                        );
-                        const stopPromises = servers.map((server) =>
-                            this.sendServerCommand(
-                                server.attributes.identifier,
-                                'stop',
-                                dbServer.serverUrl,
-                                dbServer.apiKey,
-                            ),
-                        );
-                        await Promise.all(stopPromises);
-
-                        await this.pollUntilStateChange(
-                            componentInteraction,
-                            servers.map((s) => s.attributes.identifier),
-                            'offline',
-                            dbServer.serverUrl,
-                            dbServer.apiKey,
-                            dbServer.id,
-                        );
-                    } else {
-                        const success = await this.sendServerCommand(
-                            identifier,
-                            action as 'start' | 'stop' | 'restart',
-                            dbServer.serverUrl,
-                            dbServer.apiKey,
-                        );
-
-                        if (!success) {
-                            await componentInteraction.followUp({
-                                content: '❌ Failed to control server.',
-                                ephemeral: true,
-                            });
-                            await this.refreshStatus(
-                                componentInteraction,
-                                dbServer.id,
-                            );
-                            return;
-                        }
-
-                        const expectedState = action === 'start' ? 'running' : action === 'stop' ? 'offline' : 'running';
-
-                        await this.pollUntilStateChange(
-                            componentInteraction,
-                            [identifier],
-                            expectedState,
-                            dbServer.serverUrl,
-                            dbServer.apiKey,
-                            dbServer.id,
-                        );
-                    }
-                } catch (error) {
-                    console.error('Component interaction error:', error);
-                    await componentInteraction
-                        .followUp({
-                            content: '❌ An error occurred processing your request.',
-                            ephemeral: true,
-                        })
-                        .catch(() => {});
-                    if (dbServerId) {
-                        await this.refreshStatus(componentInteraction, parseInt(dbServerId));
-                    }
+                if (dbServerId) {
+                    await this.refreshStatus(componentInteraction, parseInt(dbServerId));
                 }
-            },
-        );
+            }
+        });
 
         collector.on('end', () => {
-            message.edit({
-                components: [],
-            }).catch((error) => {console.error('Error clearing components after collector end:', error);});
+            message.edit({ components: [] }).catch((error) => {
+                console.error('Error clearing components after collector end:', error);
+            });
         });
     }
 
-    private async fetchServers(serverUrl: string, apiKey: string): Promise<PterodactylServer[]> {
-        await this.caller.validateServerSSRF(serverUrl);
-
-        const headers = {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-        };
-
-        const json: ApiResponse<PterodactylServer> = await this.caller.get(serverUrl, '/api/client', null, headers);
-        return json.data;
-    }
-
-    private async fetchServerResources(identifier: string, serverUrl: string, apiKey: string): Promise<ServerResources | null> {
-        try {
-            await this.caller.validateServerSSRF(serverUrl);
-
-            const headers = {
-                Authorization: `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-            };
-
-            return await this.caller.get(serverUrl, `/api/client/servers/${identifier}/resources`, null, headers);
-        } catch {
-            return null;
+    private parseComponentInteraction(componentInteraction: ButtonInteraction | StringSelectMenuInteraction): {
+        dbServerId: string;
+        identifier: string;
+        action: string;
+    } {
+        if (componentInteraction.isStringSelectMenu()) {
+            const [dbServerId, identifier, action] = componentInteraction.values[0].split(':');
+            return { dbServerId, identifier, action };
         }
+        const [, dbServerId, identifier, action] = componentInteraction.customId.split(':');
+        return { dbServerId, identifier, action };
     }
 
-    private async sendServerCommand(identifier: string, signal: 'start' | 'stop' | 'restart', serverUrl: string, apiKey: string): Promise<boolean> {
-        try {
-            const caller = new Caller();
-            await caller.validateServerSSRF(serverUrl);
+    private getActionMessage(action: string, identifier: string): string {
+        const actionText = action === 'start' ? '▶️ Starting' : '🔄 Restarting';
+        const stopMessage = identifier === 'all'
+            ? '⏹️ Stopping all servers... Status will update automatically.'
+            : '⏹️ Stopping server... Status will update automatically.';
 
-            const headers = {
-                Authorization: `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-            };
+        return {
+            stop: stopMessage,
+            start: `${actionText} server... Status will update automatically.`,
+            restart: `${actionText} server... Status will update automatically.`,
+        }[action] || 'Processing your request...';
+    }
 
-            await caller.post(serverUrl, `/api/client/servers/${identifier}/power`, headers, { signal });
-            return true;
-        } catch {
-            return false;
+    private async handleServerAction(
+        componentInteraction: ButtonInteraction | StringSelectMenuInteraction,
+        dbServer: ValidatedDbServer,
+        identifier: string,
+        action: string
+    ): Promise<void> {
+        if (identifier === 'all' && action === 'stop') {
+            const servers = await fetchServers(this.caller, dbServer.serverUrl, dbServer.apiKey);
+            const stopPromises = servers.map((server) =>
+                sendServerCommand(this.caller, server.attributes.identifier, 'stop', dbServer.serverUrl, dbServer.apiKey)
+            );
+            await Promise.all(stopPromises);
+
+            await this.pollUntilStateChange(
+                componentInteraction,
+                servers.map((s) => s.attributes.identifier),
+                'offline',
+                dbServer
+            );
+        } else {
+            const success = await sendServerCommand(
+                this.caller,
+                identifier,
+                action as 'start' | 'stop' | 'restart',
+                dbServer.serverUrl,
+                dbServer.apiKey
+            );
+
+            if (!success) {
+                await componentInteraction.followUp({
+                    content: '❌ Failed to control server.',
+                    ephemeral: true,
+                });
+                await this.refreshStatus(componentInteraction, dbServer.id);
+                return;
+            }
+
+            const expectedState = action === 'start' ? 'running' : action === 'stop' ? 'offline' : 'running';
+
+            await this.pollUntilStateChange(
+                componentInteraction,
+                [identifier],
+                expectedState,
+                dbServer
+            );
         }
     }
 
@@ -292,21 +188,20 @@ export default class ServerStatus {
         componentInteraction: ButtonInteraction | StringSelectMenuInteraction,
         identifiers: string[],
         expectedState: string,
-        serverUrl: string,
-        apiKey: string,
-        dbServerId: number,
+        dbServer: ValidatedDbServer,
         maxAttempts: number = 120,
-        interval: number = 500,
+        interval: number = 500
     ): Promise<void> {
         let attempts = 0;
 
         const checkStatus = async (): Promise<boolean> => {
             attempts++;
 
-            const resourcePromises = identifiers.map((id) =>
-                this.fetchServerResources(id, serverUrl, apiKey),
+            const resources = await Promise.all(
+                identifiers.map((id) =>
+                    fetchServerResources(this.caller, id, dbServer.serverUrl, dbServer.apiKey)
+                )
             );
-            const resources = await Promise.all(resourcePromises);
 
             const allReached = resources.every((r) => {
                 if (!r) return false;
@@ -315,7 +210,7 @@ export default class ServerStatus {
             });
 
             if (allReached || attempts >= maxAttempts) {
-                await this.refreshStatus(componentInteraction, dbServerId);
+                await this.refreshStatus(componentInteraction, dbServer.id);
                 return true;
             }
 
@@ -335,7 +230,10 @@ export default class ServerStatus {
         }
     }
 
-    private async refreshStatus(componentInteraction: ButtonInteraction | StringSelectMenuInteraction, dbServerId: number): Promise<void> {
+    private async refreshStatus(
+        componentInteraction: ButtonInteraction | StringSelectMenuInteraction,
+        dbServerId: number
+    ): Promise<void> {
         try {
             const dbServer = this.db.getServerById(dbServerId);
 
@@ -343,53 +241,15 @@ export default class ServerStatus {
                 return;
             }
 
-            const servers = await this.fetchServers(
-                dbServer.serverUrl,
-                dbServer.apiKey,
+            const servers = await fetchServers(this.caller, dbServer.serverUrl, dbServer.apiKey);
+            const resources = await fetchAllServerResources(this.caller, servers, dbServer.serverUrl, dbServer.apiKey);
+
+            const embed = buildServerStatusEmbed(
+                servers,
+                resources,
+                '*Last updated: ' + new Date().toLocaleTimeString() + '*'
             );
-
-            const resources = await Promise.all(
-                servers.map((server) =>
-                    this.fetchServerResources(
-                        server.attributes.identifier,
-                        dbServer.serverUrl,
-                        dbServer.apiKey,
-                    ),
-                ),
-            );
-
-            const embed = new EmbedBuilder()
-                .setColor('#0099ff')
-                .setTitle('🎮 Game Server Status')
-                .setDescription('*Last updated: ' + new Date().toLocaleTimeString() + '*')
-                .setTimestamp();
-
-            servers.forEach((server, index) => {
-                const resource = resources[index];
-                const state = resource?.attributes.current_state || 'unknown';
-                const statusEmoji = this.getStatusEmoji(state);
-
-                let value = `${statusEmoji} **Status:** ${state}`;
-
-                if (resource && state === 'running') {
-                    const res = resource.attributes.resources;
-                    const memoryMB = this.formatBytes(res.memory_bytes);
-                    const cpuPercent = res.cpu_absolute.toFixed(1);
-                    const uptime = this.formatUptime(res.uptime);
-
-                    value += `\n💾 **Memory:** ${memoryMB} MB`;
-                    value += `\n⚡ **CPU:** ${cpuPercent}%`;
-                    value += `\n⏱️ **Uptime:** ${uptime}`;
-                }
-
-                embed.addFields({
-                    name: `${server.attributes.name}`,
-                    value: value,
-                    inline: false,
-                });
-            });
-
-            const components = this.createControlComponents(servers, resources, dbServer);
+            const components = buildServerControlComponents(servers, resources, dbServer.id!);
 
             await componentInteraction.editReply({
                 embeds: [embed],
@@ -399,127 +259,4 @@ export default class ServerStatus {
             console.error('Error refreshing status:', error);
         }
     }
-
-    private createControlComponents(
-        servers: PterodactylServer[],
-        resources: (ServerResources | null)[],
-        dbServer: any,
-    ): (ActionRowBuilder<StringSelectMenuBuilder> | ActionRowBuilder<ButtonBuilder>)[] {
-        const rows: (ActionRowBuilder<StringSelectMenuBuilder> | ActionRowBuilder<ButtonBuilder>)[] = [];
-        const allOptions: { label: string; description: string; value: string }[] = [];
-
-        servers.forEach((server, index) => {
-            const state = resources[index]?.attributes.current_state || 'unknown';
-            const serverName = server.attributes.name.length > 80 ? server.attributes.name.substring(0, 77) + '...' : server.attributes.name;
-
-            if (state === 'offline') {
-                allOptions.push({
-                    label: `▶️ Start ${serverName}`,
-                    description: 'Start the server',
-                    value: `${dbServer.id}:${server.attributes.identifier}:start`,
-                });
-            }
-
-            if (state === 'running') {
-                allOptions.push({
-                    label: `🔄 Restart ${serverName}`,
-                    description: 'Restart the server',
-                    value: `${dbServer.id}:${server.attributes.identifier}:restart`,
-                });
-            }
-
-            if (state === 'running') {
-                allOptions.push({
-                    label: `⏹️ Stop ${serverName}`,
-                    description: 'Stop the server',
-                    value: `${dbServer.id}:${server.attributes.identifier}:stop`,
-                });
-            }
-        });
-
-        const maxRowsForSelects = 3;
-        const optionsPerMenu = Math.ceil(allOptions.length / Math.min(maxRowsForSelects, Math.ceil(allOptions.length / 25)));
-
-        for (let i = 0; i < allOptions.length; i += optionsPerMenu) {
-            const menuOptions = allOptions.slice(i, i + optionsPerMenu);
-            if (menuOptions.length > 0) {
-                const selectMenu = new StringSelectMenuBuilder()
-                    .setCustomId(`server_control:${dbServer.id}:menu${i}`)
-                    .setPlaceholder(`Server Actions`)
-                    .addOptions(menuOptions);
-
-                const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
-                rows.push(row);
-
-                if (rows.length >= 4) break;
-            }
-        }
-
-        const anyRunning = resources.some((r) => r?.attributes.current_state === 'running');
-        if (anyRunning && rows.length < 5) {
-            const stopRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-                new ButtonBuilder()
-                    .setCustomId(`server_control:${dbServer.id}:all:stop`)
-                    .setLabel('⏹️ Stop All Servers')
-                    .setStyle(ButtonStyle.Danger),
-            );
-            rows.push(stopRow);
-        }
-
-        return rows;
-    }
-
-    private formatBytes(bytes: number): string {
-        return (bytes / 1024 / 1024).toFixed(0);
-    }
-
-    private formatUptime(milliseconds: number): string {
-        const minutes = Math.floor(milliseconds / 60000);
-        const hours = Math.floor(minutes / 60);
-
-        if (hours > 0) {
-            return `${hours}h ${minutes % 60}m`;
-        }
-        return `${minutes}m`;
-    }
-
-    private getStatusEmoji(state: string): string {
-        switch (state) {
-            case 'running':
-                return '🟢';
-            case 'starting':
-                return '🟡';
-            case 'stopping':
-                return '🟠';
-            case 'offline':
-                return '🔴';
-            default:
-                return '⚪';
-        }
-    }
-}
-
-
-interface PterodactylServer {
-    attributes: {
-        identifier: string;
-        name: string;
-        description: string;
-    };
-}
-
-interface ServerResources {
-    attributes: {
-        current_state: string;
-        resources: {
-            memory_bytes: number;
-            cpu_absolute: number;
-            disk_bytes: number;
-            uptime: number;
-        };
-    };
-}
-
-interface ApiResponse<T> {
-    data: T[];
 }

@@ -2,7 +2,8 @@ import { ChatInputCommandInteraction } from 'discord.js';
 import { buildError } from '../../helpers/errorBuilder.js';
 import Database from '../../helpers/database.js';
 import { Caller } from '../../helpers/caller.js';
-import { validateApiConnection } from './master.js'
+import { fetchServers } from './shared/pterodactylApi.js';
+
 export default class UpdateServer {
     private db : Database;
     private caller : Caller;
@@ -34,7 +35,8 @@ export default class UpdateServer {
 
             const finalUrl = updates.serverUrl || existingServer.serverUrl;
             const finalApiKey = updates.apiKey || existingServer.apiKey;
-            await validateApiConnection(finalUrl, finalApiKey, this.caller);
+            try { await fetchServers(this.caller, finalUrl, finalApiKey); } 
+            catch (error) { throw new Error('Failed to connect to the Pterodactyl panel. Please check the URL and API key are valid.'); }
 
             this.db.updateServer(userId, serverName, updates);
 
