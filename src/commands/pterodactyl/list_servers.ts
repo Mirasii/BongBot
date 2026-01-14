@@ -30,8 +30,6 @@ export default class ListServers {
 
         } catch (error) {
             return await buildError(interaction, error);
-        } finally {
-            this.db?.close();
         }
     }
 }

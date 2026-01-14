@@ -83,8 +83,6 @@ export default class ServerStatus {
             };
         } catch (error) {
             return await buildError(interaction, error);
-        } finally {
-            this.db?.close();
         }
     }
 
@@ -157,7 +155,6 @@ export default class ServerStatus {
                         components: disabledComponents,
                     });
 
-                    this.db = new Database(process.env.SERVER_DATABASE || 'pterodactyl.db');
                     const dbServer = this.db.getServerById(parseInt(dbServerId));
 
                     if (!dbServer || !dbServer.id) {
@@ -233,8 +230,6 @@ export default class ServerStatus {
                     if (dbServerId) {
                         await this.refreshStatus(componentInteraction, parseInt(dbServerId));
                     }
-                } finally {
-                    this.db?.close();
                 }
             },
         );
@@ -341,10 +336,8 @@ export default class ServerStatus {
     }
 
     private async refreshStatus(componentInteraction: ButtonInteraction | StringSelectMenuInteraction, dbServerId: number): Promise<void> {
-        let db: Database | undefined;
         try {
-            db = new Database(process.env.SERVER_DATABASE || 'pterodactyl.db');
-            const dbServer = db.getServerById(dbServerId);
+            const dbServer = this.db.getServerById(dbServerId);
 
             if (!dbServer) {
                 return;
@@ -404,8 +397,6 @@ export default class ServerStatus {
             });
         } catch (error) {
             console.error('Error refreshing status:', error);
-        } finally {
-            db?.close();
         }
     }
 

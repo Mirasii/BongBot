@@ -19,8 +19,6 @@ export default class RemoveServer {
             };
         } catch (error) {
             return await buildError(interaction, error);
-        } finally { 
-            this.db?.close();
         }
     }
 }

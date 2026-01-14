@@ -36,8 +36,6 @@ export default class RegisterServer {
             };
         } catch (error) {
             return await buildError(interaction, error);
-        } finally {
-            this.db?.close();
         }
     }
 }
