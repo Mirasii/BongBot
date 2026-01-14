@@ -2,87 +2,90 @@ import { EmbedBuilder, ChatInputCommandInteraction, ActionRowBuilder, ButtonBuil
 import Database from '../../helpers/database.js';
 import { buildError } from '../../helpers/errorBuilder.js';
 
-export async function execute(interaction: ChatInputCommandInteraction, client: Client) {
-    let db: Database | undefined;
-    try {
-        db = new Database(process.env.SERVER_DATABASE || 'pterodactyl.db');
-        const userServers = db.getServersByUserId(interaction.user.id);
+export default class ServerStatus {
+    private db : Database;
+    constructor(db: Database) {
+        this.db = db;
+    }
+    async execute(interaction: ChatInputCommandInteraction) {
+        try {
+            const userServers = this.db.getServersByUserId(interaction.user.id);
 
-        if (!userServers || userServers.length === 0) {
-            throw new Error('You have no registered servers. Use `/register_server` to add one.');
-        }
-
-        const serverName = interaction.options.getString('server_name');
-        if (userServers.length > 1 && !serverName) {
-            const serverList = userServers.map(s => `• ${s.serverName}`).join('\n');
-            throw new Error(`You have multiple registered servers. Please specify which one to query using the \`server_name\` option. Your registered servers:\n\n${serverList}`);
-        }
-
-        let selectedServer = userServers.length === 1 ? userServers[0] : userServers.find(s => s.serverName === serverName);
-        if (!selectedServer) {
-            const serverList = userServers.map(s => `• ${s.serverName}`).join('\n');
-            throw new Error(`No server found with name "${serverName}". Your registered servers:\n\n${serverList}`);
-        }
-
-        const servers = await fetchServers(
-            selectedServer.serverUrl,
-            selectedServer.apiKey,
-        );
-
-        const resources = await Promise.all(
-            servers.map((server) =>
-                fetchServerResources(
-                    server.attributes.identifier,
-                    selectedServer.serverUrl,
-                    selectedServer.apiKey,
-                ),
-            ),
-        );
-
-        const embed = new EmbedBuilder()
-            .setColor('#0099ff')
-            .setTitle('🎮 Game Server Status')
-            .setTimestamp();
-
-        servers.forEach((server, index) => {
-            const resource = resources[index];
-            const state = resource?.attributes.current_state || 'unknown';
-            const statusEmoji = getStatusEmoji(state);
-
-            let value = `${statusEmoji} **Status:** ${state}`;
-
-            if (resource && state === 'running') {
-                const res = resource.attributes.resources;
-                const memoryMB = formatBytes(res.memory_bytes);
-                const cpuPercent = res.cpu_absolute.toFixed(1);
-                const uptime = formatUptime(res.uptime);
-
-                value += `\n💾 **Memory:** ${memoryMB} MB`;
-                value += `\n⚡ **CPU:** ${cpuPercent}%`;
-                value += `\n⏱️ **Uptime:** ${uptime}`;
+            if (!userServers || userServers.length === 0) {
+                throw new Error('You have no registered servers. Use `/register_server` to add one.');
             }
 
-            embed.addFields({
-                name: `${server.attributes.name}`,
-                value: value,
-                inline: false,
+            const serverName = interaction.options.getString('server_name');
+            if (userServers.length > 1 && !serverName) {
+                const serverList = userServers.map(s => `• ${s.serverName}`).join('\n');
+                throw new Error(`You have multiple registered servers. Please specify which one to query using the \`server_name\` option. Your registered servers:\n\n${serverList}`);
+            }
+
+            let selectedServer = userServers.length === 1 ? userServers[0] : userServers.find(s => s.serverName === serverName);
+            if (!selectedServer) {
+                const serverList = userServers.map(s => `• ${s.serverName}`).join('\n');
+                throw new Error(`No server found with name "${serverName}". Your registered servers:\n\n${serverList}`);
+            }
+
+            const servers = await fetchServers(
+                selectedServer.serverUrl,
+                selectedServer.apiKey,
+            );
+
+            const resources = await Promise.all(
+                servers.map((server) =>
+                    fetchServerResources(
+                        server.attributes.identifier,
+                        selectedServer.serverUrl,
+                        selectedServer.apiKey,
+                    ),
+                ),
+            );
+
+            const embed = new EmbedBuilder()
+                .setColor('#0099ff')
+                .setTitle('🎮 Game Server Status')
+                .setTimestamp();
+
+            servers.forEach((server, index) => {
+                const resource = resources[index];
+                const state = resource?.attributes.current_state || 'unknown';
+                const statusEmoji = getStatusEmoji(state);
+
+                let value = `${statusEmoji} **Status:** ${state}`;
+
+                if (resource && state === 'running') {
+                    const res = resource.attributes.resources;
+                    const memoryMB = formatBytes(res.memory_bytes);
+                    const cpuPercent = res.cpu_absolute.toFixed(1);
+                    const uptime = formatUptime(res.uptime);
+
+                    value += `\n💾 **Memory:** ${memoryMB} MB`;
+                    value += `\n⚡ **CPU:** ${cpuPercent}%`;
+                    value += `\n⏱️ **Uptime:** ${uptime}`;
+                }
+
+                embed.addFields({
+                    name: `${server.attributes.name}`,
+                    value: value,
+                    inline: false,
+                });
             });
-        });
 
-        const components = createControlComponents(servers, resources, selectedServer);
+            const components = createControlComponents(servers, resources, selectedServer);
 
-        return {
-            embeds: [embed],
-            components: components,
-        };
-    } catch (error) {
-        return await buildError(interaction, error);
-    } finally {
-        db?.close();
+            return {
+                embeds: [embed],
+                components: components,
+            };
+        } catch (error) {
+            return await buildError(interaction, error);
+        } finally {
+            this.db?.close();
+        }
     }
-}
 
-export async function setupCollector(interaction: ChatInputCommandInteraction, message: Message): Promise<void> {
+    async setupCollector(interaction: ChatInputCommandInteraction, message: Message): Promise<void> {
         const collector = message.createMessageComponentCollector({
             time: 600000,
         });
@@ -121,7 +124,6 @@ export async function setupCollector(interaction: ChatInputCommandInteraction, m
                     content: replyMessage,
                     ephemeral: true,
                 });
-                let db: Database | undefined;
                 try {
                     const disabledComponents = message.components.map((row) => {
                         const actionRow = row as any;
@@ -149,8 +151,8 @@ export async function setupCollector(interaction: ChatInputCommandInteraction, m
                         components: disabledComponents,
                     });
 
-                    db = new Database(process.env.SERVER_DATABASE || 'pterodactyl.db');
-                    const dbServer = db.getServerById(parseInt(dbServerId));
+                    this.db = new Database(process.env.SERVER_DATABASE || 'pterodactyl.db');
+                    const dbServer = this.db.getServerById(parseInt(dbServerId));
 
                     if (!dbServer || !dbServer.id) {
                         await componentInteraction.followUp({
@@ -226,7 +228,7 @@ export async function setupCollector(interaction: ChatInputCommandInteraction, m
                         await refreshStatus(componentInteraction, parseInt(dbServerId));
                     }
                 } finally {
-                    db?.close();
+                    this.db?.close();
                 }
             },
         );
@@ -236,6 +238,7 @@ export async function setupCollector(interaction: ChatInputCommandInteraction, m
                 components: [],
             }).catch((error) => {console.error('Error clearing components after collector end:', error);});
         });
+    }
 }
 
 async function fetchServers(serverUrl: string, apiKey: string): Promise<PterodactylServer[]> {

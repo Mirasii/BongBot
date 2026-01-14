@@ -1,9 +1,10 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, Client } from 'discord.js';
-import * as registerServer from './register_server.js';
-import * as listServers from './list_servers.js';
-import * as serverStatus from './server_status.js';
-import * as updateServer from './update_server.js';
-import * as removeServer from './remove_server.js';
+import RegisterServer from './register_server.js';
+import ListServers from './list_servers.js';
+import ServerStatus, * as serverStatus from './server_status.js';
+import UpdateServer from './update_server.js';
+import RemoveServer from './remove_server.js';
+import Database from '../../helpers/database.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -85,18 +86,18 @@ export default {
 
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
         const subcommand = interaction.options.getSubcommand();
-
+        const db = new Database(process.env.SERVER_DATABASE || 'pterodactyl.db');
         switch (subcommand) {
             case 'register':
-                return await registerServer.execute(interaction, client);
+                return await new RegisterServer(db).execute(interaction);
             case 'list':
-                return await listServers.execute(interaction, client);
+                return await new ListServers(db).execute(interaction);
             case 'manage':
-                return await serverStatus.execute(interaction, client);
+                return await new ServerStatus(db).execute(interaction);
             case 'update':
-                return await updateServer.execute(interaction, client);
+                return await new UpdateServer(db).execute(interaction);
             case 'remove':
-                return await removeServer.execute(interaction, client);
+                return await new RemoveServer(db).execute(interaction);
             default:
                 return {
                     content: 'Unknown subcommand',
@@ -105,7 +106,7 @@ export default {
         }
     },
 
-    setupCollector: serverStatus.setupCollector,
+    setupCollector: new ServerStatus(new Database(process.env.SERVER_DATABASE || 'pterodactyl.db')).setupCollector,
 
     fullDesc: {
         description: 'Manage your Pterodactyl panel servers. Use subcommands to register, list, view status, update, or remove servers. View the full guide [here](https://docs.google.com/document/d/1Zp2gsq3bqzJwQ6OeA4nu_3XM3is3-TM8ynA1vWxIZL8/edit?tab=t.0&usp=sharing).',
