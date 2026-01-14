@@ -2,13 +2,11 @@ import { ChatInputCommandInteraction, EmbedBuilder, Client } from 'discord.js';
 import { buildError } from '../../helpers/errorBuilder.js';
 import Database from '../../helpers/database.js';
 
-export async function execute(interaction: ChatInputCommandInteraction, client: Client) {
+export async function execute(interaction: ChatInputCommandInteraction) {
+    let db: Database | undefined;
     try {
-        const db = new Database(
-            process.env.SERVER_DATABASE || 'pterodactyl.db',
-        );
+        db = new Database(process.env.SERVER_DATABASE || 'pterodactyl.db');
         const servers = db.getServersByUserId(interaction.user.id);
-        db.close();
         const embed = new EmbedBuilder()
             .setColor('#0099ff')
             .setTitle('🎮 Registered Servers')
@@ -27,5 +25,7 @@ export async function execute(interaction: ChatInputCommandInteraction, client: 
 
     } catch (error) {
         return await buildError(interaction, error);
+    } finally {
+        db?.close();
     }
 }
