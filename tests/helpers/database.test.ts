@@ -1,6 +1,5 @@
 import { jest } from '@jest/globals';
 import path from 'path';
-import fs from 'fs';
 
 // Mock better-sqlite3
 const mockExec = jest.fn();
@@ -266,6 +265,28 @@ describe('Database class', () => {
             expect(() => {
                 db.updateServer('user123', 'Test Server', {});
             }).toThrow('No fields to update. Please provide at least one field (server_url or api_key).');
+        });
+    });
+
+    describe('deleteServer', () => {
+        beforeEach(() => {
+            db = new Database(testDbPath);
+            jest.clearAllMocks();
+        });
+
+        it('should successfully delete a server', () => {
+            db.deleteServer('user123', 'Test Server');
+
+            expect(mockPrepare).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM pterodactyl_servers'));
+            expect(mockRun).toHaveBeenCalledWith('user123', 'Test Server');
+        });
+
+        it('should handle deletion of non-existent server', () => {
+            // Deletion doesn't throw error even if server doesn't exist
+            db.deleteServer('user999', 'NonExistent Server');
+
+            expect(mockPrepare).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM pterodactyl_servers'));
+            expect(mockRun).toHaveBeenCalledWith('user999', 'NonExistent Server');
         });
     });
 

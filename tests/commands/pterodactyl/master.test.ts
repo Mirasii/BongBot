@@ -10,6 +10,35 @@ jest.unstable_mockModule('../../../src/helpers/errorBuilder.js', () => ({
     buildError: jest.fn(),
 }));
 
+// Mock the subcommand modules
+const mockRegisterExecute = jest.fn();
+const mockListExecute = jest.fn();
+const mockServerStatusExecute = jest.fn();
+const mockUpdateExecute = jest.fn();
+const mockRemoveExecute = jest.fn();
+const mockSetupCollector = jest.fn();
+
+jest.unstable_mockModule('../../../src/commands/pterodactyl/register_server.js', () => ({
+    execute: mockRegisterExecute,
+}));
+
+jest.unstable_mockModule('../../../src/commands/pterodactyl/list_servers.js', () => ({
+    execute: mockListExecute,
+}));
+
+jest.unstable_mockModule('../../../src/commands/pterodactyl/server_status.js', () => ({
+    execute: mockServerStatusExecute,
+    setupCollector: mockSetupCollector,
+}));
+
+jest.unstable_mockModule('../../../src/commands/pterodactyl/update_server.js', () => ({
+    execute: mockUpdateExecute,
+}));
+
+jest.unstable_mockModule('../../../src/commands/pterodactyl/remove_server.js', () => ({
+    execute: mockRemoveExecute,
+}));
+
 // Import the master module
 const masterModule = await import('../../../src/commands/pterodactyl/master.js');
 const pterodactylCommand = masterModule.default;
@@ -39,7 +68,7 @@ describe('pterodactyl master command', () => {
     });
 
     it('should have setupCollector method', () => {
-        expect(pterodactylCommand.setupCollector).toBeInstanceOf(Function);
+        expect(typeof pterodactylCommand.setupCollector).toBe('function');
     });
 
     it('should have fullDesc property', () => {
@@ -115,5 +144,81 @@ describe('pterodactyl master command', () => {
 
         const apiKeyOption = updateCmd?.options?.find((opt: any) => opt.name === 'api_key');
         expect(apiKeyOption?.required).toBe(false);
+    });
+
+    describe('execute method', () => {
+        let mockInteraction: any;
+        let mockClient: any;
+
+        beforeEach(() => {
+            jest.clearAllMocks();
+            mockClient = {};
+            mockInteraction = {
+                options: {
+                    getSubcommand: jest.fn(),
+                },
+            };
+        });
+
+        it('should call register_server execute for register subcommand', async () => {
+            mockInteraction.options.getSubcommand.mockReturnValue('register');
+            mockRegisterExecute.mockResolvedValue({ content: 'registered' });
+
+            const result = await pterodactylCommand.execute(mockInteraction, mockClient);
+
+            expect(mockRegisterExecute).toHaveBeenCalledWith(mockInteraction, mockClient);
+            expect(result).toEqual({ content: 'registered' });
+        });
+
+        it('should call list_servers execute for list subcommand', async () => {
+            mockInteraction.options.getSubcommand.mockReturnValue('list');
+            mockListExecute.mockResolvedValue({ content: 'listed' });
+
+            const result = await pterodactylCommand.execute(mockInteraction, mockClient);
+
+            expect(mockListExecute).toHaveBeenCalledWith(mockInteraction, mockClient);
+            expect(result).toEqual({ content: 'listed' });
+        });
+
+        it('should call server_status execute for manage subcommand', async () => {
+            mockInteraction.options.getSubcommand.mockReturnValue('manage');
+            mockServerStatusExecute.mockResolvedValue({ content: 'managed' });
+
+            const result = await pterodactylCommand.execute(mockInteraction, mockClient);
+
+            expect(mockServerStatusExecute).toHaveBeenCalledWith(mockInteraction, mockClient);
+            expect(result).toEqual({ content: 'managed' });
+        });
+
+        it('should call update_server execute for update subcommand', async () => {
+            mockInteraction.options.getSubcommand.mockReturnValue('update');
+            mockUpdateExecute.mockResolvedValue({ content: 'updated' });
+
+            const result = await pterodactylCommand.execute(mockInteraction, mockClient);
+
+            expect(mockUpdateExecute).toHaveBeenCalledWith(mockInteraction, mockClient);
+            expect(result).toEqual({ content: 'updated' });
+        });
+
+        it('should call remove_server execute for remove subcommand', async () => {
+            mockInteraction.options.getSubcommand.mockReturnValue('remove');
+            mockRemoveExecute.mockResolvedValue({ content: 'removed' });
+
+            const result = await pterodactylCommand.execute(mockInteraction, mockClient);
+
+            expect(mockRemoveExecute).toHaveBeenCalledWith(mockInteraction, mockClient);
+            expect(result).toEqual({ content: 'removed' });
+        });
+
+        it('should return unknown subcommand message for invalid subcommand', async () => {
+            mockInteraction.options.getSubcommand.mockReturnValue('invalid');
+
+            const result = await pterodactylCommand.execute(mockInteraction, mockClient);
+
+            expect(result).toEqual({
+                content: 'Unknown subcommand',
+                ephemeral: true,
+            });
+        });
     });
 });

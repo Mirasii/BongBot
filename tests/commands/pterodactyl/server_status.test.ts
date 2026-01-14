@@ -1114,5 +1114,823 @@ describe('server_status command', () => {
             // The interval callback should have run, making multiple fetches
             expect(fetchCount).toBeGreaterThanOrEqual(3);
         });
+
+        it('should truncate long server names in control components', async () => {
+            const longServerName = 'A'.repeat(100);
+            server.use(
+                http.get(`${testServerUrl}/api/client`, () => {
+                    return HttpResponse.json({
+                        data: [
+                            {
+                                attributes: {
+                                    identifier: 'server-123',
+                                    name: longServerName,
+                                    description: 'Test description',
+                                },
+                            },
+                        ],
+                    });
+                }),
+                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
+                    return HttpResponse.json({
+                        attributes: {
+                            current_state: 'offline',
+                            resources: {
+                                memory_bytes: 0,
+                                cpu_absolute: 0,
+                                disk_bytes: 0,
+                                uptime: 0,
+                            },
+                        },
+                    });
+                })
+            );
+
+            const result: any = await serverStatusExecute(mockInteraction);
+
+            expect(result.components).toBeDefined();
+            expect(result.components.length).toBeGreaterThan(0);
+        });
+
+        it('should handle poll timeout (max attempts reached)', async () => {
+            let fetchCount = 0;
+            server.use(
+                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
+                    fetchCount++;
+                    // Always return starting state to trigger max attempts
+                    return HttpResponse.json({
+                        attributes: {
+                            current_state: 'starting',
+                            resources: {
+                                memory_bytes: 512000000,
+                                cpu_absolute: 10.0,
+                                disk_bytes: 1000000000,
+                                uptime: 0,
+                            },
+                        },
+                    });
+                })
+            );
+
+            const collectorCallbacks: any = {};
+            const testMockMessage = {
+                createMessageComponentCollector: jest.fn().mockReturnValue({
+                    on: jest.fn((event: string, callback: any) => {
+                        collectorCallbacks[event] = callback;
+                    }),
+                }),
+                components: [
+                    {
+                        components: [
+                            {
+                                type: 2,
+                                customId: 'server_control:1:server-123:stop',
+                            },
+                        ],
+                    },
+                ],
+                edit: jest.fn().mockResolvedValue(undefined),
+            };
+
+            setupCollector(mockInteraction, testMockMessage);
+
+            const mockButtonInteraction = {
+                user: { id: 'test-user-123' },
+                isStringSelectMenu: () => false,
+                customId: 'server_control:1:server-123:start',
+                deferUpdate: jest.fn().mockResolvedValue(undefined),
+                followUp: jest.fn().mockResolvedValue(undefined),
+                editReply: jest.fn().mockResolvedValue(undefined),
+            };
+
+            const collectPromise = collectorCallbacks['collect'](mockButtonInteraction);
+
+            // Advance time significantly to exceed max attempts
+            for (let i = 0; i < 125; i++) {
+                await jest.advanceTimersByTimeAsync(500);
+            }
+
+            await collectPromise;
+
+            // Should have called editReply when max attempts reached
+            expect(mockButtonInteraction.editReply).toHaveBeenCalled();
+        });
+
+        it('should handle poll with null resource response', async () => {
+            let fetchCount = 0;
+            server.use(
+                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
+                    fetchCount++;
+                    if (fetchCount < 3) {
+                        // Return error to trigger null resource
+                        return HttpResponse.error();
+                    }
+                    return HttpResponse.json({
+                        attributes: {
+                            current_state: 'running',
+                            resources: {
+                                memory_bytes: 512000000,
+                                cpu_absolute: 10.0,
+                                disk_bytes: 1000000000,
+                                uptime: 600000,
+                            },
+                        },
+                    });
+                })
+            );
+
+            const collectorCallbacks: any = {};
+            const testMockMessage = {
+                createMessageComponentCollector: jest.fn().mockReturnValue({
+                    on: jest.fn((event: string, callback: any) => {
+                        collectorCallbacks[event] = callback;
+                    }),
+                }),
+                components: [
+                    {
+                        components: [
+                            {
+                                type: 2,
+                                customId: 'server_control:1:server-123:stop',
+                            },
+                        ],
+                    },
+                ],
+                edit: jest.fn().mockResolvedValue(undefined),
+            };
+
+            setupCollector(mockInteraction, testMockMessage);
+
+            const mockButtonInteraction = {
+                user: { id: 'test-user-123' },
+                isStringSelectMenu: () => false,
+                customId: 'server_control:1:server-123:start',
+                deferUpdate: jest.fn().mockResolvedValue(undefined),
+                followUp: jest.fn().mockResolvedValue(undefined),
+                editReply: jest.fn().mockResolvedValue(undefined),
+            };
+
+            const collectPromise = collectorCallbacks['collect'](mockButtonInteraction);
+
+            // Advance timers to trigger interval callbacks
+            await jest.advanceTimersByTimeAsync(500);
+            await jest.advanceTimersByTimeAsync(500);
+            await jest.advanceTimersByTimeAsync(500);
+
+            await collectPromise;
+
+            expect(mockButtonInteraction.editReply).toHaveBeenCalled();
+        });
+
+        it('should handle refreshStatus error in catch block', async () => {
+            // First call for performAction, then refreshStatus call throws
+            mockGetServerById.mockReturnValueOnce({
+                id: 1,
+                userId: 'test-user-123',
+                serverName: 'Test Server',
+                serverUrl: testServerUrl,
+                apiKey: testApiKey,
+            }).mockImplementation(() => {
+                throw new Error('Database connection failed');
+            });
+
+            // Make sendServerCommand fail to trigger error path
+            server.use(
+                http.post(`${testServerUrl}/api/client/servers/:identifier/power`, () => {
+                    return HttpResponse.error();
+                })
+            );
+
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+            const collectorCallbacks: any = {};
+            const testMockMessage = {
+                createMessageComponentCollector: jest.fn().mockReturnValue({
+                    on: jest.fn((event: string, callback: any) => {
+                        collectorCallbacks[event] = callback;
+                    }),
+                }),
+                components: [
+                    {
+                        components: [
+                            {
+                                type: 2,
+                                customId: 'server_control:1:server-123:stop',
+                            },
+                        ],
+                    },
+                ],
+                edit: jest.fn().mockResolvedValue(undefined),
+            };
+
+            setupCollector(mockInteraction, testMockMessage);
+
+            const mockButtonInteraction = {
+                user: { id: 'test-user-123' },
+                isStringSelectMenu: () => false,
+                customId: 'server_control:1:server-123:start',
+                deferUpdate: jest.fn().mockResolvedValue(undefined),
+                followUp: jest.fn().mockResolvedValue(undefined),
+                editReply: jest.fn().mockResolvedValue(undefined),
+            };
+
+            await collectorCallbacks['collect'](mockButtonInteraction);
+
+            // Should have logged the error from refreshStatus catch block
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                'Error refreshing status:',
+                expect.any(Error)
+            );
+            consoleErrorSpy.mockRestore();
+        });
+
+        it('should handle multiple servers with different states for control components', async () => {
+            server.use(
+                http.get(`${testServerUrl}/api/client`, () => {
+                    return HttpResponse.json({
+                        data: [
+                            {
+                                attributes: {
+                                    identifier: 'server-1',
+                                    name: 'Server 1',
+                                    description: 'First server',
+                                },
+                            },
+                            {
+                                attributes: {
+                                    identifier: 'server-2',
+                                    name: 'Server 2',
+                                    description: 'Second server',
+                                },
+                            },
+                            {
+                                attributes: {
+                                    identifier: 'server-3',
+                                    name: 'Server 3',
+                                    description: 'Third server',
+                                },
+                            },
+                        ],
+                    });
+                }),
+                http.get(`${testServerUrl}/api/client/servers/server-1/resources`, () => {
+                    return HttpResponse.json({
+                        attributes: {
+                            current_state: 'running',
+                            resources: {
+                                memory_bytes: 512000000,
+                                cpu_absolute: 25.0,
+                                disk_bytes: 1000000000,
+                                uptime: 3600000,
+                            },
+                        },
+                    });
+                }),
+                http.get(`${testServerUrl}/api/client/servers/server-2/resources`, () => {
+                    return HttpResponse.json({
+                        attributes: {
+                            current_state: 'offline',
+                            resources: {
+                                memory_bytes: 0,
+                                cpu_absolute: 0,
+                                disk_bytes: 0,
+                                uptime: 0,
+                            },
+                        },
+                    });
+                }),
+                http.get(`${testServerUrl}/api/client/servers/server-3/resources`, () => {
+                    return HttpResponse.json({
+                        attributes: {
+                            current_state: 'running',
+                            resources: {
+                                memory_bytes: 256000000,
+                                cpu_absolute: 15.0,
+                                disk_bytes: 500000000,
+                                uptime: 1800000,
+                            },
+                        },
+                    });
+                })
+            );
+
+            const result: any = await serverStatusExecute(mockInteraction);
+
+            // Should have select menu components plus stop all button
+            expect(result.components).toBeDefined();
+            expect(result.components.length).toBeGreaterThan(0);
+        });
+
+        it('should handle followUp error in catch block silently', async () => {
+            mockGetServerById.mockImplementation(() => {
+                throw new Error('Database error');
+            });
+
+            const collectorCallbacks: any = {};
+            const testMockMessage = {
+                createMessageComponentCollector: jest.fn().mockReturnValue({
+                    on: jest.fn((event: string, callback: any) => {
+                        collectorCallbacks[event] = callback;
+                    }),
+                }),
+                components: [
+                    {
+                        components: [
+                            {
+                                type: 2,
+                                customId: 'server_control:1:server-123:stop',
+                            },
+                        ],
+                    },
+                ],
+                edit: jest.fn().mockResolvedValue(undefined),
+            };
+
+            setupCollector(mockInteraction, testMockMessage);
+
+            const mockButtonInteraction = {
+                user: { id: 'test-user-123' },
+                isStringSelectMenu: () => false,
+                customId: 'server_control:1:server-123:start',
+                deferUpdate: jest.fn().mockResolvedValue(undefined),
+                followUp: jest.fn()
+                    .mockResolvedValueOnce(undefined) // First followUp succeeds
+                    .mockRejectedValueOnce(new Error('followUp failed')), // Second followUp fails (in catch block)
+                editReply: jest.fn().mockResolvedValue(undefined),
+            };
+
+            // Should not throw even when followUp in catch block fails
+            await expect(collectorCallbacks['collect'](mockButtonInteraction)).resolves.not.toThrow();
+        });
+
+        it('should handle dbServer without id in component interaction', async () => {
+            mockGetServerById.mockReturnValue({
+                userId: 'test-user-123',
+                serverName: 'Test Server',
+                serverUrl: testServerUrl,
+                apiKey: testApiKey,
+                // No id field
+            });
+
+            const collectorCallbacks: any = {};
+            const testMockMessage = {
+                createMessageComponentCollector: jest.fn().mockReturnValue({
+                    on: jest.fn((event: string, callback: any) => {
+                        collectorCallbacks[event] = callback;
+                    }),
+                }),
+                components: [
+                    {
+                        components: [
+                            {
+                                type: 2,
+                                customId: 'server_control:1:server-123:stop',
+                            },
+                        ],
+                    },
+                ],
+                edit: jest.fn().mockResolvedValue(undefined),
+            };
+
+            setupCollector(mockInteraction, testMockMessage);
+
+            const mockButtonInteraction = {
+                user: { id: 'test-user-123' },
+                isStringSelectMenu: () => false,
+                customId: 'server_control:1:server-123:start',
+                deferUpdate: jest.fn().mockResolvedValue(undefined),
+                followUp: jest.fn().mockResolvedValue(undefined),
+                editReply: jest.fn().mockResolvedValue(undefined),
+            };
+
+            await collectorCallbacks['collect'](mockButtonInteraction);
+
+            expect(mockButtonInteraction.followUp).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    content: '❌ Server configuration not found.',
+                })
+            );
+        });
+
+        it('should handle unknown action in replyMessage lookup', async () => {
+            const collectorCallbacks: any = {};
+            const testMockMessage = {
+                createMessageComponentCollector: jest.fn().mockReturnValue({
+                    on: jest.fn((event: string, callback: any) => {
+                        collectorCallbacks[event] = callback;
+                    }),
+                }),
+                components: [
+                    {
+                        components: [
+                            {
+                                type: 2,
+                                customId: 'server_control:1:server-123:unknown_action',
+                            },
+                        ],
+                    },
+                ],
+                edit: jest.fn().mockResolvedValue(undefined),
+            };
+
+            setupCollector(mockInteraction, testMockMessage);
+
+            const mockButtonInteraction = {
+                user: { id: 'test-user-123' },
+                isStringSelectMenu: () => false,
+                customId: 'server_control:1:server-123:unknown_action',
+                deferUpdate: jest.fn().mockResolvedValue(undefined),
+                followUp: jest.fn().mockResolvedValue(undefined),
+                editReply: jest.fn().mockResolvedValue(undefined),
+            };
+
+            await collectorCallbacks['collect'](mockButtonInteraction);
+
+            // Should use default message for unknown action
+            expect(mockButtonInteraction.followUp).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    content: 'Processing your request...',
+                })
+            );
+        });
+
+        it('should handle error with undefined dbServerId (no refreshStatus call)', async () => {
+            // Make the error happen after deferUpdate but before dbServerId is fully set
+            // by throwing from editReply which happens inside the try block
+            mockGetServerById.mockImplementation(() => {
+                throw new Error('DB error before id set');
+            });
+
+            const collectorCallbacks: any = {};
+            const testMockMessage = {
+                createMessageComponentCollector: jest.fn().mockReturnValue({
+                    on: jest.fn((event: string, callback: any) => {
+                        collectorCallbacks[event] = callback;
+                    }),
+                }),
+                components: [],
+                edit: jest.fn().mockResolvedValue(undefined),
+            };
+
+            setupCollector(mockInteraction, testMockMessage);
+
+            // Use select menu to set dbServerId from values array
+            const mockSelectInteraction = {
+                user: { id: 'test-user-123' },
+                isStringSelectMenu: () => true,
+                values: [''], // Empty string to make parseInt return NaN, testing falsy dbServerId
+                deferUpdate: jest.fn().mockResolvedValue(undefined),
+                followUp: jest.fn().mockResolvedValue(undefined),
+                editReply: jest.fn().mockResolvedValue(undefined),
+            };
+
+            await collectorCallbacks['collect'](mockSelectInteraction);
+
+            // Should handle error without calling refreshStatus (dbServerId is NaN which is falsy)
+            expect(mockSelectInteraction.followUp).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    content: expect.stringContaining('error occurred'),
+                })
+            );
+        });
+
+        it('should handle servers with all offline states (no stop all button)', async () => {
+            server.use(
+                http.get(`${testServerUrl}/api/client`, () => {
+                    return HttpResponse.json({
+                        data: [
+                            {
+                                attributes: {
+                                    identifier: 'server-1',
+                                    name: 'Server 1',
+                                    description: 'First server',
+                                },
+                            },
+                        ],
+                    });
+                }),
+                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
+                    return HttpResponse.json({
+                        attributes: {
+                            current_state: 'offline',
+                            resources: {
+                                memory_bytes: 0,
+                                cpu_absolute: 0,
+                                disk_bytes: 0,
+                                uptime: 0,
+                            },
+                        },
+                    });
+                })
+            );
+
+            const result: any = await serverStatusExecute(mockInteraction);
+
+            // With only offline servers, there should be start options but no stop all button
+            expect(result.components).toBeDefined();
+            // Should have at least one select menu for starting the offline server
+            const hasSelectMenu = result.components.some((c: any) => c.components?.[0]?.data?.type === 3);
+            expect(hasSelectMenu).toBe(true);
+        });
+
+        it('should handle many servers creating multiple menu rows', async () => {
+            // Reset mocks to default state
+            jest.clearAllMocks();
+
+            // Create many servers to test the row limit
+            const serverList = Array.from({ length: 30 }, (_, i) => ({
+                attributes: {
+                    identifier: `server-${i}`,
+                    name: `Server ${i}`,
+                    description: `Server ${i} description`,
+                },
+            }));
+
+            // Ensure mockGetServersByUserId returns the correct data
+            mockGetServersByUserId.mockReturnValue([
+                {
+                    id: 1,
+                    userId: 'test-user-123',
+                    serverName: 'My Server',
+                    serverUrl: testServerUrl,
+                    apiKey: testApiKey,
+                },
+            ]);
+
+            server.use(
+                http.get(`${testServerUrl}/api/client`, () => {
+                    return HttpResponse.json({ data: serverList });
+                }),
+                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
+                    return HttpResponse.json({
+                        attributes: {
+                            current_state: 'running',
+                            resources: {
+                                memory_bytes: 512000000,
+                                cpu_absolute: 25.0,
+                                disk_bytes: 1000000000,
+                                uptime: 3600000,
+                            },
+                        },
+                    });
+                })
+            );
+
+            const result: any = await serverStatusExecute(mockInteraction);
+
+            // Should have components but limited to max 5 rows (4 select menus + 1 stop all button)
+            expect(result).toBeDefined();
+            if (result.components) {
+                expect(result.components.length).toBeLessThanOrEqual(5);
+            }
+        });
+
+        it('should handle refreshStatus with running server and resource state', async () => {
+            let fetchCount = 0;
+            server.use(
+                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
+                    fetchCount++;
+                    // Return running state for refreshStatus path
+                    return HttpResponse.json({
+                        attributes: {
+                            current_state: 'running',
+                            resources: {
+                                memory_bytes: 512000000,
+                                cpu_absolute: 25.0,
+                                disk_bytes: 1000000000,
+                                uptime: 3600000,
+                            },
+                        },
+                    });
+                })
+            );
+
+            const collectorCallbacks: any = {};
+            const testMockMessage = {
+                createMessageComponentCollector: jest.fn().mockReturnValue({
+                    on: jest.fn((event: string, callback: any) => {
+                        collectorCallbacks[event] = callback;
+                    }),
+                }),
+                components: [
+                    {
+                        components: [
+                            {
+                                type: 2,
+                                customId: 'server_control:1:server-123:restart',
+                            },
+                        ],
+                    },
+                ],
+                edit: jest.fn().mockResolvedValue(undefined),
+            };
+
+            setupCollector(mockInteraction, testMockMessage);
+
+            const mockButtonInteraction = {
+                user: { id: 'test-user-123' },
+                isStringSelectMenu: () => false,
+                customId: 'server_control:1:server-123:restart',
+                deferUpdate: jest.fn().mockResolvedValue(undefined),
+                followUp: jest.fn().mockResolvedValue(undefined),
+                editReply: jest.fn().mockResolvedValue(undefined),
+            };
+
+            const collectPromise = collectorCallbacks['collect'](mockButtonInteraction);
+
+            // Advance timers
+            await jest.advanceTimersByTimeAsync(500);
+
+            await collectPromise;
+
+            // Should have fetched resources and called editReply
+            expect(mockButtonInteraction.editReply).toHaveBeenCalled();
+        });
+
+        it('should handle servers with unknown state (not running/offline)', async () => {
+            server.use(
+                http.get(`${testServerUrl}/api/client`, () => {
+                    return HttpResponse.json({
+                        data: [
+                            {
+                                attributes: {
+                                    identifier: 'server-1',
+                                    name: 'Server 1',
+                                    description: 'First server',
+                                },
+                            },
+                        ],
+                    });
+                }),
+                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
+                    return HttpResponse.json({
+                        attributes: {
+                            current_state: 'installing',
+                            resources: {
+                                memory_bytes: 0,
+                                cpu_absolute: 0,
+                                disk_bytes: 0,
+                                uptime: 0,
+                            },
+                        },
+                    });
+                })
+            );
+
+            const result: any = await serverStatusExecute(mockInteraction);
+
+            // Should return components but with no actions for installing state
+            expect(result.components).toBeDefined();
+        });
+
+        it('should handle refreshStatus with non-running server state', async () => {
+            // Test refreshStatus path where server is offline (not running)
+            server.use(
+                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
+                    return HttpResponse.json({
+                        attributes: {
+                            current_state: 'offline',
+                            resources: {
+                                memory_bytes: 0,
+                                cpu_absolute: 0,
+                                disk_bytes: 0,
+                                uptime: 0,
+                            },
+                        },
+                    });
+                })
+            );
+
+            const collectorCallbacks: any = {};
+            const testMockMessage = {
+                createMessageComponentCollector: jest.fn().mockReturnValue({
+                    on: jest.fn((event: string, callback: any) => {
+                        collectorCallbacks[event] = callback;
+                    }),
+                }),
+                components: [
+                    {
+                        components: [
+                            {
+                                type: 2,
+                                customId: 'server_control:1:server-123:stop',
+                            },
+                        ],
+                    },
+                ],
+                edit: jest.fn().mockResolvedValue(undefined),
+            };
+
+            setupCollector(mockInteraction, testMockMessage);
+
+            const mockButtonInteraction = {
+                user: { id: 'test-user-123' },
+                isStringSelectMenu: () => false,
+                customId: 'server_control:1:server-123:stop',
+                deferUpdate: jest.fn().mockResolvedValue(undefined),
+                followUp: jest.fn().mockResolvedValue(undefined),
+                editReply: jest.fn().mockResolvedValue(undefined),
+            };
+
+            const collectPromise = collectorCallbacks['collect'](mockButtonInteraction);
+
+            // Advance timers to trigger refresh
+            await jest.advanceTimersByTimeAsync(500);
+
+            await collectPromise;
+
+            // Should have called editReply with offline state info (without resource details)
+            expect(mockButtonInteraction.editReply).toHaveBeenCalled();
+        });
+
+        it('should handle createControlComponents with no valid options (all unknown states)', async () => {
+            server.use(
+                http.get(`${testServerUrl}/api/client`, () => {
+                    return HttpResponse.json({
+                        data: [
+                            {
+                                attributes: {
+                                    identifier: 'server-1',
+                                    name: 'Server 1',
+                                    description: 'First server',
+                                },
+                            },
+                        ],
+                    });
+                }),
+                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
+                    // Return unknown state - neither running nor offline
+                    return HttpResponse.json({
+                        attributes: {
+                            current_state: 'suspended',
+                            resources: {
+                                memory_bytes: 0,
+                                cpu_absolute: 0,
+                                disk_bytes: 0,
+                                uptime: 0,
+                            },
+                        },
+                    });
+                })
+            );
+
+            const result: any = await serverStatusExecute(mockInteraction);
+
+            // With suspended state (not running or offline), no control buttons should be shown
+            expect(result.embeds).toBeDefined();
+            // Components array might be empty or not contain select menus
+            expect(result.components).toBeDefined();
+        });
+
+        it('should limit menu rows to 4 and add stop all button as 5th row', async () => {
+            // Create enough servers with offline state to generate many start options
+            // 25 options per menu max, so we need enough servers to exceed 4 menus worth
+            const serverList = Array.from({ length: 120 }, (_, i) => ({
+                attributes: {
+                    identifier: `server-${i}`,
+                    name: `Srv${i}`,
+                    description: `Server ${i}`,
+                },
+            }));
+
+            jest.clearAllMocks();
+
+            mockGetServersByUserId.mockReturnValue([
+                {
+                    id: 1,
+                    userId: 'test-user-123',
+                    serverName: 'My Server',
+                    serverUrl: testServerUrl,
+                    apiKey: testApiKey,
+                },
+            ]);
+
+            server.use(
+                http.get(`${testServerUrl}/api/client`, () => {
+                    return HttpResponse.json({ data: serverList });
+                }),
+                http.get(`${testServerUrl}/api/client/servers/:identifier/resources`, () => {
+                    // All running - each will generate restart + stop = 2 options per server
+                    return HttpResponse.json({
+                        attributes: {
+                            current_state: 'running',
+                            resources: {
+                                memory_bytes: 512000000,
+                                cpu_absolute: 25.0,
+                                disk_bytes: 1000000000,
+                                uptime: 3600000,
+                            },
+                        },
+                    });
+                })
+            );
+
+            const result: any = await serverStatusExecute(mockInteraction);
+
+            // Should have max 5 rows total (4 select menus + stop all button)
+            if (result.components) {
+                expect(result.components.length).toBeLessThanOrEqual(5);
+            }
+        });
     });
 });

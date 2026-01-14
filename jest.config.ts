@@ -27,7 +27,7 @@ const config: Config = {
   ],
 
   collectCoverage: true,
-  collectCoverageFrom: ['**/*.{js,ts,vue}', '!**/node_modules/**'],
+  collectCoverageFrom: ['src/**/*.{js,ts}', '!**/node_modules/**', '!**/dist/**'],
   coverageReporters: ['text', 'text-summary', 'json', 'json-summary', 'lcov'],
   coverageDirectory: 'coverage',
   coveragePathIgnorePatterns: [
@@ -36,6 +36,7 @@ const config: Config = {
     '/tests/utils/*',
     '/tests/mocks/*',
     '/coverage/*',
+    '/dist/*',
   ],
 
   reporters: [
@@ -56,6 +57,10 @@ const config: Config = {
 
   // Force exit after test completion to prevent hanging
   forceExit: true,
+
+  // Limit worker memory to help with ts-jest memory leak
+  // https://github.com/kulshekhar/ts-jest/issues/1967
+  workerIdleMemoryLimit: '1024MB',
 };
 
 export default config;
