@@ -55,7 +55,6 @@ async function makeCallout(url: string, config: { [key: string]: any }): Promise
     return resp;
 }
 
-// SSRF Protection: Validate server URLs before making requests
 async function validateServerUrl(serverUrl: string): Promise<void> {
     let parsedUrl: URL;
     try {
@@ -64,26 +63,21 @@ async function validateServerUrl(serverUrl: string): Promise<void> {
         throw new Error('Invalid server URL format.');
     }
 
-    // Only allow https scheme
     if (parsedUrl.protocol !== 'https:') {
         throw new Error('Server URL must use HTTPS protocol.');
     }
 
-    // Check against allowlist if configured
     const allowedHosts = process.env.PTERODACTYL_ALLOWED_HOSTS;
     if (allowedHosts) {
         const allowedList = allowedHosts.split(',').map(h => h.trim().toLowerCase());
         if (!allowedList.includes(parsedUrl.hostname.toLowerCase())) {
             throw new Error('Server URL hostname is not in the allowed hosts list.');
         }
-        // If allowlist is configured and host is allowed, skip IP validation
         return;
     }
 
-    // Resolve hostname to IP addresses
     let addresses: string[];
     try {
-        // Try to resolve as IPv4 first, then IPv6
         const ipv4Addresses = await dns.resolve4(parsedUrl.hostname).catch(() => []);
         const ipv6Addresses = await dns.resolve6(parsedUrl.hostname).catch(() => []);
         addresses = [...ipv4Addresses, ...ipv6Addresses];
@@ -98,7 +92,6 @@ async function validateServerUrl(serverUrl: string): Promise<void> {
         throw new Error('Unable to resolve server hostname.');
     }
 
-    // Check each resolved IP against blocked ranges
     for (const ip of addresses) {
         if (isPrivateOrReservedIP(ip)) {
             throw new Error('Server URL resolves to a private or reserved IP address.');
@@ -107,26 +100,20 @@ async function validateServerUrl(serverUrl: string): Promise<void> {
 }
 
 function isPrivateOrReservedIP(ip: string): boolean {
-    // Check for IPv6 addresses
-    if (ip.includes(':')) {
-        const normalizedIp = ip.toLowerCase();
-        // Loopback (::1)
-        if (normalizedIp === '::1') return true;
-        // Unique local addresses (fc00::/7 covers fc00:: to fdff::)
-        if (normalizedIp.startsWith('fc') || normalizedIp.startsWith('fd')) return true;
-        // Link-local addresses (fe80::/10)
-        if (normalizedIp.startsWith('fe8') || normalizedIp.startsWith('fe9') ||
-            normalizedIp.startsWith('fea') || normalizedIp.startsWith('feb')) return true;
-        // IPv4-mapped IPv6 addresses (::ffff:x.x.x.x)
-        if (normalizedIp.startsWith('::ffff:')) {
-            const ipv4Part = normalizedIp.slice(7);
-            return isPrivateOrReservedIPv4(ipv4Part);
-        }
-        return false;
-    }
 
-    // IPv4 address
-    return isPrivateOrReservedIPv4(ip);
+    if (!ip.includes(':')) {
+        return isPrivateOrReservedIPv4(ip);
+    }
+    const normalizedIp = ip.toLowerCase();
+    if (normalizedIp === '::1') return true;
+    if (normalizedIp.startsWith('fc') || normalizedIp.startsWith('fd')) return true;
+    if (normalizedIp.startsWith('fe8') || normalizedIp.startsWith('fe9') ||
+        normalizedIp.startsWith('fea') || normalizedIp.startsWith('feb')) return true;
+    if (normalizedIp.startsWith('::ffff:')) {
+        const ipv4Part = normalizedIp.slice(7);
+        return isPrivateOrReservedIPv4(ipv4Part);
+    }
+    return false;
 }
 
 function isPrivateOrReservedIPv4(ip: string): boolean {

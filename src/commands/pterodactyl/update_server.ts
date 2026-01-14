@@ -1,11 +1,14 @@
 import { ChatInputCommandInteraction } from 'discord.js';
 import { buildError } from '../../helpers/errorBuilder.js';
 import Database from '../../helpers/database.js';
+import { Caller } from '../../helpers/caller.js';
 
 export default class UpdateServer {
     private db : Database;
-    constructor(db: Database) {
+    private caller : Caller;
+    constructor(db: Database, caller: Caller) {
         this.db = db;
+        this.caller = caller;
     }
     async execute(interaction: ChatInputCommandInteraction) {
         try {

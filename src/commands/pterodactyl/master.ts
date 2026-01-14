@@ -5,6 +5,7 @@ import ServerStatus, * as serverStatus from './server_status.js';
 import UpdateServer from './update_server.js';
 import RemoveServer from './remove_server.js';
 import Database from '../../helpers/database.js';
+import { Caller } from '../../helpers/caller.js';
 
 export default {
     ephemeralDefer: true,
@@ -88,15 +89,16 @@ export default {
     async execute(interaction: ChatInputCommandInteraction) {
         const subcommand = interaction.options.getSubcommand();
         const db = new Database(process.env.SERVER_DATABASE || 'pterodactyl.db');
+        const caller = new Caller();
         switch (subcommand) {
             case 'register':
-                return await new RegisterServer(db).execute(interaction);
+                return await new RegisterServer(db, caller).execute(interaction);
             case 'list':
                 return await new ListServers(db).execute(interaction);
             case 'manage':
-                return await new ServerStatus(db).execute(interaction);
+                return await new ServerStatus(db, caller).execute(interaction);
             case 'update':
-                return await new UpdateServer(db).execute(interaction);
+                return await new UpdateServer(db, caller).execute(interaction);
             case 'remove':
                 return await new RemoveServer(db).execute(interaction);
             default:
@@ -107,7 +109,7 @@ export default {
         }
     },
 
-    setupCollector: new ServerStatus(new Database(process.env.SERVER_DATABASE || 'pterodactyl.db')).setupCollector,
+    setupCollector: new ServerStatus(new Database(process.env.SERVER_DATABASE || 'pterodactyl.db'), new Caller()).setupCollector,
 
     fullDesc: {
         description: 'Manage your Pterodactyl panel servers. Use subcommands to register, list, view status, update, or remove servers. View the full guide [here](https://docs.google.com/document/d/1Zp2gsq3bqzJwQ6OeA4nu_3XM3is3-TM8ynA1vWxIZL8/edit?tab=t.0&usp=sharing).',
