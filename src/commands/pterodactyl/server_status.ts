@@ -1,4 +1,4 @@
-import { EmbedBuilder, ChatInputCommandInteraction, ActionRowBuilder, ButtonBuilder, ButtonStyle, ButtonInteraction, ComponentType, APIButtonComponent, Message, StringSelectMenuBuilder, StringSelectMenuInteraction, Client } from 'discord.js';
+import { EmbedBuilder, ChatInputCommandInteraction, ActionRowBuilder, ButtonBuilder, ButtonStyle, ButtonInteraction, ComponentType, APIButtonComponent, Message, StringSelectMenuBuilder, StringSelectMenuInteraction } from 'discord.js';
 import Database from '../../helpers/database.js';
 import { buildError } from '../../helpers/errorBuilder.js';
 

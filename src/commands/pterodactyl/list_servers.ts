@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, EmbedBuilder, Client } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
 import { buildError } from '../../helpers/errorBuilder.js';
 import Database from '../../helpers/database.js';
 

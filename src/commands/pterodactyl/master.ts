@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, Client } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
 import RegisterServer from './register_server.js';
 import ListServers from './list_servers.js';
 import ServerStatus, * as serverStatus from './server_status.js';
@@ -85,7 +85,7 @@ export default {
                 )
         ),
 
-    async execute(interaction: ChatInputCommandInteraction, client: Client) {
+    async execute(interaction: ChatInputCommandInteraction) {
         const subcommand = interaction.options.getSubcommand();
         const db = new Database(process.env.SERVER_DATABASE || 'pterodactyl.db');
         switch (subcommand) {
