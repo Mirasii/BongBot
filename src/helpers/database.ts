@@ -1,5 +1,6 @@
 import BetterSqlite3 from 'better-sqlite3';
 import path from 'path';
+import crypto from 'crypto';
 
 export interface PterodactylServer {
     id?: number;
@@ -48,11 +49,12 @@ export default class Database {
             INSERT INTO pterodactyl_servers (userId, serverName, serverUrl, apiKey)
             VALUES (?, ?, ?, ?)
         `);
+        const encrypted = this.encryptApiKey(server.apiKey);
         const result = stmt.run(
             server.userId,
             server.serverName,
             server.serverUrl,
-            server.apiKey,
+            encrypted,
         );
         return result.lastInsertRowid as number;
     }
@@ -88,7 +90,8 @@ export default class Database {
 
         if (updates.apiKey !== undefined) {
             updateFields.push('apiKey = ?');
-            values.push(updates.apiKey);
+            const encrypted = this.encryptApiKey(updates.apiKey);
+            values.push(encrypted);
         }
 
         if (updateFields.length === 0) {
@@ -110,17 +113,51 @@ export default class Database {
         const stmt = this.db.prepare(
             'SELECT * FROM pterodactyl_servers WHERE id = ?',
         );
-        return stmt.get(id) as PterodactylServer | undefined;
+        let server = stmt.get(id) as PterodactylServer | undefined;
+        if (!server) { return server; }
+        server.apiKey = this.decryptApiKey(server.apiKey);
+        return server;
     }
 
     getServersByUserId(userId: string): PterodactylServer[] {
         const stmt = this.db.prepare(
             'SELECT * FROM pterodactyl_servers WHERE userId = ?',
         );
-        return stmt.all(userId) as PterodactylServer[];
+        let servers = stmt.all(userId) as PterodactylServer[];
+        servers = servers.map((server) => {
+            server.apiKey = this.decryptApiKey(server.apiKey);
+            return server;
+        });
+        return servers;
     }
 
     close(): void {
         this.db.close();
+    }
+
+    private encryptApiKey(plaintext: string): string {
+        const key = Buffer.from(process.env.ENCRYPTION_KEY!, 'hex');
+        const iv = crypto.randomBytes(16);
+        const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+        let encrypted = cipher.update(plaintext, 'utf8', 'hex');
+        encrypted += cipher.final('hex');
+        const authTag = cipher.getAuthTag(); // Extract the authentication tag
+        return iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted;
+    }
+
+    private decryptApiKey(ciphertext: string): string {
+        const key = Buffer.from(process.env.ENCRYPTION_KEY!, 'hex');
+        const parts = ciphertext.split(':');
+        if (parts.length !== 3) {
+            throw new Error('Invalid ciphertext format');
+        }
+        const iv = Buffer.from(parts[0], 'hex');
+        const authTag = Buffer.from(parts[1], 'hex');
+        const encrypted = parts[2];
+        const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+        decipher.setAuthTag(authTag); // Set auth tag before decryption
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
     }
 }
