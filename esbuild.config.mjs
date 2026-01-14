@@ -42,21 +42,23 @@ const buildOptions = {
 
 // Copy better-sqlite3 native bindings after build
 async function copyNativeBindings() {
-    try {
-        const sqlitePath =
-            "node_modules/better-sqlite3/build/Release/better_sqlite3.node";
-        const destDir = "dist/build/Release";
+    const sqlitePath =
+        "node_modules/better-sqlite3/build/Release/better_sqlite3.node";
+    const destDir = "dist/build/Release";
 
+    if (!existsSync(sqlitePath)) {
+        throw new Error(`Native binding not found: ${sqlitePath}`);
+    }
+
+    try {
         if (!existsSync(destDir)) {
             mkdirSync(destDir, { recursive: true });
         }
 
-        if (existsSync(sqlitePath)) {
-            copyFileSync(sqlitePath, join(destDir, "better_sqlite3.node"));
-            console.log("✓ Copied native SQLite binding");
-        }
+        copyFileSync(sqlitePath, join(destDir, "better_sqlite3.node"));
+        console.log("✓ Copied native SQLite binding");
     } catch (error) {
-        console.error("Error copying native bindings:", error);
+        throw new Error(`Error copying native bindings: ${error.message}`);
     }
 }
 
