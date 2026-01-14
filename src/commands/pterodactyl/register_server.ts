@@ -2,6 +2,7 @@ import { ChatInputCommandInteraction } from 'discord.js';
 import { buildError } from '../../helpers/errorBuilder.js';
 import Database from '../../helpers/database.js';
 import { Caller } from '../../helpers/caller.js';
+import { validateApiConnection } from './master.js'
 
 export default class RegisterServer {
     private db : Database;
@@ -19,6 +20,9 @@ export default class RegisterServer {
             if (serverUrl.endsWith('/')) {
                 serverUrl = serverUrl.slice(0, -1);
             }
+
+            await validateApiConnection(serverUrl, apiKey, this.caller);
+
             this.db.addServer({
                 userId,
                 serverName,
@@ -36,9 +40,4 @@ export default class RegisterServer {
             this.db?.close();
         }
     }
-}
-
-async function checkServerExists(serverUrl: string, apiKey: string): Promise<boolean> {
-
-    return false;
 }

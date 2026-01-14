@@ -2,7 +2,7 @@ import { ChatInputCommandInteraction } from 'discord.js';
 import { buildError } from '../../helpers/errorBuilder.js';
 import Database from '../../helpers/database.js';
 import { Caller } from '../../helpers/caller.js';
-
+import { validateApiConnection } from './master.js'
 export default class UpdateServer {
     private db : Database;
     private caller : Caller;
@@ -13,18 +13,31 @@ export default class UpdateServer {
     async execute(interaction: ChatInputCommandInteraction) {
         try {
             const serverName = interaction.options.getString('server_name', true).trim();
-            const serverUrl = interaction.options.getString('server_url');
+            let serverUrl = interaction.options.getString('server_url');
             const apiKey = interaction.options.getString('api_key');
             const userId = interaction.user.id;
 
-            // Build updates object with only provided fields
+            const existingServers = this.db.getServersByUserId(userId);
+            const existingServer = existingServers.find(s => s.serverName === serverName);
+
+            if (!existingServer) {
+                throw new Error(`Server "${serverName}" not found for this user.`);
+            }
+
             const updates: { serverUrl?: string; apiKey?: string } = {};
-            if (serverUrl) updates.serverUrl = serverUrl.trim();
+            if (serverUrl) {
+                serverUrl = serverUrl.trim();
+                if (serverUrl.endsWith('/')) { serverUrl = serverUrl.slice(0, -1); }
+                updates.serverUrl = serverUrl;
+            }
             if (apiKey) updates.apiKey = apiKey.trim();
+
+            const finalUrl = updates.serverUrl || existingServer.serverUrl;
+            const finalApiKey = updates.apiKey || existingServer.apiKey;
+            await validateApiConnection(finalUrl, finalApiKey, this.caller);
 
             this.db.updateServer(userId, serverName, updates);
 
-            // Build response message
             const updatedFields: string[] = [];
             if (updates.serverUrl) updatedFields.push('URL');
             if (updates.apiKey) updatedFields.push('API key');

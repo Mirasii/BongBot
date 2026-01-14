@@ -137,3 +137,18 @@ export default {
         ],
     },
 };
+
+export async function validateApiConnection(serverUrl: string, apiKey: string, caller: Caller): Promise<void> {
+    await caller.validateServerSSRF(serverUrl);
+    const headers = {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+    };
+
+    try {
+        await caller.get(serverUrl, '/api/client', null, headers);
+    } catch (error) {
+        throw new Error('Failed to connect to Pterodactyl server. Please verify your server URL and API key are correct.');
+    }
+}
