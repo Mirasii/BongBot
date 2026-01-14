@@ -7,6 +7,7 @@ import RemoveServer from './remove_server.js';
 import Database from '../../helpers/database.js';
 
 export default {
+    ephemeralDefer: true,
     data: new SlashCommandBuilder()
         .setName('pterodactyl')
         .setDescription('Manage your Pterodactyl panel servers')

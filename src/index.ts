@@ -29,7 +29,7 @@ bot.on('interactionCreate', async (interaction: Interaction) => {
     try {
         const command = bot.commands!.get(interaction.commandName);
         if (!command) return;
-        await interaction.deferReply();
+        await interaction.deferReply({ ephemeral: command.ephemeralDefer || false });
         const response = await command.execute(interaction, bot); 
         if (response?.isError === true && interaction.replied) { 
             await interaction.deleteReply(); 

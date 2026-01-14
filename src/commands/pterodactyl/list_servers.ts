@@ -8,7 +8,7 @@ export default class ListServers {
     constructor(db: Database) {
         this.db = db;
     }
-    
+
     public async execute(interaction: ChatInputCommandInteraction) {
         try {
             const servers = this.db.getServersByUserId(interaction.user.id);
@@ -26,7 +26,7 @@ export default class ListServers {
                     value: `URL: ${server.serverUrl}`,
                 });
             });
-            return { embeds: [embed] };
+            return { embeds: [embed], ephemeral: true };
 
         } catch (error) {
             return await buildError(interaction, error);
