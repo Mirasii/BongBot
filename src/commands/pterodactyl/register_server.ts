@@ -17,6 +17,11 @@ export default class RegisterServer {
             const apiKey = interaction.options.getString('api_key', true).trim();
             const serverName = interaction.options.getString('server_name', true).trim();
             const userId = interaction.user.id;
+
+            if (!serverName) {
+                throw new Error('Server name cannot be empty or whitespace.');
+            }
+
             if (serverUrl.endsWith('/')) {
                 serverUrl = serverUrl.slice(0, -1);
             }

@@ -251,5 +251,55 @@ describe('register_server command', () => {
             );
             expect(mockAddServer).not.toHaveBeenCalled();
         });
+
+        it('should reject empty server name', async () => {
+            const getString = jest.fn((key: string, required?: boolean) => {
+                const options: { [key: string]: string } = {
+                    server_url: 'https://panel.example.com',
+                    api_key: 'test-api-key',
+                    server_name: '   ', // Whitespace only
+                };
+                return options[key] || null;
+            });
+
+            mockInteraction.options = { getString } as any;
+
+            await registerServerExecute(
+                mockInteraction as ChatInputCommandInteraction
+            );
+
+            expect(mockBuildError).toHaveBeenCalledWith(
+                mockInteraction,
+                expect.objectContaining({
+                    message: 'Server name cannot be empty or whitespace.'
+                })
+            );
+            expect(mockAddServer).not.toHaveBeenCalled();
+        });
+
+        it('should reject empty string server name', async () => {
+            const getString = jest.fn((key: string, required?: boolean) => {
+                const options: { [key: string]: string | null } = {
+                    server_url: 'https://panel.example.com',
+                    api_key: 'test-api-key',
+                    server_name: '',
+                };
+                return key in options ? options[key] : null;
+            });
+
+            mockInteraction.options = { getString } as any;
+
+            await registerServerExecute(
+                mockInteraction as ChatInputCommandInteraction
+            );
+
+            expect(mockBuildError).toHaveBeenCalledWith(
+                mockInteraction,
+                expect.objectContaining({
+                    message: 'Server name cannot be empty or whitespace.'
+                })
+            );
+            expect(mockAddServer).not.toHaveBeenCalled();
+        });
     });
 });
