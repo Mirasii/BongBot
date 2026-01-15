@@ -1,8 +1,21 @@
 import { jest } from '@jest/globals';
 
-// Mock Database to prevent better-sqlite3 from being loaded
-jest.unstable_mockModule('../../../src/helpers/database.js', () => ({
-    default: jest.fn(),
+// Mock the database pool
+const mockGetConnection = jest.fn().mockReturnValue({
+    getServersByUserId: jest.fn(),
+    getServerById: jest.fn(),
+    addServer: jest.fn(),
+    updateServer: jest.fn(),
+    deleteServer: jest.fn(),
+    close: jest.fn(),
+});
+
+jest.unstable_mockModule('../../../src/services/databasePool.js', () => ({
+    default: {
+        getInstance: jest.fn().mockReturnValue({
+            getConnection: mockGetConnection,
+        }),
+    },
 }));
 
 // Mock errorBuilder
@@ -10,7 +23,7 @@ jest.unstable_mockModule('../../../src/helpers/errorBuilder.js', () => ({
     buildError: jest.fn(),
 }));
 
-// Mock the subcommand modules
+// Mock the subcommand modules as classes
 const mockRegisterExecute = jest.fn();
 const mockListExecute = jest.fn();
 const mockServerStatusExecute = jest.fn();
@@ -19,24 +32,34 @@ const mockRemoveExecute = jest.fn();
 const mockSetupCollector = jest.fn();
 
 jest.unstable_mockModule('../../../src/commands/pterodactyl/register_server.js', () => ({
-    execute: mockRegisterExecute,
+    default: class MockRegisterServer {
+        execute = mockRegisterExecute;
+    },
 }));
 
 jest.unstable_mockModule('../../../src/commands/pterodactyl/list_servers.js', () => ({
-    execute: mockListExecute,
+    default: class MockListServers {
+        execute = mockListExecute;
+    },
 }));
 
 jest.unstable_mockModule('../../../src/commands/pterodactyl/server_status.js', () => ({
-    execute: mockServerStatusExecute,
-    setupCollector: mockSetupCollector,
+    default: class MockServerStatus {
+        execute = mockServerStatusExecute;
+        setupCollector = mockSetupCollector;
+    },
 }));
 
 jest.unstable_mockModule('../../../src/commands/pterodactyl/update_server.js', () => ({
-    execute: mockUpdateExecute,
+    default: class MockUpdateServer {
+        execute = mockUpdateExecute;
+    },
 }));
 
 jest.unstable_mockModule('../../../src/commands/pterodactyl/remove_server.js', () => ({
-    execute: mockRemoveExecute,
+    default: class MockRemoveServer {
+        execute = mockRemoveExecute;
+    },
 }));
 
 // Import the master module
@@ -148,11 +171,9 @@ describe('pterodactyl master command', () => {
 
     describe('execute method', () => {
         let mockInteraction: any;
-        let mockClient: any;
 
         beforeEach(() => {
             jest.clearAllMocks();
-            mockClient = {};
             mockInteraction = {
                 options: {
                     getSubcommand: jest.fn(),
@@ -164,9 +185,9 @@ describe('pterodactyl master command', () => {
             mockInteraction.options.getSubcommand.mockReturnValue('register');
             mockRegisterExecute.mockResolvedValue({ content: 'registered' });
 
-            const result = await pterodactylCommand.execute(mockInteraction, mockClient);
+            const result = await pterodactylCommand.execute(mockInteraction);
 
-            expect(mockRegisterExecute).toHaveBeenCalledWith(mockInteraction, mockClient);
+            expect(mockRegisterExecute).toHaveBeenCalledWith(mockInteraction);
             expect(result).toEqual({ content: 'registered' });
         });
 
@@ -174,9 +195,9 @@ describe('pterodactyl master command', () => {
             mockInteraction.options.getSubcommand.mockReturnValue('list');
             mockListExecute.mockResolvedValue({ content: 'listed' });
 
-            const result = await pterodactylCommand.execute(mockInteraction, mockClient);
+            const result = await pterodactylCommand.execute(mockInteraction);
 
-            expect(mockListExecute).toHaveBeenCalledWith(mockInteraction, mockClient);
+            expect(mockListExecute).toHaveBeenCalledWith(mockInteraction);
             expect(result).toEqual({ content: 'listed' });
         });
 
@@ -184,9 +205,9 @@ describe('pterodactyl master command', () => {
             mockInteraction.options.getSubcommand.mockReturnValue('manage');
             mockServerStatusExecute.mockResolvedValue({ content: 'managed' });
 
-            const result = await pterodactylCommand.execute(mockInteraction, mockClient);
+            const result = await pterodactylCommand.execute(mockInteraction);
 
-            expect(mockServerStatusExecute).toHaveBeenCalledWith(mockInteraction, mockClient);
+            expect(mockServerStatusExecute).toHaveBeenCalledWith(mockInteraction);
             expect(result).toEqual({ content: 'managed' });
         });
 
@@ -194,9 +215,9 @@ describe('pterodactyl master command', () => {
             mockInteraction.options.getSubcommand.mockReturnValue('update');
             mockUpdateExecute.mockResolvedValue({ content: 'updated' });
 
-            const result = await pterodactylCommand.execute(mockInteraction, mockClient);
+            const result = await pterodactylCommand.execute(mockInteraction);
 
-            expect(mockUpdateExecute).toHaveBeenCalledWith(mockInteraction, mockClient);
+            expect(mockUpdateExecute).toHaveBeenCalledWith(mockInteraction);
             expect(result).toEqual({ content: 'updated' });
         });
 
@@ -204,16 +225,16 @@ describe('pterodactyl master command', () => {
             mockInteraction.options.getSubcommand.mockReturnValue('remove');
             mockRemoveExecute.mockResolvedValue({ content: 'removed' });
 
-            const result = await pterodactylCommand.execute(mockInteraction, mockClient);
+            const result = await pterodactylCommand.execute(mockInteraction);
 
-            expect(mockRemoveExecute).toHaveBeenCalledWith(mockInteraction, mockClient);
+            expect(mockRemoveExecute).toHaveBeenCalledWith(mockInteraction);
             expect(result).toEqual({ content: 'removed' });
         });
 
         it('should return unknown subcommand message for invalid subcommand', async () => {
             mockInteraction.options.getSubcommand.mockReturnValue('invalid');
 
-            const result = await pterodactylCommand.execute(mockInteraction, mockClient);
+            const result = await pterodactylCommand.execute(mockInteraction);
 
             expect(result).toEqual({
                 content: 'Unknown subcommand',

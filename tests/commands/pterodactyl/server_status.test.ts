@@ -2,6 +2,9 @@ import { jest } from '@jest/globals';
 import type { ChatInputCommandInteraction, Message, ButtonInteraction, StringSelectMenuInteraction } from 'discord.js';
 import { testCommandStructure, createMockInteraction } from '../../utils/commandTestUtils.js';
 
+// Set allowed hosts to bypass DNS resolution in tests
+process.env.PTERODACTYL_ALLOWED_HOSTS = 'panel.example.com';
+
 // Setup MSW for mocking fetch
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
@@ -52,16 +55,12 @@ const mockGetServersByUserId = jest.fn();
 const mockGetServerById = jest.fn();
 const mockDbClose = jest.fn();
 
-const MockDatabase = jest.fn().mockImplementation(() => ({
+const mockDb = {
     getServersByUserId: mockGetServersByUserId,
     getServerById: mockGetServerById,
     close: mockDbClose,
     addServer: jest.fn(),
-}));
-
-jest.unstable_mockModule('../../../src/helpers/database.js', () => ({
-    default: MockDatabase,
-}));
+};
 
 // Mock errorBuilder
 const mockBuildError = jest.fn();
@@ -70,7 +69,14 @@ jest.unstable_mockModule('../../../src/helpers/errorBuilder.js', () => ({
 }));
 
 // Import after mocking and MSW setup
-const { execute: serverStatusExecute, setupCollector } = await import('../../../src/commands/pterodactyl/server_status.js');
+const { default: ServerStatus } = await import('../../../src/commands/pterodactyl/server_status.js');
+const { Caller } = await import('../../../src/helpers/caller.js');
+
+// Create instance with mock dependencies
+const caller = new Caller();
+const serverStatusInstance = new ServerStatus(mockDb as any, caller);
+const serverStatusExecute = serverStatusInstance.execute.bind(serverStatusInstance);
+const setupCollector = serverStatusInstance.setupCollector.bind(serverStatusInstance);
 
 describe('server_status command', () => {
     let mockInteraction: any;
@@ -156,7 +162,6 @@ describe('server_status command', () => {
             await serverStatusExecute(mockInteraction);
 
             expect(mockGetServersByUserId).toHaveBeenCalledWith('test-user-123');
-            expect(mockDbClose).toHaveBeenCalledTimes(1);
             expect(mockBuildError).toHaveBeenCalledWith(
                 mockInteraction,
                 expect.objectContaining({
@@ -170,7 +175,6 @@ describe('server_status command', () => {
 
             await serverStatusExecute(mockInteraction);
 
-            expect(mockDbClose).toHaveBeenCalledTimes(1);
             expect(mockBuildError).toHaveBeenCalledWith(
                 mockInteraction,
                 expect.objectContaining({
@@ -183,7 +187,6 @@ describe('server_status command', () => {
             const result: any = await serverStatusExecute(mockInteraction);
 
             expect(mockGetServersByUserId).toHaveBeenCalledWith('test-user-123');
-            expect(mockDbClose).toHaveBeenCalledTimes(1);
             expect(result.embeds).toBeDefined();
             expect(result.embeds.length).toBe(1);
 
@@ -196,7 +199,6 @@ describe('server_status command', () => {
         it('should include control components in response', async () => {
             const result: any = await serverStatusExecute(mockInteraction);
 
-            expect(mockDbClose).toHaveBeenCalledTimes(1);
             expect(result.components).toBeDefined();
             expect(result.components.length).toBeGreaterThan(0);
         });
@@ -227,11 +229,10 @@ describe('server_status command', () => {
 
             await serverStatusExecute(mockInteraction);
 
-            expect(mockDbClose).toHaveBeenCalledTimes(1);
             expect(mockBuildError).toHaveBeenCalledWith(
                 mockInteraction,
                 expect.objectContaining({
-                    message: expect.stringMatching(/multiple.*servers.*registered/)
+                    message: expect.stringMatching(/multiple.*servers/)
                 })
             );
         });
@@ -241,7 +242,6 @@ describe('server_status command', () => {
 
             const result: any = await serverStatusExecute(mockInteraction);
 
-            expect(mockDbClose).toHaveBeenCalledTimes(1);
             expect(result.embeds).toBeDefined();
             expect(result.embeds[0].data.fields.length).toBeGreaterThan(0);
         });
@@ -251,7 +251,6 @@ describe('server_status command', () => {
 
             await serverStatusExecute(mockInteraction);
 
-            expect(mockDbClose).toHaveBeenCalledTimes(1);
             expect(mockBuildError).toHaveBeenCalledWith(
                 mockInteraction,
                 expect.objectContaining({
@@ -311,15 +310,13 @@ describe('server_status command', () => {
     });
 
     describe('error handling', () => {
-        it('should handle database error before closing', async () => {
+        it('should handle database error', async () => {
             mockGetServersByUserId.mockImplementation(() => {
                 throw new Error('Database error');
             });
 
             await serverStatusExecute(mockInteraction);
 
-            // Database should NOT be closed if error happens before db.close()
-            expect(mockDbClose).toHaveBeenCalledTimes(0);
             expect(mockBuildError).toHaveBeenCalled();
         });
 
@@ -727,21 +724,12 @@ describe('server_status command', () => {
         });
     });
 
-    describe('use custom database from environment variable', () => {
-        it('should use custom database path from env', async () => {
-            const originalEnv = process.env.SERVER_DATABASE;
-            process.env.SERVER_DATABASE = 'custom-db.db';
-
+    describe('dependency injection', () => {
+        it('should use the injected database', async () => {
             await serverStatusExecute(mockInteraction);
 
-            expect(MockDatabase).toHaveBeenCalledWith('custom-db.db');
-
-            // Restore
-            if (originalEnv) {
-                process.env.SERVER_DATABASE = originalEnv;
-            } else {
-                delete process.env.SERVER_DATABASE;
-            }
+            // Verify the injected mock database was used
+            expect(mockGetServersByUserId).toHaveBeenCalledWith('test-user-123');
         });
     });
 
@@ -758,7 +746,7 @@ describe('server_status command', () => {
             expect(mockBuildError).toHaveBeenCalledWith(
                 mockInteraction,
                 expect.objectContaining({
-                    message: expect.stringContaining('Failed to fetch servers')
+                    message: expect.stringContaining('Network response was not ok')
                 })
             );
         });

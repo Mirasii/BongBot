@@ -6,16 +6,12 @@ import { testCommandStructure, createMockInteraction, createMockClient } from '.
 const mockGetServersByUserId = jest.fn();
 const mockDbClose = jest.fn();
 
-const MockDatabase = jest.fn().mockImplementation(() => ({
+const mockDb = {
     addServer: jest.fn(),
     getServerById: jest.fn(),
     getServersByUserId: mockGetServersByUserId,
     close: mockDbClose,
-}));
-
-jest.unstable_mockModule('../../../src/helpers/database.js', () => ({
-    default: MockDatabase,
-}));
+};
 
 // Mock errorBuilder
 const mockBuildError = jest.fn();
@@ -24,7 +20,11 @@ jest.unstable_mockModule('../../../src/helpers/errorBuilder.js', () => ({
 }));
 
 // Import after mocking
-const { execute: listServersExecute } = await import('../../../src/commands/pterodactyl/list_servers.js');
+const { default: ListServers } = await import('../../../src/commands/pterodactyl/list_servers.js');
+
+// Create instance with mock dependencies
+const listServersInstance = new ListServers(mockDb as any);
+const listServersExecute = listServersInstance.execute.bind(listServersInstance);
 
 describe('list_servers command', () => {
     let mockInteraction: Partial<ChatInputCommandInteraction>;
@@ -74,13 +74,10 @@ describe('list_servers command', () => {
             mockGetServersByUserId.mockReturnValue(mockServers);
 
             const result = await listServersExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
+                mockInteraction as ChatInputCommandInteraction
             );
 
-            expect(MockDatabase).toHaveBeenCalledWith('pterodactyl.db');
             expect(mockGetServersByUserId).toHaveBeenCalledWith('test-user-123');
-            expect(mockDbClose).toHaveBeenCalled();
             expect(result).toHaveProperty('embeds');
             expect(result.embeds).toHaveLength(1);
             expect(result.embeds[0].data.title).toBe('🎮 Registered Servers');
@@ -96,13 +93,10 @@ describe('list_servers command', () => {
             mockGetServersByUserId.mockReturnValue([]);
 
             const result = await listServersExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
+                mockInteraction as ChatInputCommandInteraction
             );
 
-            expect(MockDatabase).toHaveBeenCalledWith('pterodactyl.db');
             expect(mockGetServersByUserId).toHaveBeenCalledWith('test-user-123');
-            expect(mockDbClose).toHaveBeenCalled();
             expect(result).toHaveProperty('embeds');
             expect(result.embeds).toHaveLength(1);
             expect(result.embeds[0].data.title).toBe('🎮 Registered Servers');
@@ -124,35 +118,13 @@ describe('list_servers command', () => {
             mockGetServersByUserId.mockReturnValue(mockServers);
 
             const result = await listServersExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
+                mockInteraction as ChatInputCommandInteraction
             );
 
             expect(result).toHaveProperty('embeds');
             expect(result.embeds[0].data.fields).toHaveLength(1);
             expect(result.embeds[0].data.fields![0].name).toBe('My Server');
             expect(result.embeds[0].data.fields![0].value).toBe('URL: https://panel.example.com');
-        });
-
-        it('should use custom database from environment variable', async () => {
-            const originalEnv = process.env.SERVER_DATABASE;
-            process.env.SERVER_DATABASE = 'custom-db.db';
-
-            mockGetServersByUserId.mockReturnValue([]);
-
-            await listServersExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
-            );
-
-            expect(MockDatabase).toHaveBeenCalledWith('custom-db.db');
-
-            // Restore original env
-            if (originalEnv) {
-                process.env.SERVER_DATABASE = originalEnv;
-            } else {
-                delete process.env.SERVER_DATABASE;
-            }
         });
 
         it('should handle database errors', async () => {
@@ -168,23 +140,11 @@ describe('list_servers command', () => {
             });
 
             const result = await listServersExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
+                mockInteraction as ChatInputCommandInteraction
             );
 
             expect(mockBuildError).toHaveBeenCalledWith(mockInteraction, testError);
             expect((result as any).isError).toBe(true);
-        });
-
-        it('should close database connection even on success', async () => {
-            mockGetServersByUserId.mockReturnValue([]);
-
-            await listServersExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
-            );
-
-            expect(mockDbClose).toHaveBeenCalled();
         });
 
         it('should handle multiple servers with various names and URLs', async () => {
@@ -215,8 +175,7 @@ describe('list_servers command', () => {
             mockGetServersByUserId.mockReturnValue(mockServers);
 
             const result = await listServersExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
+                mockInteraction as ChatInputCommandInteraction
             );
 
             expect(result.embeds[0].data.fields).toHaveLength(3);
@@ -229,8 +188,7 @@ describe('list_servers command', () => {
             mockGetServersByUserId.mockReturnValue([]);
 
             const result = await listServersExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
+                mockInteraction as ChatInputCommandInteraction
             );
 
             expect(result.embeds[0].data.timestamp).toBeDefined();
@@ -245,8 +203,7 @@ describe('list_servers command', () => {
             mockGetServersByUserId.mockReturnValue([]);
 
             await listServersExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
+                mockInteraction as ChatInputCommandInteraction
             );
 
             expect(mockGetServersByUserId).toHaveBeenCalledWith('different-user-456');

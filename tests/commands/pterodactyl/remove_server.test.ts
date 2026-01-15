@@ -6,14 +6,10 @@ import { testCommandStructure, createMockInteraction, createMockClient } from '.
 const mockDeleteServer = jest.fn();
 const mockDbClose = jest.fn();
 
-const MockDatabase = jest.fn().mockImplementation(() => ({
+const mockDb = {
     deleteServer: mockDeleteServer,
     close: mockDbClose,
-}));
-
-jest.unstable_mockModule('../../../src/helpers/database.js', () => ({
-    default: MockDatabase,
-}));
+};
 
 // Mock errorBuilder
 const mockBuildError = jest.fn();
@@ -22,7 +18,11 @@ jest.unstable_mockModule('../../../src/helpers/errorBuilder.js', () => ({
 }));
 
 // Import after mocking
-const { execute: removeServerExecute } = await import('../../../src/commands/pterodactyl/remove_server.js');
+const { default: RemoveServer } = await import('../../../src/commands/pterodactyl/remove_server.js');
+
+// Create instance with mock dependencies
+const removeServerInstance = new RemoveServer(mockDb as any);
+const removeServerExecute = removeServerInstance.execute.bind(removeServerInstance);
 
 
 describe('remove_server command', () => {
@@ -60,13 +60,10 @@ describe('remove_server command', () => {
     describe('execute function', () => {
         it('should successfully remove a server', async () => {
             const result = await removeServerExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
+                mockInteraction as ChatInputCommandInteraction
             );
 
-            expect(MockDatabase).toHaveBeenCalledWith('pterodactyl.db');
             expect(mockDeleteServer).toHaveBeenCalledWith('test-user-123', 'Test Server');
-            expect(mockDbClose).toHaveBeenCalled();
             expect(result).toEqual({
                 content: 'Successfully removed server **Test Server**!',
                 ephemeral: true,
@@ -77,29 +74,10 @@ describe('remove_server command', () => {
             (mockInteraction.options!.getString as jest.Mock).mockReturnValue('  Test Server  ');
 
             await removeServerExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
+                mockInteraction as ChatInputCommandInteraction
             );
 
             expect(mockDeleteServer).toHaveBeenCalledWith('test-user-123', 'Test Server');
-        });
-
-        it('should use custom database from environment variable', async () => {
-            const originalEnv = process.env.SERVER_DATABASE;
-            process.env.SERVER_DATABASE = 'custom-db.db';
-
-            await removeServerExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
-            );
-
-            expect(MockDatabase).toHaveBeenCalledWith('custom-db.db');
-
-            if (originalEnv) {
-                process.env.SERVER_DATABASE = originalEnv;
-            } else {
-                delete process.env.SERVER_DATABASE;
-            }
         });
 
         it('should handle database errors', async () => {
@@ -114,26 +92,20 @@ describe('remove_server command', () => {
             });
 
             const result = await removeServerExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
+                mockInteraction as ChatInputCommandInteraction
             );
 
             expect(mockBuildError).toHaveBeenCalledWith(mockInteraction, testError);
             expect(result.content).toBe('Error removing server');
         });
 
-        it('should close database connection even on error', async () => {
-            mockDeleteServer.mockImplementation(() => {
-                throw new Error('Database error');
-            });
-
+        it('should use the injected database', async () => {
             await removeServerExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
+                mockInteraction as ChatInputCommandInteraction
             );
 
-            // Database close should be called in the constructor, even if deleteServer throws
-            expect(MockDatabase).toHaveBeenCalled();
+            // Verify the injected mock database was used
+            expect(mockDeleteServer).toHaveBeenCalledWith('test-user-123', 'Test Server');
         });
     });
 });

@@ -1,21 +1,33 @@
 import { jest } from '@jest/globals';
 import type { ChatInputCommandInteraction, Client } from 'discord.js';
+import { http, HttpResponse } from 'msw';
+import { setupServer } from 'msw/node';
 import { testCommandStructure, createMockInteraction, createMockClient } from '../../utils/commandTestUtils.js';
+
+// Set allowed hosts to bypass DNS resolution in tests
+process.env.PTERODACTYL_ALLOWED_HOSTS = 'panel.example.com,custom-panel.com';
+
+// Setup MSW for mocking pterodactyl API calls
+const testServerUrl = 'https://panel.example.com';
+
+const handlers = [
+    http.get(`${testServerUrl}/api/client`, () => {
+        return HttpResponse.json({ data: [] });
+    }),
+];
+
+const server = setupServer(...handlers);
 
 // Mock Database
 const mockAddServer = jest.fn();
 const mockDbClose = jest.fn();
 
-const MockDatabase = jest.fn().mockImplementation(() => ({
+const mockDb = {
     addServer: mockAddServer,
     getServerById: jest.fn(),
     getServersByUserId: jest.fn(),
     close: mockDbClose,
-}));
-
-jest.unstable_mockModule('../../../src/helpers/database.js', () => ({
-    default: MockDatabase,
-}));
+};
 
 // Mock errorBuilder
 const mockBuildError = jest.fn();
@@ -24,11 +36,29 @@ jest.unstable_mockModule('../../../src/helpers/errorBuilder.js', () => ({
 }));
 
 // Import after mocking
-const { execute: registerServerExecute } = await import('../../../src/commands/pterodactyl/register_server.js');
+const { default: RegisterServer } = await import('../../../src/commands/pterodactyl/register_server.js');
+const { Caller } = await import('../../../src/helpers/caller.js');
+
+// Create instance with mock dependencies
+const caller = new Caller();
+const registerServerInstance = new RegisterServer(mockDb as any, caller);
+const registerServerExecute = registerServerInstance.execute.bind(registerServerInstance);
 
 describe('register_server command', () => {
     let mockInteraction: Partial<ChatInputCommandInteraction>;
     let mockClient: Partial<Client>;
+
+    beforeAll(() => {
+        server.listen({ onUnhandledRequest: 'bypass' });
+    });
+
+    afterAll(() => {
+        server.close();
+    });
+
+    afterEach(() => {
+        server.resetHandlers(...handlers);
+    });
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -71,18 +101,15 @@ describe('register_server command', () => {
             mockAddServer.mockReturnValue(42);
 
             const result = await registerServerExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
+                mockInteraction as ChatInputCommandInteraction
             );
 
-            expect(MockDatabase).toHaveBeenCalledWith('pterodactyl.db');
             expect(mockAddServer).toHaveBeenCalledWith({
                 userId: 'test-user-123',
                 serverName: 'My Test Server',
                 serverUrl: 'https://panel.example.com',
                 apiKey: 'test-api-key-123',
             });
-            expect(mockDbClose).toHaveBeenCalled();
             expect(result).toEqual({
                 content: expect.stringContaining('Successfully registered server'),
                 ephemeral: true,
@@ -104,8 +131,7 @@ describe('register_server command', () => {
             mockAddServer.mockReturnValue(1);
 
             await registerServerExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
+                mockInteraction as ChatInputCommandInteraction
             );
 
             expect(mockAddServer).toHaveBeenCalledWith({
@@ -114,25 +140,6 @@ describe('register_server command', () => {
                 serverUrl: 'https://panel.example.com',
                 apiKey: 'test-api-key',
             });
-        });
-
-        it('should use custom database from environment variable', async () => {
-            const originalEnv = process.env.SERVER_DATABASE;
-            process.env.SERVER_DATABASE = 'custom-db.db';
-
-            await registerServerExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
-            );
-
-            expect(MockDatabase).toHaveBeenCalledWith('custom-db.db');
-
-            // Restore original env
-            if (originalEnv) {
-                process.env.SERVER_DATABASE = originalEnv;
-            } else {
-                delete process.env.SERVER_DATABASE;
-            }
         });
 
         it('should handle database errors', async () => {
@@ -148,8 +155,7 @@ describe('register_server command', () => {
             });
 
             const result = await registerServerExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
+                mockInteraction as ChatInputCommandInteraction
             );
 
             expect(mockBuildError).toHaveBeenCalledWith(mockInteraction, testError);
@@ -165,8 +171,7 @@ describe('register_server command', () => {
             });
 
             await registerServerExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
+                mockInteraction as ChatInputCommandInteraction
             );
 
             expect(mockBuildError).toHaveBeenCalledWith(mockInteraction, duplicateError);
@@ -185,16 +190,21 @@ describe('register_server command', () => {
             });
 
             await registerServerExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
+                mockInteraction as ChatInputCommandInteraction
             );
 
             // buildError should be called when error occurs
             expect(mockBuildError).toHaveBeenCalledWith(mockInteraction, testError);
-            // Note: Database close is not called in error case as db is scoped to try block
         });
 
         it('should extract all options from interaction correctly', async () => {
+            // Set up a handler for the custom URL
+            server.use(
+                http.get('https://custom-panel.com/api/client', () => {
+                    return HttpResponse.json({ data: [] });
+                })
+            );
+
             const getString = jest.fn((key: string, required?: boolean) => {
                 const map: { [key: string]: string } = {
                     server_url: 'https://custom-panel.com',
@@ -207,8 +217,7 @@ describe('register_server command', () => {
             mockInteraction.options = { getString } as any;
 
             await registerServerExecute(
-                mockInteraction as ChatInputCommandInteraction,
-                mockClient as Client
+                mockInteraction as ChatInputCommandInteraction
             );
 
             expect(getString).toHaveBeenCalledWith('server_url', true);
@@ -221,6 +230,26 @@ describe('register_server command', () => {
                 serverUrl: 'https://custom-panel.com',
                 apiKey: 'custom-key-xyz',
             });
+        });
+
+        it('should handle pterodactyl API validation failure', async () => {
+            server.use(
+                http.get(`${testServerUrl}/api/client`, () => {
+                    return new HttpResponse(null, { status: 401 });
+                })
+            );
+
+            await registerServerExecute(
+                mockInteraction as ChatInputCommandInteraction
+            );
+
+            expect(mockBuildError).toHaveBeenCalledWith(
+                mockInteraction,
+                expect.objectContaining({
+                    message: expect.stringContaining('Failed to connect to the Pterodactyl panel')
+                })
+            );
+            expect(mockAddServer).not.toHaveBeenCalled();
         });
     });
 });
