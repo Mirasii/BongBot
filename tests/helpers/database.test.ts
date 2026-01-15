@@ -331,4 +331,49 @@ describe('Database class', () => {
             expect(mockClose).toHaveBeenCalledTimes(1);
         });
     });
+
+    describe('decryption error handling', () => {
+        beforeEach(() => {
+            db = new Database(testDbPath);
+            jest.clearAllMocks();
+        });
+
+        it('should throw error for invalid ciphertext format (not 3 parts)', () => {
+            // Return a server with invalid ciphertext (only 2 parts instead of 3)
+            const invalidCiphertext = 'invalid:format';
+            mockGet.mockReturnValueOnce({
+                id: 1,
+                userId: 'user123',
+                serverName: 'Test Server',
+                serverUrl: 'https://panel.example.com',
+                apiKey: invalidCiphertext,
+            });
+
+            expect(() => db.getServerById(1)).toThrow('Invalid ciphertext format');
+        });
+
+        it('should throw error for ciphertext with 1 part', () => {
+            mockGet.mockReturnValueOnce({
+                id: 1,
+                userId: 'user123',
+                serverName: 'Test Server',
+                serverUrl: 'https://panel.example.com',
+                apiKey: 'onlyonepart',
+            });
+
+            expect(() => db.getServerById(1)).toThrow('Invalid ciphertext format');
+        });
+
+        it('should throw error for ciphertext with 4 parts', () => {
+            mockGet.mockReturnValueOnce({
+                id: 1,
+                userId: 'user123',
+                serverName: 'Test Server',
+                serverUrl: 'https://panel.example.com',
+                apiKey: 'part1:part2:part3:part4',
+            });
+
+            expect(() => db.getServerById(1)).toThrow('Invalid ciphertext format');
+        });
+    });
 });
