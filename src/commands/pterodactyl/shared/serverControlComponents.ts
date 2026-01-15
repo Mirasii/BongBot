@@ -40,17 +40,13 @@ export function buildServerControlComponents(servers: PterodactylServer[], resou
 
     for (let i = 0; i < allOptions.length; i += optionsPerMenu) {
         const menuOptions = allOptions.slice(i, i + optionsPerMenu);
-        if (menuOptions.length > 0) {
-            const selectMenu = new StringSelectMenuBuilder()
-                .setCustomId(`server_control:${dbServerId}:menu${i}`)
-                .setPlaceholder('Server Actions')
-                .addOptions(menuOptions);
+        const selectMenu = new StringSelectMenuBuilder()
+            .setCustomId(`server_control:${dbServerId}:menu${i}`)
+            .setPlaceholder('Server Actions')
+            .addOptions(menuOptions);
 
-            const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
-            rows.push(row);
-
-            if (rows.length >= 4) break;
-        }
+        const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
+        rows.push(row);
     }
 
     const anyRunning = resources.some((r) => r?.attributes.current_state === 'running');
