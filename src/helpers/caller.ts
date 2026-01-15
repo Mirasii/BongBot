@@ -76,19 +76,16 @@ async function validateServerUrl(serverUrl: string): Promise<void> {
         return;
     }
 
-    let addresses: string[];
-    try {
-        const ipv4Addresses = await dns.resolve4(parsedUrl.hostname);
-        const ipv6Addresses = await dns.resolve6(parsedUrl.hostname);
-        addresses = [...ipv4Addresses, ...ipv6Addresses];
+    const [ipv4Result, ipv6Result] = await Promise.allSettled([
+        dns.resolve4(parsedUrl.hostname),
+        dns.resolve6(parsedUrl.hostname)
+    ]);
 
-        if (addresses.length === 0) {
-            throw new Error('Unable to resolve server hostname.');
-        }
-    } catch (error) {
-        if (error instanceof Error && error.message.includes('Unable to resolve')) {
-            throw error;
-        }
+    const ipv4Addresses = ipv4Result.status === 'fulfilled' ? ipv4Result.value : [];
+    const ipv6Addresses = ipv6Result.status === 'fulfilled' ? ipv6Result.value : [];
+    const addresses = [...ipv4Addresses, ...ipv6Addresses];
+
+    if (addresses.length === 0) {
         throw new Error('Unable to resolve server hostname.');
     }
 

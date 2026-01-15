@@ -281,7 +281,7 @@ describe('caller helper', () => {
                 .rejects.toThrow('Unable to resolve server hostname.');
         });
 
-        test('should handle DNS resolution errors', async () => {
+        test('should handle DNS resolution errors when both fail', async () => {
             mockResolve4.mockRejectedValue(new Error('DNS error'));
             mockResolve6.mockRejectedValue(new Error('DNS error'));
 
@@ -289,12 +289,36 @@ describe('caller helper', () => {
                 .rejects.toThrow('Unable to resolve server hostname.');
         });
 
-        test('should re-throw "Unable to resolve" errors', async () => {
-            mockResolve4.mockRejectedValue(new Error('Unable to resolve'));
+        test('should succeed when only IPv4 resolves (IPv6 fails)', async () => {
+            mockResolve4.mockResolvedValue(['8.8.8.8']);
+            mockResolve6.mockRejectedValue(new Error('ENODATA - no AAAA record'));
+
+            await expect(callerInstance.validateServerSSRF('https://ipv4-only.example.com'))
+                .resolves.toBeUndefined();
+        });
+
+        test('should succeed when only IPv6 resolves (IPv4 fails)', async () => {
+            mockResolve4.mockRejectedValue(new Error('ENODATA - no A record'));
+            mockResolve6.mockResolvedValue(['2001:4860:4860::8888']);
+
+            await expect(callerInstance.validateServerSSRF('https://ipv6-only.example.com'))
+                .resolves.toBeUndefined();
+        });
+
+        test('should fail when IPv4 fails and IPv6 returns empty', async () => {
+            mockResolve4.mockRejectedValue(new Error('DNS error'));
+            mockResolve6.mockResolvedValue([]);
+
+            await expect(callerInstance.validateServerSSRF('https://partial-fail.example.com'))
+                .rejects.toThrow('Unable to resolve server hostname.');
+        });
+
+        test('should fail when IPv6 fails and IPv4 returns empty', async () => {
+            mockResolve4.mockResolvedValue([]);
             mockResolve6.mockRejectedValue(new Error('DNS error'));
 
-            await expect(callerInstance.validateServerSSRF('https://dns-error.example.com'))
-                .rejects.toThrow('Unable to resolve');
+            await expect(callerInstance.validateServerSSRF('https://partial-fail.example.com'))
+                .rejects.toThrow('Unable to resolve server hostname.');
         });
 
         // IPv6 tests
