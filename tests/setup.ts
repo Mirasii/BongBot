@@ -6,6 +6,10 @@ jest.mock('fs', () => ({
     readFileSync: jest.fn()
 }));
 
-beforeAll(() => server.listen());
+beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }));
 afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+afterAll(async () => {
+    server.close();
+    // Allow pending requests to complete before Jest exits
+    await new Promise(resolve => setTimeout(resolve, 100));
+});

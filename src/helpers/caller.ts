@@ -78,8 +78,8 @@ async function validateServerUrl(serverUrl: string): Promise<void> {
 
     let addresses: string[];
     try {
-        const ipv4Addresses = await dns.resolve4(parsedUrl.hostname).catch(() => []);
-        const ipv6Addresses = await dns.resolve6(parsedUrl.hostname).catch(() => []);
+        const ipv4Addresses = await dns.resolve4(parsedUrl.hostname);
+        const ipv6Addresses = await dns.resolve6(parsedUrl.hostname);
         addresses = [...ipv4Addresses, ...ipv6Addresses];
 
         if (addresses.length === 0) {
