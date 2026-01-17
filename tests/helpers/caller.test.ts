@@ -199,6 +199,8 @@ describe('caller helper', () => {
 
         test('should accept URLs in allowed hosts list', async () => {
             process.env.PTERODACTYL_ALLOWED_HOSTS = 'example.com,test.com';
+            mockResolve4.mockResolvedValue(['8.8.8.8']);
+            mockResolve6.mockResolvedValue([]);
             await expect(callerInstance.validateServerSSRF('https://example.com'))
                 .resolves.toBeUndefined();
         });
@@ -412,6 +414,8 @@ describe('caller helper', () => {
 
         test('should handle allowed hosts with mixed case', async () => {
             process.env.PTERODACTYL_ALLOWED_HOSTS = 'EXAMPLE.COM, Test.Com ';
+            mockResolve4.mockResolvedValue(['8.8.8.8']);
+            mockResolve6.mockResolvedValue([]);
             await expect(callerInstance.validateServerSSRF('https://example.com'))
                 .resolves.toBeUndefined();
         });
