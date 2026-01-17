@@ -1,6 +1,8 @@
 import { jest } from '@jest/globals';
-import type { ChatInputCommandInteraction, Message, ButtonInteraction, StringSelectMenuInteraction } from 'discord.js';
-import { testCommandStructure, createMockInteraction } from '../../utils/commandTestUtils.js';
+import { createMockInteraction } from '../../utils/commandTestUtils.js';
+import mockDNSValues from '../../mocks/mockDNSValues.js';
+// Mock DNS resolution to prevent SSRF issues during tests
+mockDNSValues();
 
 // Set allowed hosts to bypass DNS resolution in tests
 process.env.PTERODACTYL_ALLOWED_HOSTS = 'panel.example.com';

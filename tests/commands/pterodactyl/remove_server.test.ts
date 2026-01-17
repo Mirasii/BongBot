@@ -1,6 +1,9 @@
 import { jest } from '@jest/globals';
 import type { ChatInputCommandInteraction, Client } from 'discord.js';
-import { testCommandStructure, createMockInteraction, createMockClient } from '../../utils/commandTestUtils.js';
+import { createMockInteraction, createMockClient } from '../../utils/commandTestUtils.js';
+import mockDNSValues from '../../mocks/mockDNSValues.js';
+// Mock DNS resolution to prevent SSRF issues during tests
+mockDNSValues();
 
 // Mock Database
 const mockDeleteServer = jest.fn();
