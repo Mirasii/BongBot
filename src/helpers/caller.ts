@@ -73,7 +73,6 @@ async function validateServerUrl(serverUrl: string): Promise<void> {
         if (!allowedList.includes(parsedUrl.hostname.toLowerCase())) {
             throw new Error('Server URL hostname is not in the allowed hosts list.');
         }
-        return;
     }
 
     const [ipv4Result, ipv6Result] = await Promise.allSettled([
