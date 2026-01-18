@@ -1,5 +1,5 @@
 import Logger from '../helpers/interfaces.js';
-import DatabasePool from '../services/databasePool.js';
+import DefaultLogger from '../loggers/default_logger.js';
 import FileLogger from '../loggers/file_logger.js';
 
 export default {
