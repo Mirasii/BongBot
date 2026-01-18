@@ -18,7 +18,6 @@ const bot: ExtendedClient = new Client({ intents: [GatewayIntentBits.Guilds, Gat
 
 /** set up logging */
 process.env.SESSION_ID = crypto.randomUUID();
-LOGGER.init();
 const commands: Array<ApplicationCommandDataResolvable> = buildCommands(bot);
 
 /** respond to slash commands */
