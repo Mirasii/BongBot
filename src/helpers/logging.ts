@@ -3,6 +3,7 @@ import BetterSqlite3 from 'better-sqlite3';
 import path from 'path';
 import Logger from '../helpers/interfaces.js';
 import DatabasePool from '../services/databasePool.js';
+import 'source-map-support/register.js';
 let logFile: string | undefined;
 let sessionId: string | undefined;
 
@@ -71,7 +72,8 @@ export class DefaultLogger implements Logger {
     }
 
     error(error: Error): void {
-        this.log(`${error.message || error}`, error.stack, 'ERROR');
+        const resolvedStack = error.stack;
+        this.log(`${error.message || error}`, resolvedStack, 'ERROR');
         const datetime = new Date().toLocaleString().replace(', ', '@');
         console.error(`${datetime} | An Error Occurred - check logs for details.`);
     }

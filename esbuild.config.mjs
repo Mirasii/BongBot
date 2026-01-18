@@ -33,8 +33,11 @@ const buildOptions = {
         js: 'import { createRequire } from "module"; import { fileURLToPath } from "url"; import { dirname } from "path"; const require = createRequire(import.meta.url); const __filename = fileURLToPath(import.meta.url); const __dirname = dirname(__filename);',
     },
     plugins: [nativeModulePlugin],
-    minify,
-    sourcemap: isWatch,
+    minify: true,
+    minifyIdentifiers: false,
+    sourcemap: true, 
+    keepNames: true,
+    sourcesContent: true, 
     loader: {
         ".node": "copy",
     },
