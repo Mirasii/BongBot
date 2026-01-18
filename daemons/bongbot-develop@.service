@@ -1,0 +1,29 @@
+[Unit]
+Description=BongBot Develop Service for branch %i (auto-stops after 1 hour)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Environment="BRANCH_NAME=%i"
+
+ExecStartPre=-/usr/bin/docker stop bongbot-develop-%i
+ExecStartPre=-/usr/bin/docker rm bongbot-develop-%i
+ExecStartPre=/usr/bin/docker pull mirasi/bongbot-develop:latest
+
+ExecStart=/usr/bin/docker run \
+  --name bongbot-develop-%i \
+  --env-file /etc/bongbot/dev.env \
+  --env BRANCH=${BRANCH_NAME} \
+  --volume /etc/bongbot/data-dev:/app/data \
+  --volume /etc/bongbot/logs-dev:/app/logs \
+  mirasi/bongbot-develop:latest
+
+ExecStop=/usr/bin/docker stop bongbot-develop-%i
+ExecStopPost=/usr/bin/docker rm bongbot-develop-%i
+
+RuntimeMaxSec=3600
+
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
