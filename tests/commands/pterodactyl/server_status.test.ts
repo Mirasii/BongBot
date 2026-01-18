@@ -15,6 +15,15 @@ import { setupServer } from 'msw/node';
 const testServerUrl = 'https://panel.example.com';
 const testApiKey = 'test-api-key';
 
+const mockLogger = class implements Logger {
+    info(message: string, stack?: string): void { jest.fn(); }
+    warn(message: string, stack?: string): void { jest.fn(); }
+    error(message: string, stack?: string): void { jest.fn(); }
+};
+
+const mockLoggerInstance = new mockLogger();
+
+
 const handlers = [
     http.get(`${testServerUrl}/api/client`, () => {
         return HttpResponse.json({
@@ -76,7 +85,7 @@ const { Caller } = await import('../../../src/helpers/caller.js');
 
 // Create instance with mock dependencies
 const caller = new Caller();
-const serverStatusInstance = new ServerStatus(mockDb as any, caller);
+const serverStatusInstance = new ServerStatus(mockDb as any, caller, mockLoggerInstance);
 const serverStatusExecute = serverStatusInstance.execute.bind(serverStatusInstance);
 const setupCollector = serverStatusInstance.setupCollector.bind(serverStatusInstance);
 
@@ -656,7 +665,7 @@ describe('server_status command', () => {
         });
 
         it('should handle message.edit rejection on collector end', async () => {
-            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const loggerSpy = jest.spyOn(mockLoggerInstance, 'error').mockImplementation(() => {});
             const editError = new Error('Failed to edit');
             mockMessage.edit = jest.fn().mockRejectedValue(editError);
 
@@ -667,8 +676,8 @@ describe('server_status command', () => {
             // Give promise time to reject using fake timers
             await jest.runAllTimersAsync();
 
-            expect(consoleErrorSpy).toHaveBeenCalledWith('Error clearing components after collector end:', editError);
-            consoleErrorSpy.mockRestore();
+            expect(loggerSpy).toHaveBeenCalledWith(editError);
+            loggerSpy.mockRestore();
         });
 
         it('should handle unknown component type when disabling components', async () => {
@@ -1291,7 +1300,7 @@ describe('server_status command', () => {
                 })
             );
 
-            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const loggerSpy = jest.spyOn(mockLoggerInstance, 'error').mockImplementation(() => {});
 
             const collectorCallbacks: any = {};
             const testMockMessage = {
@@ -1327,11 +1336,10 @@ describe('server_status command', () => {
             await collectorCallbacks['collect'](mockButtonInteraction);
 
             // Should have logged the error from refreshStatus catch block
-            expect(consoleErrorSpy).toHaveBeenCalledWith(
-                'Error refreshing status:',
+            expect(loggerSpy).toHaveBeenCalledWith(
                 expect.any(Error)
             );
-            consoleErrorSpy.mockRestore();
+            loggerSpy.mockRestore();
         });
 
         it('should handle multiple servers with different states for control components', async () => {
