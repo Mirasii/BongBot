@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, Client, MessageFlags } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, Message, MessageFlags } from 'discord.js';
 import RegisterServer from './register_server.js';
 import ListServers from './list_servers.js';
 import ServerStatus, * as serverStatus from './server_status.js';
@@ -110,11 +110,12 @@ export default {
         }
     },
 
-    setupCollector: (client: Client) => { 
+    setupCollector: (interaction: ChatInputCommandInteraction, message: Message) => { 
         return new ServerStatus(
             DatabasePool.getInstance().getConnection(), 
-            new Caller()
-        ).setupCollector(client);
+            new Caller(), 
+            LOGGER.default
+        ).setupCollector(interaction, message);
     },
 
     fullDesc: {
