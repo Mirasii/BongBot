@@ -98,17 +98,6 @@ const postDeploymentMessage = async () => {
     
 };
 
-/** Refresh the session ID and logger on a weekly cycle */
-setInterval(async () => {
-    try {
-        process.env.SESSION_ID = crypto.randomUUID();
-        LOGGER.init();
-        console.log(`Session ID Refreshed: ${process.env.SESSION_ID}`);
-    } catch (error) {
-        LOGGER.log(error);
-    }
-}, 7 * 24 * 60 * 60 * 1000);
-
 /** login to bot */
 bot.login(token);
 console.log('BongBot Online!');

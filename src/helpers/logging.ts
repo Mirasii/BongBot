@@ -9,7 +9,7 @@ let logFile: string | undefined;
 export default {
     async init() {
         const logsDir = path.join(process.cwd(), 'logs');
-        logFile = path.join(logsDir, `${process.env.SESSION_ID!}.log`);
+        logFile = path.join(logsDir, `${new Date().toISOString().slice(0, 10)}.log`);
     },
     get default(): Logger {
         return DatabasePool.getInstance().getLoggerConnection();
@@ -32,12 +32,13 @@ export class DefaultLogger implements Logger {
 
     constructor() {
         const logsDir = path.join(process.cwd(), 'logs');
-        const dbPath = path.join(logsDir, `${process.env.SESSION_ID}.db`);
+        const dbPath = path.join(logsDir, `${new Date().toISOString().slice(0, 10)}.db`);
         console.log('Initializing DefaultLogger with DB path:', dbPath);
         this.db = new BetterSqlite3(dbPath);
         const createTableSQL = `
             CREATE TABLE IF NOT EXISTS logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id TEXT NOT NULL,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
                 message TEXT NOT NULL,
                 stack TEXT,
@@ -46,8 +47,8 @@ export class DefaultLogger implements Logger {
         `;
         this.db.exec(createTableSQL);
         this.stmt = this.db.prepare(`
-            INSERT INTO logs (message, stack, level)
-            VALUES (?, ?, ?)
+            INSERT INTO logs (message, stack, level, session_id)
+            VALUES (?, ?, ?, ?)
         `);
         this.db.pragma('journal_mode = WAL');
     }
@@ -75,7 +76,7 @@ export class DefaultLogger implements Logger {
 
     private log(message: string, stack: string | undefined, level: string): void {
         try {
-            this.stmt.run(message, stack || null, level);
+            this.stmt.run(message, stack || null, level, process.env.SESSION_ID);
         } catch (err) {
             console.error('Failed to log to DB:', err, 'falling back to legacy file logger');
             this.logLegacy(message, stack);
