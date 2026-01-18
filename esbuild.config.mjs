@@ -34,7 +34,6 @@ const buildOptions = {
     },
     plugins: [nativeModulePlugin],
     minify: true,
-    minifyIdentifiers: false,
     sourcemap: true, 
     keepNames: true,
     sourcesContent: true, 
