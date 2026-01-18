@@ -1,4 +1,6 @@
 import Database from '../helpers/database.js';
+import Logger from '../helpers/interfaces.js';
+import { DefaultLogger } from '../helpers/logging.js';
 
 export default class DatabasePool {
     private static instance: DatabasePool;
@@ -18,6 +20,15 @@ export default class DatabasePool {
 
         if (!this.connections.has(resolvedFileName)) {
             this.connections.set(resolvedFileName, new Database(resolvedFileName));
+        }
+        return this.connections.get(resolvedFileName)!;
+    }
+
+    getLoggerConnection(sessionId: string): Logger {
+        const resolvedFileName = `${sessionId}.db`;
+
+        if (!this.connections.has(resolvedFileName)) {
+            this.connections.set(resolvedFileName, new DefaultLogger(sessionId));
         }
         return this.connections.get(resolvedFileName)!;
     }

@@ -26,3 +26,10 @@ export interface GithubInfo {
     commitMessage: string;
     tag: string;
 }
+
+export interface Logger {
+    init(sessionId: string): void;
+    info(message: string, stack?: string): void;
+    debug(message: string, stack?: string): void;
+    error(error: Error): void;
+}

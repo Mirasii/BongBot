@@ -17,7 +17,7 @@ const token: string = config.discord.apikey!;
 const bot: ExtendedClient = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
 /** set up logging */
-const sessionId = crypto.randomUUID();
+let sessionId = crypto.randomUUID();
 LOGGER.init(sessionId);
 const commands: Array<ApplicationCommandDataResolvable> = buildCommands(bot);
 
@@ -97,6 +97,17 @@ const postDeploymentMessage = async () => {
     await channel.send({ embeds: [card] });
     
 };
+
+/** Refresh the session ID and logger on a weekly cycle */
+setInterval(async () => {
+    try {
+        sessionId = crypto.randomUUID();
+        LOGGER.init(sessionId);
+        console.log(`Session ID Refreshed: ${sessionId}`);
+    } catch (error) {
+        LOGGER.log(error);
+    }
+}, 7 * 24 * 60 * 60 * 1000);
 
 /** login to bot */
 bot.login(token);

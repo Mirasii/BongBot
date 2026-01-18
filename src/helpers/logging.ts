@@ -1,9 +1,16 @@
 import fsp from 'fs/promises';
+import BetterSqlite3 from 'better-sqlite3';
+import path from 'path';
+import Logger from '../helpers/interfaces.js';
+import DatabasePool from '../services/databasePool.js';
 let logFile: string | undefined;
+let sessionId: string | undefined;
 
 export default {
     async init(sessionId: string) {
-        logFile = `./logs/${sessionId}.log`
+        sessionId = sessionId;
+        const logsDir = path.join(process.cwd(), 'logs');
+        logFile = path.join(logsDir, `${sessionId}.log`);
         try {
             await fsp.writeFile(logFile, 'Logger Initialised\n\n');
             console.log('Logger Initialised');
@@ -11,18 +18,84 @@ export default {
             throw err;
         }
     },
+    get default(): Logger {
+        return DatabasePool.getInstance().getLoggerConnection(sessionId!);
+    },
+    /** Legacy log function has been updated to use the new _logger so that code uses it implicitly. */
     async log(error: any) {
-        let currentdate = new Date(); 
-        let datetime = `${currentdate.toLocaleDateString()} @ ${currentdate.toLocaleTimeString()}`
+        const _logger = DatabasePool.getInstance().getLoggerConnection(sessionId!);
+        if (!_logger) throw new Error('Logger not initialised');
+        if (error instanceof Error) {
+            _logger.error(error);
+            return;
+        }
+        _logger.debug(typeof error === 'string' ? error : JSON.stringify(error));
+    }
+}
+
+export class DefaultLogger implements Logger {
+    private db: BetterSqlite3.Database;
+    private sessionId: string;
+    private stmt: BetterSqlite3.Statement;
+
+    constructor(sessionId: string) {
+        this.sessionId = sessionId;
+        const logsDir = path.join(process.cwd(), 'logs');
+        const dbPath = path.join(logsDir, `${sessionId}.db`);
+        this.db = new BetterSqlite3(dbPath);
+        const createTableSQL = `
+            CREATE TABLE IF NOT EXISTS logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                message TEXT NOT NULL,
+                stack TEXT,
+                level TEXT NOT NULL
+            )
+        `;
+        this.stmt = this.db.prepare(`
+            INSERT INTO logs (message, stack, level)
+            VALUES (?, ?, ?)
+        `);
+        this.db.exec(createTableSQL);
+    }
+
+    info(message: string, stack?: string): void {
+        this.log(message, stack, 'INFO');
+        const datetime = new Date().toLocaleString().replace(', ', '@');
+        console.info(`${datetime} | ${message}`);
+    }
+
+    debug(message: string, stack?: string): void {
+        this.log(message, stack, 'DEBUG');
+        const datetime = new Date().toLocaleString().replace(', ', '@');
+        console.debug(`${datetime} | ${message}`);
+    }
+
+    error(error: Error): void {
+        this.log(`${error.message || error}`, error.stack, 'ERROR');
+        const datetime = new Date().toLocaleString().replace(', ', '@');
+        console.error(`${datetime} | An Error Occurred - check logs for details.`);
+    }
+
+    close(): void { this.db.close(); }
+
+    private log(message: string, stack: string | undefined, level: string): void {
+        try {
+            this.stmt.run(message, stack || null, level);
+        } catch (err) {
+            console.error('Failed to log to DB:', err, 'falling back to legacy file logger');
+            this.logLegacy(message, stack);
+        }
+    }
+
+    private logLegacy(message: string, stack: string | undefined): void {
         if (!logFile) {
             console.error('Log file not initialized');
             return;
         }
-        try {
-            await fsp.appendFile(logFile, `${datetime} | ${error.stack || error}\n\n`);
-            console.log(`error saved to logfile ${logFile}`);
-        } catch (err) {
+        let datetime = `${new Date().toISOString()}`
+        fsp.appendFile(logFile, `${datetime} | ${message}\n${stack ? stack + '\n' : ''}\n`).catch((err) => {
             console.error('Failed to append to log file:', err);
-        }
+        });
     }
 }

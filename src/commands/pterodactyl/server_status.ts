@@ -5,14 +5,17 @@ import { Caller } from '../../helpers/caller.js';
 import { fetchServers, fetchServerResources, fetchAllServerResources, sendServerCommand } from './shared/pterodactylApi.js';
 import { buildServerStatusEmbed } from './shared/serverStatusEmbed.js';
 import { buildServerControlComponents, disableAllComponents } from './shared/serverControlComponents.js';
+import { Logger } from '../../helpers/logger.js';
 
 export default class ServerStatus {
     private db: Database;
     private caller: Caller;
+    private _logger: Logger;
 
-    constructor(db: Database, caller: Caller) {
+    constructor(db: Database, caller: Caller, _logger: Logger) {
         this.db = db;
         this.caller = caller;
+        this._logger = _logger;
     }
 
     async execute(interaction: ChatInputCommandInteraction) {
@@ -89,7 +92,7 @@ export default class ServerStatus {
 
                 await this.handleServerAction(componentInteraction, dbServer as ValidatedDbServer, identifier, action);
             } catch (error) {
-                console.error('Component interaction error:', error);
+                this._logger.error(error);
                 await componentInteraction.followUp({
                     content: '❌ An error occurred processing your request.',
                     ephemeral: true,
@@ -103,7 +106,7 @@ export default class ServerStatus {
 
         collector.on('end', () => {
             message.edit({ components: [] }).catch((error) => {
-                console.error('Error clearing components after collector end:', error);
+                this._logger.error(error);
             });
         });
     }
@@ -223,7 +226,7 @@ export default class ServerStatus {
                 const done = await checkStatus();
                 if (done) { clearInterval(pollInterval); }
             } catch (error) {
-                console.error('Polling error:', error);
+                this._logger.error(error);
                 clearInterval(pollInterval);
                 await this.refreshStatus(componentInteraction, dbServer.id);
             }
@@ -257,7 +260,7 @@ export default class ServerStatus {
                 components: components,
             });
         } catch (error) {
-            console.error('Error refreshing status:', error);
+            this._logger.error(error);
         }
     }
 }
