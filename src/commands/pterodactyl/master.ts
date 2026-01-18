@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, Client } from 'discord.js';
 import RegisterServer from './register_server.js';
 import ListServers from './list_servers.js';
 import ServerStatus, * as serverStatus from './server_status.js';
@@ -110,7 +110,12 @@ export default {
         }
     },
 
-    setupCollector: new ServerStatus(DatabasePool.getInstance().getConnection(), new Caller()).setupCollector,
+    setupCollector: (client: Client) => { 
+        return new ServerStatus(
+            DatabasePool.getInstance().getConnection(), 
+            new Caller()
+        ).setupCollector(client);
+    },
 
     fullDesc: {
         description: 'Manage your Pterodactyl panel servers. Use subcommands to register, list, view status, update, or remove servers. View the full guide [here](https://docs.google.com/document/d/1Zp2gsq3bqzJwQ6OeA4nu_3XM3is3-TM8ynA1vWxIZL8/edit?tab=t.0&usp=sharing).',
