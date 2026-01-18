@@ -49,4 +49,11 @@ class LoggerService {
         }
         return this.connections.get('file')!;
     }
+
+    closeAll(): void {
+        for (const db of this.connections.values()) {
+            db.close?.();
+        }
+        this.connections.clear();
+    }
 }

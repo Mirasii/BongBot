@@ -1,7 +1,8 @@
 import path from 'path';
 import fs from 'fs';
-import Logger from '../helpers/interfaces.js';
 import 'source-map-support/register.js';
+import Logger from '../helpers/interfaces.js';
+import Utilities from '../helpers/utilities.js';
 
 /**
  * @class FileLogger
@@ -15,37 +16,33 @@ export default class FileLogger implements Logger {
     constructor() {
         const logsDir = path.join(process.cwd(), 'logs');
         this.logFile = path.join(logsDir, `${process.env.SESSION_ID}.log`);
-        fs.access(this.logFile).catch(() => {
-            fs.writeFile(this.logFile, 'Logger Initialised\n\n');
+        fs.accessSync(this.logFile).catch(() => {
+            fs.writeFileSync(this.logFile, 'Logger Initialised\n\n');
         });
     }
 
     info(message: string, stack?: string): void {
         this.log(message, stack, 'INFO');
-        const datetime = new Date().toLocaleString().replace(', ', ' ');
-        console.info(`${datetime} | ${message}`);
+        console.info(`${Utilities.formatLocalDateTime()} | ${message}`);
     }
 
     debug(message: string, stack?: string): void {
         this.log(message, stack, 'DEBUG');
-        const datetime = new Date().toLocaleString().replace(', ', ' ');
-        console.debug(`${datetime} | ${message}`);
+        console.debug(`${Utilities.formatLocalDateTime()} | ${message}`);
     }
 
     error(error: Error): void {
         const resolvedStack = error.stack;
         this.log(`${error.message || error}`, resolvedStack, 'ERROR');
-        const datetime = new Date().toLocaleString().replace(', ', ' ');
-        console.error(`${datetime} | An Error Occurred - check logs for details.`);
+        console.error(`${Utilities.formatLocalDateTime()} | An Error Occurred - check logs for details.`);
     }
 
-    close(): void { this.db.close(); }
-
     private log(message: string, stack: string | undefined, level: string): void {
-        const datetime = new Date().toLocaleString().replace(', ', ' ');
-        const logEntry = `[${datetime}] [${level}] ${message}${stack ? `\nStack Trace: ${stack}` : ''}\n\n`;
-        fs.appendFile(this.logFile, logEntry).catch((err) => {
+        const logEntry = `[${Utilities.formatLocalDateTime()}] [${level}] ${message}${stack ? `\nStack Trace: ${stack}` : ''}\n\n`;
+        try {
+            fs.appendFileSync(this.logFile, logEntry);
+        } catch (err) {
             console.error('Failed to append to log file:', err);
-        });
+        }
     }
 }

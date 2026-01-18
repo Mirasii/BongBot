@@ -1,8 +1,9 @@
 import path from 'path';
 import fsp from 'fs/promises';
 import BetterSqlite3 from 'better-sqlite3';
-import Logger from '../helpers/interfaces.js';
 import 'source-map-support/register.js';
+import Logger from '../helpers/interfaces.js';
+import Utilities from '../helpers/utilities.js';
 
 /**
  * @class DefaultLogger
@@ -17,7 +18,7 @@ export default class DefaultLogger implements Logger {
 
     constructor() {
         const logsDir = path.join(process.cwd(), 'logs');
-        const dbPath = path.join(logsDir, `${new Date().toISOString().slice(0, 10)}.db`);
+        const dbPath = path.join(logsDir, `${Utilities.getCurrentDateISO()}.db`);
         console.log('Initializing DefaultLogger with DB path:', dbPath);
         this.db = new BetterSqlite3(dbPath);
         const createTableSQL = `
@@ -39,21 +40,18 @@ export default class DefaultLogger implements Logger {
 
     info(message: string, stack?: string): void {
         this.log(message, stack, 'INFO');
-        const datetime = new Date().toLocaleString().replace(', ', '@');
-        console.info(`${datetime} | ${message}`);
+        console.info(`${Utilities.formatLocalDateTime()} | ${message}`);
     }
 
     debug(message: string, stack?: string): void {
         this.log(message, stack, 'DEBUG');
-        const datetime = new Date().toLocaleString().replace(', ', '@');
-        console.debug(`${datetime} | ${message}`);
+        console.debug(`${Utilities.formatLocalDateTime()} | ${message}`);
     }
 
     error(error: Error): void {
         const resolvedStack = error.stack;
         this.log(`${error.message || error}`, resolvedStack, 'ERROR');
-        const datetime = new Date().toLocaleString().replace(', ', '@');
-        console.error(`${datetime} | An Error Occurred - check logs for details.`);
+        console.error(`${Utilities.formatLocalDateTime()} | An Error Occurred - check logs for details.`);
     }
 
     close(): void { this.db.close(); }
@@ -69,12 +67,11 @@ export default class DefaultLogger implements Logger {
 
     private async logLegacy(message: string, stack: string | undefined): Promise<void> {
         const logsDir = path.join(process.cwd(), 'logs');
-        const logFile = path.join(logsDir, `${new Date().toISOString().slice(0, 10)}.log`);
+        const logFile = path.join(logsDir, `${Utilities.getCurrentDateISO()}.log`);
         if (!await fsp.access(logFile).then(() => true).catch(() => false)) {
             await fsp.writeFile(logFile, 'Logger Initialised\n\n');
         }
-        let datetime = `${new Date().toISOString()}`
-        fsp.appendFile(logFile, `${datetime} | ${message}\n${stack ? stack + '\n' : ''}\n`).catch((err) => {
+        fsp.appendFile(logFile, `${Utilities.formatLocalDateTime()} | ${message}\n${stack ? stack + '\n' : ''}\n`).catch((err) => {
             console.error('Failed to append to log file:', err);
         });
     }
