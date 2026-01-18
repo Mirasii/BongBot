@@ -5,8 +5,7 @@ import { Caller } from '../../helpers/caller.js';
 import { fetchServers, fetchServerResources, fetchAllServerResources, sendServerCommand } from './shared/pterodactylApi.js';
 import { buildServerStatusEmbed } from './shared/serverStatusEmbed.js';
 import { buildServerControlComponents, disableAllComponents } from './shared/serverControlComponents.js';
-import { Logger } from '../../helpers/logger.js';
-
+import { Logger } from '../../helpers/interfaces.js'
 export default class ServerStatus {
     private db: Database;
     private caller: Caller;
@@ -57,6 +56,7 @@ export default class ServerStatus {
     }
 
     async setupCollector(interaction: ChatInputCommandInteraction, message: Message): Promise<void> {
+        if (!('manage' === interaction.options.getSubcommand())) { return; }
         const collector = message.createMessageComponentCollector({ time: 600000 });
 
         collector.on('collect', async (componentInteraction: ButtonInteraction | StringSelectMenuInteraction) => {
@@ -92,7 +92,7 @@ export default class ServerStatus {
 
                 await this.handleServerAction(componentInteraction, dbServer as ValidatedDbServer, identifier, action);
             } catch (error) {
-                this._logger.error(error);
+                this._logger.error(error as Error);
                 await componentInteraction.followUp({
                     content: '❌ An error occurred processing your request.',
                     ephemeral: true,
@@ -226,7 +226,7 @@ export default class ServerStatus {
                 const done = await checkStatus();
                 if (done) { clearInterval(pollInterval); }
             } catch (error) {
-                this._logger.error(error);
+                this._logger.error(error as Error);
                 clearInterval(pollInterval);
                 await this.refreshStatus(componentInteraction, dbServer.id);
             }
@@ -260,7 +260,7 @@ export default class ServerStatus {
                 components: components,
             });
         } catch (error) {
-            this._logger.error(error);
+            this._logger.error(error as Error);
         }
     }
 }
