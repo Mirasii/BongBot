@@ -4,6 +4,13 @@ import BetterSqlite3 from 'better-sqlite3';
 import Logger from '../helpers/interfaces.js';
 import 'source-map-support/register.js';
 
+/**
+ * @class DefaultLogger
+ * Default logger implementation using SQLite database to store logs.
+ * Logs are stored in the 'logs' directory with a database file named after the current date (YYYY-MM-DD.db).
+ * If database logging fails, it falls back to a legacy file-based logging mechanism.
+ * Logs include session ID, timestamp, message, stack trace, and log level.
+ */
 export default class DefaultLogger implements Logger {
     private db: BetterSqlite3.Database;
     private stmt: BetterSqlite3.Statement;
