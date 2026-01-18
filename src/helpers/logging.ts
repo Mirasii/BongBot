@@ -10,12 +10,6 @@ export default {
     async init(sessionId: string) {
         const logsDir = path.join(process.cwd(), 'logs');
         logFile = path.join(logsDir, `${sessionId}.log`);
-        try {
-            await fsp.writeFile(logFile, 'Logger Initialised\n\n');
-            console.log('Logger Initialised');
-        } catch (err) {
-            throw err;
-        }
     },
     get default(): Logger {
         return DatabasePool.getInstance().getLoggerConnection();
@@ -91,7 +85,7 @@ export class DefaultLogger implements Logger {
     private logLegacy(message: string, stack: string | undefined): void {
         if (!logFile) {
             console.error('Log file not initialized');
-            return;
+            await fsp.writeFile(logFile, 'Logger Initialised\n\n');
         }
         let datetime = `${new Date().toISOString()}`
         fsp.appendFile(logFile, `${datetime} | ${message}\n${stack ? stack + '\n' : ''}\n`).catch((err) => {
