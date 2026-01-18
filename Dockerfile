@@ -29,4 +29,4 @@ COPY --from=builder /app/node_modules/better-sqlite3/build/Release/better_sqlite
 
 ENV NODE_ENV=production
 
-CMD ["--no-deprecation", "/app/dist/index.js"]
+CMD ["--no-deprecation", "--enable-source-maps", "/app/dist/index.js"]
