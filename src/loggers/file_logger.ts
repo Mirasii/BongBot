@@ -16,9 +16,11 @@ export default class FileLogger implements Logger {
     constructor() {
         const logsDir = path.join(process.cwd(), 'logs');
         this.logFile = path.join(logsDir, `${process.env.SESSION_ID}.log`);
-        fs.accessSync(this.logFile).catch(() => {
+        try {
+            fs.accessSync(this.logFile);
+        } catch {
             fs.writeFileSync(this.logFile, 'Logger Initialised\n\n');
-        });
+        }
     }
 
     info(message: string, stack?: string): void {
