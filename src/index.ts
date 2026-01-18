@@ -17,9 +17,8 @@ const token: string = config.discord.apikey!;
 const bot: ExtendedClient = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
 /** set up logging */
-let sessionId = crypto.randomUUID();
-process.env.SESSION_ID = sessionId;
-LOGGER.init(sessionId);
+process.env.SESSION_ID = crypto.randomUUID();
+LOGGER.init();
 const commands: Array<ApplicationCommandDataResolvable> = buildCommands(bot);
 
 /** respond to slash commands */
@@ -102,10 +101,9 @@ const postDeploymentMessage = async () => {
 /** Refresh the session ID and logger on a weekly cycle */
 setInterval(async () => {
     try {
-        sessionId = crypto.randomUUID();
-        process.env.SESSION_ID = sessionId;
-        LOGGER.init(sessionId);
-        console.log(`Session ID Refreshed: ${sessionId}`);
+        process.env.SESSION_ID = crypto.randomUUID();
+        LOGGER.init();
+        console.log(`Session ID Refreshed: ${process.env.SESSION_ID}`);
     } catch (error) {
         LOGGER.log(error);
     }
@@ -114,4 +112,4 @@ setInterval(async () => {
 /** login to bot */
 bot.login(token);
 console.log('BongBot Online!');
-console.log(`sessionId: ${sessionId}`);
+console.log(`sessionId: ${process.env.SESSION_ID}`);

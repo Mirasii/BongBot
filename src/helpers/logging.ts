@@ -7,9 +7,9 @@ import 'source-map-support/register.js';
 let logFile: string | undefined;
 
 export default {
-    async init(sessionId: string) {
+    async init() {
         const logsDir = path.join(process.cwd(), 'logs');
-        logFile = path.join(logsDir, `${sessionId}.log`);
+        logFile = path.join(logsDir, `${process.env.SESSION_ID!}.log`);
     },
     get default(): Logger {
         return DatabasePool.getInstance().getLoggerConnection();
