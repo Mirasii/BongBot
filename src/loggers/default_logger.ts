@@ -61,7 +61,7 @@ export default class DefaultLogger implements Logger {
             this.stmt.run(message, stack || null, level, process.env.SESSION_ID);
         } catch (err) {
             console.error('Failed to log to DB:', err, 'falling back to legacy file logger');
-            this.logLegacy(message, stack);
+            this.logLegacy(message, stack).catch((error) => { console.error('Failed to log to legacy file:', error); });
         }
     }
 
