@@ -28,7 +28,6 @@ export interface GithubInfo {
 }
 
 export interface Logger {
-    init(sessionId: string): void;
     info(message: string, stack?: string): void;
     debug(message: string, stack?: string): void;
     error(error: Error): void;
