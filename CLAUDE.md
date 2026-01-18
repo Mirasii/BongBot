@@ -16,6 +16,7 @@ A Discord Bot built on NodeJS in TypeScript. Contains several functions, includi
 - snake_case preferred for file names and bot input variables
 - camelCase for code variables and functions
 - Functional components with Object-Orientated design where appropriate for code re-usabilities, e.g. separating database interactions from implementation for re-usability.
+- Early return statements should be used to prevent nesting, e.g. instead of `if (condition) { ...logic }`, do `if (condition) { return; } ...logic`. Create helper functions if necessary to facilitate this.
 - Files should be structured according to the following design implementation:
     - import statements
     - constant declarations
