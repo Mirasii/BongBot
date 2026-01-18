@@ -5,11 +5,9 @@ import Logger from '../helpers/interfaces.js';
 import DatabasePool from '../services/databasePool.js';
 import 'source-map-support/register.js';
 let logFile: string | undefined;
-let sessionId: string | undefined;
 
 export default {
     async init(sessionId: string) {
-        sessionId = sessionId;
         const logsDir = path.join(process.cwd(), 'logs');
         logFile = path.join(logsDir, `${sessionId}.log`);
         try {
@@ -57,6 +55,7 @@ export class DefaultLogger implements Logger {
             INSERT INTO logs (message, stack, level)
             VALUES (?, ?, ?)
         `);
+        this.db.pragma('journal_mode = WAL');
     }
 
     info(message: string, stack?: string): void {
