@@ -6,7 +6,7 @@
     "type": "module",
     "scripts": {
         "build": "node esbuild.config.mjs --minify",
-        "dev": "docker build . -t bongbot && docker run --env-file .env --volume ./data:/app/data bongbot",
+        "dev": "docker build . -t bongbot && docker run --env-file .env --volume ./data:/app/data --volume ./logs:/app/logs bongbot",
         "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --json --coverage --outputFile=report.json --passWithNoTests --silent"
     },
     "devDependencies": {
