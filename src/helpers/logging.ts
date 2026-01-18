@@ -1,8 +1,10 @@
 import Logger from '../helpers/interfaces.js';
 import DatabasePool from '../services/databasePool.js';
+import FileLogger from '../loggers/file_logger.js';
 
 export default {
     get default(): Logger {
+        if (process.env.DEFAULT_LOGGER === 'file') return new FileLogger(); /** use environment variable to switch loggers for local dev */
         return DatabasePool.getInstance().getLoggerConnection();
     },
     /** 
