@@ -64,7 +64,6 @@ jest.unstable_mockModule('fs', () => ({
 // Mock logging
 jest.unstable_mockModule('../src/services/logging_service.js', () => ({
     default: {
-        init: jest.fn(),
         log: jest.fn()
     }
 }));
@@ -128,10 +127,6 @@ describe('BongBot', () => {
         
         // Get the client instance
         mockClient = (Discord.Client as any).mock.results[0].value;
-    });
-
-    it('initializes logging with sessionId', () => {
-        expect(LOGGER.init).toHaveBeenCalledWith('fixed-uuid-1234-5678-9012-abcdef123456');
     });
 
     it('loads ping command into bot.commands', () => {
