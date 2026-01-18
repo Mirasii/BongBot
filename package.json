@@ -7,7 +7,7 @@
     "scripts": {
         "build": "node esbuild.config.mjs --minify",
         "dev": "docker build . -t bongbot && docker run --env-file .env --volume ./data:/app/data bongbot",
-        "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --json --coverage --outputFile=report.json --passWithNoTests"
+        "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --json --coverage --outputFile=report.json --passWithNoTests --silent"
     },
     "devDependencies": {
         "@google/generative-ai": "^0.24.1",

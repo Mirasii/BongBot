@@ -24,8 +24,6 @@ describe('serverControlComponents', () => {
                     memory_bytes: 1024 * 1024 * 512,
                     cpu_absolute: 50,
                     disk_bytes: 1024 * 1024 * 1024,
-                    network_rx_bytes: 1000,
-                    network_tx_bytes: 2000,
                     uptime: 3600000,
                 },
             },
