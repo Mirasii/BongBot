@@ -18,6 +18,7 @@ const bot: ExtendedClient = new Client({ intents: [GatewayIntentBits.Guilds, Gat
 
 /** set up logging */
 let sessionId = crypto.randomUUID();
+process.env.SESSION_ID = sessionId;
 LOGGER.init(sessionId);
 const commands: Array<ApplicationCommandDataResolvable> = buildCommands(bot);
 
@@ -102,6 +103,7 @@ const postDeploymentMessage = async () => {
 setInterval(async () => {
     try {
         sessionId = crypto.randomUUID();
+        process.env.SESSION_ID = sessionId;
         LOGGER.init(sessionId);
         console.log(`Session ID Refreshed: ${sessionId}`);
     } catch (error) {

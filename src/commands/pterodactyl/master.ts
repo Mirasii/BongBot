@@ -6,6 +6,7 @@ import UpdateServer from './update_server.js';
 import RemoveServer from './remove_server.js';
 import DatabasePool from '../../services/databasePool.js';
 import { Caller } from '../../helpers/caller.js';
+import LOGGER from '../../helpers/logging.js';
 
 export default {
     ephemeralDefer: true,
@@ -96,7 +97,7 @@ export default {
             case 'list':
                 return await new ListServers(db).execute(interaction);
             case 'manage':
-                return await new ServerStatus(db, caller).execute(interaction);
+                return await new ServerStatus(db, caller, LOGGER.default).execute(interaction);
             case 'update':
                 return await new UpdateServer(db, caller).execute(interaction);
             case 'remove':

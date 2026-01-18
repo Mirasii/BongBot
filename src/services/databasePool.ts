@@ -24,13 +24,11 @@ export default class DatabasePool {
         return this.connections.get(resolvedFileName)!;
     }
 
-    getLoggerConnection(sessionId: string): Logger {
-        const resolvedFileName = `${sessionId}.db`;
-
-        if (!this.connections.has(resolvedFileName)) {
-            this.connections.set(resolvedFileName, new DefaultLogger(sessionId));
+    getLoggerConnection(): Logger {
+        if (!this.connections.has('logger')) {
+            this.connections.set('logger', new DefaultLogger());
         }
-        return this.connections.get(resolvedFileName)!;
+        return this.connections.get('logger')!;
     }
 
     closeAll(): void {

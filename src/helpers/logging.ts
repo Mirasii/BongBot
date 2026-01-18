@@ -19,11 +19,11 @@ export default {
         }
     },
     get default(): Logger {
-        return DatabasePool.getInstance().getLoggerConnection(sessionId!);
+        return DatabasePool.getInstance().getLoggerConnection();
     },
     /** Legacy log function has been updated to use the new _logger so that code uses it implicitly. */
     async log(error: any) {
-        const _logger = DatabasePool.getInstance().getLoggerConnection(sessionId!);
+        const _logger = DatabasePool.getInstance().getLoggerConnection();
         if (!_logger) throw new Error('Logger not initialised');
         if (error instanceof Error) {
             _logger.error(error);
@@ -35,13 +35,12 @@ export default {
 
 export class DefaultLogger implements Logger {
     private db: BetterSqlite3.Database;
-    private sessionId: string;
     private stmt: BetterSqlite3.Statement;
 
-    constructor(sessionId: string) {
-        this.sessionId = sessionId;
+    constructor() {
         const logsDir = path.join(process.cwd(), 'logs');
-        const dbPath = path.join(logsDir, `${sessionId}.db`);
+        const dbPath = path.join(logsDir, `${process.env.SESSION_ID}.db`);
+        console.log('Initializing DefaultLogger with DB path:', dbPath);
         this.db = new BetterSqlite3(dbPath);
         const createTableSQL = `
             CREATE TABLE IF NOT EXISTS logs (
@@ -52,11 +51,11 @@ export class DefaultLogger implements Logger {
                 level TEXT NOT NULL
             )
         `;
+        this.db.exec(createTableSQL);
         this.stmt = this.db.prepare(`
             INSERT INTO logs (message, stack, level)
             VALUES (?, ?, ?)
         `);
-        this.db.exec(createTableSQL);
     }
 
     info(message: string, stack?: string): void {
