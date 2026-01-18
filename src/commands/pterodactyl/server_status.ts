@@ -1,7 +1,5 @@
 import { ChatInputCommandInteraction, ButtonInteraction, Message, StringSelectMenuInteraction } from 'discord.js';
 import Database, { PterodactylServer as DbPterodactylServer } from '../../helpers/database.js';
-
-type ValidatedDbServer = DbPterodactylServer & { id: number };
 import { buildError } from '../../helpers/errorBuilder.js';
 import { Caller } from '../../helpers/caller.js';
 import { fetchServers, fetchServerResources, fetchAllServerResources, sendServerCommand } from './shared/pterodactylApi.js';
@@ -217,17 +215,20 @@ export default class ServerStatus {
             return false;
         };
 
+        const done = await checkStatus();
+        if (done) { return; }
+
         const pollInterval = setInterval(async () => {
-            const done = await checkStatus();
-            if (done) {
+            try {
+                const done = await checkStatus();
+                if (done) { clearInterval(pollInterval); }
+            } catch (error) {
+                console.error('Polling error:', error);
                 clearInterval(pollInterval);
+                await this.refreshStatus(componentInteraction, dbServer.id);
             }
         }, interval);
 
-        const done = await checkStatus();
-        if (done) {
-            clearInterval(pollInterval);
-        }
     }
 
     private async refreshStatus(
@@ -260,3 +261,5 @@ export default class ServerStatus {
         }
     }
 }
+
+type ValidatedDbServer = DbPterodactylServer & { id: number };
