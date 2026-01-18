@@ -24,13 +24,6 @@ export default class DatabasePool {
         return this.connections.get(resolvedFileName)!;
     }
 
-    getLoggerConnection(): Logger {
-        if (!this.connections.has('logger')) {
-            this.connections.set('logger', new DefaultLogger());
-        }
-        return this.connections.get('logger')!;
-    }
-
     closeAll(): void {
         for (const db of this.connections.values()) {
             db.close();

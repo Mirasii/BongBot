@@ -16,7 +16,7 @@ jest.unstable_mockModule('fs/promises', () => ({
 }));
 
 // Import after mocks are set up
-const logging = await import('../../src/helpers/logging.js');
+const logging = await import('../../src/services/logging_service.js');
 
 // Setup standard mock cleanup
 setupMockCleanup();
@@ -101,7 +101,7 @@ describe('logging helper', () => {
 
         test('handles logging when logFile not initialized', async () => {
             // Import a fresh instance to clear the logFile variable
-            const freshLogging = await import('../../src/helpers/logging.js?t=' + Date.now());
+            const freshLogging = await import('../../src/services/logging_service.js?t=' + Date.now());
             
             const message = 'Test without init';
             await freshLogging.default.log(message);

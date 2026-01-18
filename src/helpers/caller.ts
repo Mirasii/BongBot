@@ -1,4 +1,4 @@
-import LOGGER from './logging.js'
+import LOGGER from '../services/logging_service.js'
 import dns from 'dns/promises';
 
 export class Caller {

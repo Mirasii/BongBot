@@ -5,7 +5,7 @@ import { jest } from '@jest/globals';
 
 // Mock the LOGGER module
 const mockLog = jest.fn();
-jest.unstable_mockModule('../../src/helpers/logging.js', () => ({
+jest.unstable_mockModule('../../src/services/logging_service.js', () => ({
     default: {
         log: mockLog,
     },

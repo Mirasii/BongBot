@@ -6,7 +6,7 @@ import UpdateServer from './update_server.js';
 import RemoveServer from './remove_server.js';
 import DatabasePool from '../../services/databasePool.js';
 import { Caller } from '../../helpers/caller.js';
-import LOGGER from '../../helpers/logging.js';
+import LOGGER from '../../services/logging_service.js';
 
 export default {
     ephemeralDefer: true,

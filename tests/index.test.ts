@@ -62,7 +62,7 @@ jest.unstable_mockModule('fs', () => ({
 }));
 
 // Mock logging
-jest.unstable_mockModule('../src/helpers/logging.js', () => ({
+jest.unstable_mockModule('../src/services/logging_service.js', () => ({
     default: {
         init: jest.fn(),
         log: jest.fn()
@@ -120,7 +120,7 @@ describe('BongBot', () => {
     beforeAll(async () => {
         // Import mocked modules
         Discord = await import('discord.js');
-        LOGGER = (await import('../src/helpers/logging.js')).default;
+        LOGGER = (await import('../src/services/logging_service.js')).default;
         ERROR_BUILDER = await import('../src/helpers/errorBuilder.js');
         
         // Import index.js which will use all the mocks

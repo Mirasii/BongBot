@@ -1,7 +1,7 @@
 import { Client, GatewayIntentBits, Collection, ActivityType } from 'discord.js';
 import type { Message, MessageReplyOptions, InteractionReplyOptions, CommandInteraction, Interaction, ApplicationCommandDataResolvable } from 'discord.js';
 import type { ExtendedClient } from './helpers/interfaces.ts';
-import LOGGER from './helpers/logging.js';
+import LOGGER from './services/logging_service.js';
 import crypto from 'crypto';
 import config, { validateRequiredConfig } from './config/index.js';
 import { buildUnknownError } from './helpers/errorBuilder.js';
