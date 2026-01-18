@@ -5,7 +5,7 @@ import FileLogger from '../loggers/file_logger.js';
 export default {
     get default(): Logger {
         const loggerService = LoggerService.getInstance();
-        if (process.env.DEFAULT_LOGGER === 'file') loggerService.getFileLogger(); /** use environment variable to switch loggers for local dev */
+        if (process.env.DEFAULT_LOGGER === 'file') return loggerService.getFileLogger(); /** use environment variable to switch loggers for local dev */
         return loggerService.getDefaultLogger();
     },
     /** 
@@ -15,11 +15,12 @@ export default {
      * This file is now intended to surface loggers, e.g. LOGGER.default, LOGGER.custom_logger, etc.
      */
     async log(error: any) {
+        const logger = this.default;
         if (error instanceof Error) {
-            default.error(error);
+            logger.error(error);
             return;
         }
-        default.debug(typeof error === 'string' ? error : JSON.stringify(error));
+        logger.debug(typeof error === 'string' ? error : JSON.stringify(error));
     }
 }
 
