@@ -1,5 +1,7 @@
 import LOGGER from '../services/logging_service.js'
 import dns from 'dns/promises';
+import net from 'node:net';
+import ipaddr from 'ipaddr.js';
 
 export class Caller {
     async validateServerSSRF(serverUrl: string): Promise<void> {
@@ -75,14 +77,7 @@ async function validateServerUrl(serverUrl: string): Promise<void> {
         }
     }
 
-    const [ipv4Result, ipv6Result] = await Promise.allSettled([
-        dns.resolve4(parsedUrl.hostname),
-        dns.resolve6(parsedUrl.hostname)
-    ]);
-
-    const ipv4Addresses = ipv4Result.status === 'fulfilled' ? ipv4Result.value : [];
-    const ipv6Addresses = ipv6Result.status === 'fulfilled' ? ipv6Result.value : [];
-    const addresses = [...ipv4Addresses, ...ipv6Addresses];
+    const addresses = await resolveHostnameToIPs(parsedUrl);
 
     if (addresses.length === 0) {
         throw new Error('Unable to resolve server hostname.');
@@ -95,51 +90,40 @@ async function validateServerUrl(serverUrl: string): Promise<void> {
     }
 }
 
-function isPrivateOrReservedIP(ip: string): boolean {
-
-    if (!ip.includes(':')) {
-        return isPrivateOrReservedIPv4(ip);
+async function resolveHostnameToIPs(parsedUrl: URL): Promise<string[]> {
+    let addresses: string[];
+    if (net.isIP(parsedUrl.hostname)) {
+        addresses = [parsedUrl.hostname];
+    } else {
+        const [ipv4Result, ipv6Result] = await Promise.allSettled([
+            dns.resolve4(parsedUrl.hostname),
+            dns.resolve6(parsedUrl.hostname)
+        ]);
+        const ipv4Addresses = ipv4Result.status === 'fulfilled' ? ipv4Result.value : [];
+        const ipv6Addresses = ipv6Result.status === 'fulfilled' ? ipv6Result.value : [];
+        addresses = [...ipv4Addresses, ...ipv6Addresses];
     }
-    const normalizedIp = ip.toLowerCase();
-    if (normalizedIp === '::1') return true;
-    if (normalizedIp.startsWith('fc') || normalizedIp.startsWith('fd')) return true;
-    if (normalizedIp.startsWith('fe8') || normalizedIp.startsWith('fe9') ||
-        normalizedIp.startsWith('fea') || normalizedIp.startsWith('feb')) return true;
-    if (normalizedIp.startsWith('::ffff:')) {
-        const ipv4Part = normalizedIp.slice(7);
-        return isPrivateOrReservedIPv4(ipv4Part);
-    }
-    return false;
+    return addresses;
 }
 
-function isPrivateOrReservedIPv4(ip: string): boolean {
-    const parts = ip.split('.').map(Number);
-    if (parts.length !== 4 || parts.some(p => isNaN(p) || p < 0 || p > 255)) {
-        return true; // Invalid IP, treat as blocked
+function isPrivateOrReservedIP(ip: string): boolean {
+    try {
+        const addr = ipaddr.process(ip);
+        const range = addr.range();
+
+        const blockedRanges = [
+            'private', 
+            'uniqueLocal', 
+            'loopback', 
+            'linkLocal', 
+            'reserved', 
+            'unspecified',
+            'carrierGradeNat',
+            'broadcast'
+        ];
+
+        return blockedRanges.includes(range);
+    } catch (err) {
+        return true; 
     }
-
-    const [a, b, c, d] = parts;
-
-    // Loopback: 127.0.0.0/8
-    if (a === 127) return true;
-
-    // Private Class A: 10.0.0.0/8
-    if (a === 10) return true;
-
-    // Private Class B: 172.16.0.0/12 (172.16.0.0 - 172.31.255.255)
-    if (a === 172 && b >= 16 && b <= 31) return true;
-
-    // Private Class C: 192.168.0.0/16
-    if (a === 192 && b === 168) return true;
-
-    // Link-local: 169.254.0.0/16
-    if (a === 169 && b === 254) return true;
-
-    // Current network: 0.0.0.0/8
-    if (a === 0) return true;
-
-    // Broadcast: 255.255.255.255
-    if (a === 255 && b === 255 && c === 255 && d === 255) return true;
-
-    return false;
 }
