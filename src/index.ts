@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Collection, ActivityType } from 'discord.js';
+import { Client, GatewayIntentBits, Collection, ActivityType, MessageFlags } from 'discord.js';
 import type { Message, MessageReplyOptions, InteractionReplyOptions, CommandInteraction, Interaction, ApplicationCommandDataResolvable } from 'discord.js';
 import type { ExtendedClient } from './helpers/interfaces.ts';
 import LOGGER from './services/logging_service.js';
@@ -28,7 +28,7 @@ bot.on('interactionCreate', async (interaction: Interaction) => {
     try {
         const command = bot.commands!.get(interaction.commandName);
         if (!command) return;
-        await interaction.deferReply({ ephemeral: command.ephemeralDefer || false });
+        await interaction.deferReply({ flags: command.msgFlag || MessageFlags.Loading });
         const response = await command.execute(interaction, bot); 
         if (response?.isError === true && interaction.replied) { 
             await interaction.deleteReply(); 

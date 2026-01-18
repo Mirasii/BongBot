@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, Client } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, Client, MessageFlags } from 'discord.js';
 import RegisterServer from './register_server.js';
 import ListServers from './list_servers.js';
 import ServerStatus, * as serverStatus from './server_status.js';
@@ -9,7 +9,7 @@ import { Caller } from '../../helpers/caller.js';
 import LOGGER from '../../services/logging_service.js';
 
 export default {
-    ephemeralDefer: true,
+    msgFlag: MessageFlags.Ephemeral,
     data: new SlashCommandBuilder()
         .setName('pterodactyl')
         .setDescription('Manage your Pterodactyl panel servers')
