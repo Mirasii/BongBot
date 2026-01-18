@@ -50,7 +50,6 @@ export class DefaultLogger implements Logger {
             INSERT INTO logs (message, stack, level, session_id)
             VALUES (?, ?, ?, ?)
         `);
-        this.db.pragma('journal_mode = WAL');
     }
 
     info(message: string, stack?: string): void {
@@ -83,7 +82,7 @@ export class DefaultLogger implements Logger {
         }
     }
 
-    private logLegacy(message: string, stack: string | undefined): void {
+    private async logLegacy(message: string, stack: string | undefined): Promise<void> {
         if (!logFile) {
             console.error('Log file not initialized');
             await fsp.writeFile(logFile, 'Logger Initialised\n\n');
