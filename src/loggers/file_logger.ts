@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 import 'source-map-support/register.js';
-import Logger from '../helpers/interfaces.js';
+import { Logger } from '../helpers/interfaces.js';
 import Utilities from '../helpers/utilities.js';
 
 /**

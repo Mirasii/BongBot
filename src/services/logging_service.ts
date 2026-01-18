@@ -1,4 +1,4 @@
-import Logger from '../helpers/interfaces.js';
+import { Logger } from '../helpers/interfaces.js';
 import DefaultLogger from '../loggers/default_logger.js';
 import FileLogger from '../loggers/file_logger.js';
 

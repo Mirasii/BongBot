@@ -1,6 +1,4 @@
 import Database from '../helpers/database.js';
-import Logger from '../helpers/interfaces.js';
-import DefaultLogger from '../loggers/default_logger.js';
 
 export default class DatabasePool {
     private static instance: DatabasePool;

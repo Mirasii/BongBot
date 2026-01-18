@@ -2,7 +2,7 @@ import path from 'path';
 import fsp from 'fs/promises';
 import BetterSqlite3 from 'better-sqlite3';
 import 'source-map-support/register.js';
-import Logger from '../helpers/interfaces.js';
+import { Logger } from '../helpers/interfaces.js';
 import Utilities from '../helpers/utilities.js';
 
 /**
