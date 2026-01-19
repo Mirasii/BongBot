@@ -52,6 +52,7 @@ jest.unstable_mockModule('discord.js', () => {
         })),
         GatewayIntentBits: { Guilds: 1, GuildMessages: 2, MessageContent: 4 },
         ActivityType: { Playing: 'PLAYING' },
+        MessageFlags: { Loading: 1 << 7 },
         Collection: MockCollection
     };
 });
