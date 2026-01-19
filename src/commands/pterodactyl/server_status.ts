@@ -147,15 +147,42 @@ export default class ServerStatus {
             const servers = await fetchServers(this.caller, dbServer.serverUrl, dbServer.apiKey);
             const stopPromises = servers.map((server) =>
                 sendServerCommand(this.caller, server.attributes.identifier, 'stop', dbServer.serverUrl, dbServer.apiKey)
+                    .then((success) => ({ identifier: server.attributes.identifier, name: server.attributes.name, success }))
             );
-            await Promise.all(stopPromises);
+            const results = await Promise.allSettled(stopPromises);
 
-            await this.pollUntilStateChange(
-                componentInteraction,
-                servers.map((s) => s.attributes.identifier),
-                'offline',
-                dbServer
-            );
+            const failedServers: string[] = [];
+            const successfulIdentifiers: string[] = [];
+
+            for (const result of results) {
+                if (result.status === 'rejected') {
+                    failedServers.push('unknown');
+                    this._logger.error(new Error(`Stop command rejected: ${result.reason}`));
+                } else if (!result.value.success) {
+                    failedServers.push(result.value.name);
+                    this._logger.debug(`Failed to stop server: ${result.value.identifier} (${result.value.name})`);
+                } else {
+                    successfulIdentifiers.push(result.value.identifier);
+                }
+            }
+
+            if (failedServers.length > 0) {
+                await componentInteraction.followUp({
+                    content: `⚠️ Failed to stop ${failedServers.length} server(s): ${failedServers.join(', ')}`,
+                    ephemeral: true,
+                });
+            }
+
+            if (successfulIdentifiers.length > 0) {
+                await this.pollUntilStateChange(
+                    componentInteraction,
+                    successfulIdentifiers,
+                    'offline',
+                    dbServer
+                );
+            } else {
+                await this.refreshStatus(componentInteraction, dbServer.id);
+            }
         } else {
             const success = await sendServerCommand(
                 this.caller,

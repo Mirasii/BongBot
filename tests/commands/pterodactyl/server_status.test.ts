@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import { createMockInteraction } from '../../utils/commandTestUtils.js';
 import mockDNSValues from '../../mocks/mockDNSValues.js';
+import { Logger } from '../../../src/helpers/interfaces.js';
 // Mock DNS resolution to prevent SSRF issues during tests
 mockDNSValues();
 
@@ -15,13 +16,11 @@ import { setupServer } from 'msw/node';
 const testServerUrl = 'https://panel.example.com';
 const testApiKey = 'test-api-key';
 
-const mockLogger = class implements Logger {
-    info(message: string, stack?: string): void { jest.fn(); }
-    warn(message: string, stack?: string): void { jest.fn(); }
-    error(message: string, stack?: string): void { jest.fn(); }
+const mockLogger: Logger = {
+    info: jest.fn(),
+    debug: jest.fn(),
+    error: jest.fn(),
 };
-
-const mockLoggerInstance = new mockLogger();
 
 
 const handlers = [
@@ -85,7 +84,7 @@ const { Caller } = await import('../../../src/helpers/caller.js');
 
 // Create instance with mock dependencies
 const caller = new Caller();
-const serverStatusInstance = new ServerStatus(mockDb as any, caller, mockLoggerInstance);
+const serverStatusInstance = new ServerStatus(mockDb as any, caller, mockLogger);
 const serverStatusExecute = serverStatusInstance.execute.bind(serverStatusInstance);
 const setupCollector = serverStatusInstance.setupCollector.bind(serverStatusInstance);
 
@@ -580,6 +579,83 @@ describe('server_status command', () => {
             );
         });
 
+        it('should handle stop all with partial failures', async () => {
+            // Setup multiple servers
+            server.use(
+                http.get(`${testServerUrl}/api/client`, () => {
+                    return HttpResponse.json({
+                        data: [
+                            { attributes: { identifier: 'server-1', name: 'Server 1', description: '' } },
+                            { attributes: { identifier: 'server-2', name: 'Server 2', description: '' } },
+                            { attributes: { identifier: 'server-3', name: 'Server 3', description: '' } },
+                        ],
+                    });
+                })
+            );
+
+            let callCount = 0;
+            server.use(
+                http.post(`${testServerUrl}/api/client/servers/:identifier/power`, () => {
+                    callCount++;
+                    // First server succeeds, second fails, third succeeds
+                    if (callCount === 2) {
+                        return new HttpResponse(null, { status: 500 });
+                    }
+                    return HttpResponse.json({ success: true });
+                })
+            );
+
+            setupCollector(mockInteraction, mockMessage);
+
+            const mockButtonInteraction = {
+                user: { id: 'test-user-123' },
+                isStringSelectMenu: () => false,
+                customId: 'server_control:1:all:stop',
+                deferUpdate: jest.fn().mockResolvedValue(undefined),
+                followUp: jest.fn().mockResolvedValue(undefined),
+                editReply: jest.fn().mockResolvedValue(undefined),
+            };
+
+            await collectorCallbacks['collect'](mockButtonInteraction);
+
+            // Should report the partial failure
+            expect(mockButtonInteraction.followUp).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    content: expect.stringContaining('Failed to stop'),
+                    ephemeral: true,
+                })
+            );
+        });
+
+        it('should handle stop all when all servers fail', async () => {
+            server.use(
+                http.post(`${testServerUrl}/api/client/servers/:identifier/power`, () => {
+                    return new HttpResponse(null, { status: 500 });
+                })
+            );
+
+            setupCollector(mockInteraction, mockMessage);
+
+            const mockButtonInteraction = {
+                user: { id: 'test-user-123' },
+                isStringSelectMenu: () => false,
+                customId: 'server_control:1:all:stop',
+                deferUpdate: jest.fn().mockResolvedValue(undefined),
+                followUp: jest.fn().mockResolvedValue(undefined),
+                editReply: jest.fn().mockResolvedValue(undefined),
+            };
+
+            await collectorCallbacks['collect'](mockButtonInteraction);
+
+            // Should report all failures
+            expect(mockButtonInteraction.followUp).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    content: expect.stringContaining('Failed to stop 1 server'),
+                    ephemeral: true,
+                })
+            );
+        });
+
         it('should handle server command failure', async () => {
             server.use(
                 http.post(`${testServerUrl}/api/client/servers/:identifier/power`, () => {
@@ -666,7 +742,7 @@ describe('server_status command', () => {
         });
 
         it('should handle message.edit rejection on collector end', async () => {
-            const loggerSpy = jest.spyOn(mockLoggerInstance, 'error').mockImplementation(() => {});
+            const loggerSpy = jest.spyOn(mockLogger, 'error').mockImplementation(() => {});
             const editError = new Error('Failed to edit');
             mockMessage.edit = jest.fn().mockRejectedValue(editError);
 
@@ -1301,7 +1377,7 @@ describe('server_status command', () => {
                 })
             );
 
-            const loggerSpy = jest.spyOn(mockLoggerInstance, 'error').mockImplementation(() => {});
+            const loggerSpy = jest.spyOn(mockLogger, 'error').mockImplementation(() => {});
 
             const collectorCallbacks: any = {};
             const testMockMessage = {
