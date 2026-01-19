@@ -21,6 +21,10 @@ export default {
             return;
         }
         logger.debug(typeof error === 'string' ? error : JSON.stringify(error));
+    },
+    /** Closes all logger connections. Useful for graceful shutdown or testing cleanup */
+    closeAll() {
+        LoggerService.getInstance().closeAll();
     }
 }
 

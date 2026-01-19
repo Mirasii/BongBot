@@ -130,6 +130,7 @@ describe('server_status command', () => {
             },
             options: {
                 getString: jest.fn((key: string) => null),
+                getSubcommand: jest.fn(() => 'manage'),
             },
         };
 

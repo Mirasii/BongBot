@@ -124,4 +124,59 @@ describe('LoggingService', () => {
             expect(defaultLogger).not.toBe(fileLogger);
         });
     });
+
+    describe('closeAll method', () => {
+        it('should close all logger connections', async () => {
+            jest.resetModules();
+            const module = await import('../../src/services/logging_service.js');
+
+            // Access both loggers to create connections
+            delete process.env.DEFAULT_LOGGER;
+            module.default.default;
+
+            process.env.DEFAULT_LOGGER = 'file';
+            module.default.default;
+
+            // Close all connections
+            module.default.closeAll();
+
+            expect(mockDefaultLoggerInstance.close).toHaveBeenCalled();
+            expect(mockFileLoggerInstance.close).toHaveBeenCalled();
+        });
+
+        it('should handle loggers without close method', async () => {
+            jest.resetModules();
+
+            // Create a logger without a close method
+            const loggerWithoutClose: Logger = {
+                info: jest.fn(),
+                debug: jest.fn(),
+                error: jest.fn(),
+            };
+            MockDefaultLogger.mockReturnValueOnce(loggerWithoutClose);
+
+            const module = await import('../../src/services/logging_service.js');
+            delete process.env.DEFAULT_LOGGER;
+            module.default.default;
+
+            // Should not throw when close is undefined
+            expect(() => module.default.closeAll()).not.toThrow();
+        });
+
+        it('should clear connections after closeAll', async () => {
+            jest.resetModules();
+            const module = await import('../../src/services/logging_service.js');
+
+            delete process.env.DEFAULT_LOGGER;
+            module.default.default;
+            module.default.closeAll();
+
+            // Reset mock to track new instantiation
+            MockDefaultLogger.mockClear();
+
+            // Getting logger again should create a new instance
+            module.default.default;
+            expect(MockDefaultLogger).toHaveBeenCalledTimes(1);
+        });
+    });
 });

@@ -31,4 +31,5 @@ export interface Logger {
     info(message: string, stack?: string): void;
     debug(message: string, stack?: string): void;
     error(error: Error): void;
+    close?(): void;
 }
