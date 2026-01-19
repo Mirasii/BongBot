@@ -9,923 +9,564 @@
 1. [Current Architectural Overview](#1-current-architectural-overview)
 2. [Identified Architectural Smells](#2-identified-architectural-smells)
 3. [Proposed Improvements](#3-proposed-improvements)
-4. [Testing Architecture](#4-testing-architecture)
-5. [Dependency Graph](#5-dependency-graph)
-6. [Critical Files Reference](#6-critical-files-reference)
 
 ---
 
 ## 1. Current Architectural Overview
 
-### 1.1 Layer Structure
+### 1.1 High-Level Architecture
+
+BongBot follows a **layered architecture** with three primary tiers:
 
 ```
-+----------------------------------------------------------+
-|           Discord.js Client (Bot Entry Point)             |
-|                    (src/index.ts)                         |
-+----------------------------------------------------------+
-                           |
-+----------------------------------------------------------+
-|              Event Handlers Layer                         |
-|  - interactionCreate (slash commands)                     |
-|  - messageCreate (mention-based replies)                  |
-|  - clientReady (initialization)                           |
-+----------------------------------------------------------+
-                           |
-+----------------------------------------------------------+
-|              Command Layer                                |
-|  - Simple Commands (object literals: ping, die, etc)      |
-|  - Complex Commands (classes: pterodactyl)                |
-|  - Hybrid Commands (chat_ai, create_quote)                |
-+----------------------------------------------------------+
-                           |
-+----------------------------------------------------------+
-|              Service/Helper Layer                         |
-|  - Database (DatabasePool singleton)                      |
-|  - Caller (HTTP wrapper with SSRF protection)             |
-|  - Embed builders, error handlers, logging                |
-+----------------------------------------------------------+
-                           |
-+----------------------------------------------------------+
-|              Configuration Layer                          |
-|  - Centralized env config (src/config/index.ts)           |
-|  - Feature flags (API toggles)                            |
-+----------------------------------------------------------+
+┌─────────────────────────────────────────────────────────────────┐
+│                     Entry Point Layer                           │
+│                    (src/index.ts)                               │
+│              Bot initialization, event binding                  │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────────────┐
+│                     Command Layer                               │
+│          (src/commands/*.ts, src/commands/pterodactyl/)         │
+│     Slash commands, message handlers, subcommand routing        │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────────────┐
+│                  Service/Helper Layer                           │
+│    (src/services/, src/helpers/, src/loggers/, src/config/)     │
+│   Database access, HTTP calls, logging, embed building          │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### 1.2 Bot Initialization and Event Lifecycle
+### 1.2 Entry Point and Bot Lifecycle
 
-**Entry Point:** `src/index.ts`
+**File: `src/index.ts`**
 
-The bot lifecycle follows this sequence:
+The entry point orchestrates bot startup in this sequence:
 
-1. **Configuration Validation**: `validateRequiredConfig()` checks for required environment variables and fails fast if missing
-2. **Logging Initialization**: Creates a session UUID and initializes the file-based logger
-3. **Command Registration**: `buildCommands(bot)` populates `bot.commands` Collection and returns command data for Discord API
-4. **Event Handler Registration**: Three handlers are registered:
-   - `interactionCreate` - Handles slash command interactions
-   - `messageCreate` - Handles mention-based replies (quote creation, chat AI)
-   - `clientReady` - Registers commands with Discord API, sets bot presence, posts deployment message, initializes TikTok notifier
-5. **Login**: `bot.login(token)` connects to Discord Gateway
+1. **Config Validation** (line 13): `validateRequiredConfig()` fails fast if required environment variables are missing
+2. **Session Setup** (line 20): Generates a unique `SESSION_ID` UUID for log correlation
+3. **Command Registration** (line 21): `buildCommands(bot)` populates `bot.commands` Collection
+4. **Event Binding** (lines 24-80): Registers three Discord event listeners
+5. **Login** (line 101): `bot.login(token)` connects to Discord
 
-#### Slash Command Flow
+**Event Handlers:**
 
-```
-User Input --> Discord Gateway --> interactionCreate
-    |
-    v
-deferReply({ ephemeral: command.ephemeralDefer })
-    |
-    v
-command.execute(interaction, bot)
-    |
-    v
-interaction.followUp(response)
-    |
-    v
-[optional] command.setupCollector(interaction, message)
-```
+| Event | Lines | Purpose |
+|-------|-------|---------|
+| `interactionCreate` | 24-44 | Handles slash command execution with deferred replies |
+| `messageCreate` | 47-64 | Handles mention-based invocation (quote creation or chat) |
+| `clientReady` | 67-80 | Registers commands with Discord API, sets presence, initializes TikTok notifier |
 
-#### Mention-Based Flow
+### 1.3 Command Structure
 
-```
-User @mentions bot --> messageCreate
-    |
-    v
-Create temporary "thinking" reply
-    |
-    v
-Parse message content
-    |
-    v
-Route to handler:
-  - No content --> create_quote.executeReply()
-  - Has content --> chat.executeLegacy()
-    |
-    v
-Delete temp reply --> message.reply(response)
-```
+#### Standard Command Pattern
 
-### 1.3 Command Patterns
+Commands export a consistent object structure with required and optional properties:
 
-BongBot uses **four distinct command patterns**:
-
-#### Pattern 1: Simple Object Literals
-Used for stateless, single-file commands.
-
+**Required exports:**
 ```typescript
-// src/commands/ping.ts
+export default {
+    data: SlashCommandBuilder,        // Discord.js command definition
+    execute(interaction, bot): Promise<Response>,  // Main handler
+    fullDesc: { description: string, options: [] } // Help documentation
+}
+```
+
+**Optional exports:**
+- `executeReply(message, bot)` - For mention-based invocation without content (line 55 in index.ts)
+- `executeLegacy(message, bot)` - For mention-based invocation with content (line 56 in index.ts)
+- `setupCollector(interaction, message)` - For interactive components (lines 37-39 in index.ts)
+- `msgFlag` - Message flags like `MessageFlags.Ephemeral`
+
+**Example - Simple Command (`src/commands/ping.ts`):**
+```typescript
 export default {
     data: new SlashCommandBuilder()
         .setName('ping')
-        .setDescription('Health check'),
-    async execute(interaction, client) {
+        .setDescription('Health Check BongBot'),
+    async execute() {
         return 'Pong';
     },
-    fullDesc: { options: [], description: 'Verify bot is responsive' }
+    fullDesc: { options: [], description: "Praise unto you, my friend" }
 }
 ```
 
-**Used in:** `ping`, `dance`, `hoe`, `die`, and most media commands.
+#### Subcommand Pattern (Pterodactyl Module)
 
-#### Pattern 2: Class-Based with Dependency Injection
-Used for complex features requiring testability.
+**File: `src/commands/pterodactyl/master.ts`**
 
+The pterodactyl feature demonstrates the recommended pattern for complex multi-command features:
+
+```
+pterodactyl/
+├── master.ts                    # Main entry, routing, SlashCommandBuilder with subcommands
+├── register_server.ts           # Class: RegisterServer
+├── list_servers.ts              # Class: ListServers
+├── server_status.ts             # Class: ServerStatus (with setupCollector)
+├── update_server.ts             # Class: UpdateServer
+├── remove_server.ts             # Class: RemoveServer
+└── shared/
+    ├── pterodactylApi.ts        # API interaction functions
+    ├── serverStatusEmbed.ts     # Embed building for status display
+    └── serverControlComponents.ts # Button/select menu builders
+```
+
+**Routing in master.ts (lines 90-111):**
 ```typescript
-// src/commands/pterodactyl/register_server.ts
-export default class RegisterServer {
-    constructor(db: Database, caller: Caller) {
-        this.db = db;
-        this.caller = caller;
+async execute(interaction: ChatInputCommandInteraction) {
+    const subcommand = interaction.options.getSubcommand();
+    const db = DatabasePool.getInstance().getConnection();
+    const caller = new Caller();
+    switch (subcommand) {
+        case 'register':
+            return await new RegisterServer(db, caller).execute(interaction);
+        case 'list':
+            return await new ListServers(db).execute(interaction);
+        // ... etc
     }
-    async execute(interaction: ChatInputCommandInteraction) { ... }
 }
 ```
 
-**Used in:** All pterodactyl subcommands (`register_server`, `list_servers`, `update_server`, `remove_server`, `server_status`).
+**Key Design Decisions:**
+- Each subcommand is a **class** with constructor dependency injection
+- Database and HTTP clients are instantiated in master.ts and passed to handlers
+- Shared utilities in `shared/` directory prevent duplication
 
-#### Pattern 3: Hybrid Commands with State
-Commands supporting both slash and mention-based invocation with in-memory state.
+### 1.4 Service Layer
 
-```typescript
-// src/commands/chat_ai.ts
-const chatHistory: { [key: string]: [...] } = {};
+#### DatabasePool Singleton
 
-export default {
-    data: SlashCommandBuilder,
-    async execute(interaction, client) { ... },      // Slash command
-    async executeLegacy(message, client) { ... },   // @mention with content
-    fullDesc: { ... }
-}
-```
+**File: `src/services/databasePool.ts`**
 
-**Used in:** `chat_ai`, `create_quote`.
-
-#### Pattern 4: Master/Subcommand Pattern
-Used for grouping related functionality under a single command namespace.
+Manages database connections using the singleton pattern with lazy initialization:
 
 ```typescript
-// src/commands/pterodactyl/master.ts
-export default {
-    data: new SlashCommandBuilder()
-        .setName('pterodactyl')
-        .addSubcommand(subcommand => subcommand.setName('register')...)
-        .addSubcommand(subcommand => subcommand.setName('list')...),
+export default class DatabasePool {
+    private static instance: DatabasePool;
+    private connections: Map<string, Database> = new Map();
 
-    async execute(interaction) {
-        const subcommand = interaction.options.getSubcommand();
-        const db = DatabasePool.getInstance().getConnection();
-        const caller = new Caller();
-
-        switch(subcommand) {
-            case 'register': return new RegisterServer(db, caller).execute(interaction);
-            case 'list': return new ListServers(db, caller).execute(interaction);
-            // ...
+    static getInstance(): DatabasePool {
+        if (!DatabasePool.instance) {
+            DatabasePool.instance = new DatabasePool();
         }
-    },
-    setupCollector: ServerStatus.setupCollector
+        return DatabasePool.instance;
+    }
+
+    getConnection(dbFileName: string = 'pterodactyl.db'): Database {
+        // Respects SERVER_DATABASE env var override
+        // Creates connection if not exists, returns cached otherwise
+    }
+
+    closeAll(): void { /* Cleanup all connections */ }
 }
 ```
 
-### 1.4 Command Registration
+#### LoggerService Singleton
 
-**File:** `src/commands/buildCommands.ts`
+**File: `src/services/logging_service.ts`**
 
-- Imports all command modules into `commandsArray`
-- Creates a `Collection<string, any>` on `bot.commands`
-- Returns JSON array for Discord API registration
+Provides logger factory with multiple implementations:
 
-### 1.5 Helper/Service Layer
-
-| File | Purpose | Pattern |
-|------|---------|---------|
-| `src/helpers/database.ts` | SQLite wrapper for Pterodactyl servers | Class with AES-256-GCM encryption |
-| `src/services/databasePool.ts` | Singleton connection pool | Singleton pattern |
-| `src/helpers/caller.ts` | HTTP client wrapper | Class + module exports |
-| `src/helpers/errorBuilder.ts` | Error response formatting | Functional |
-| `src/helpers/embedBuilder.ts` | Discord embed construction | Class (Builder pattern) |
-| `src/helpers/quoteBuilder.ts` | Quote-specific embeds | Class (Builder pattern) |
-| `src/helpers/logging.ts` | File-based logging | Module singleton |
-| `src/helpers/infoCard.ts` | Bot info card generation | Functional |
-
-### 1.6 Dependency Injection Patterns
-
-| Approach | Used In | Testability | Coupling |
-|----------|---------|-------------|----------|
-| **Constructor DI** | Pterodactyl subcommands | High | Low |
-| **Global imports** | Most simple commands | Low | High |
-| **Singleton** | DatabasePool | Medium | Medium |
-
-**Example of Constructor DI:**
 ```typescript
-// Instantiation in master.ts
-const db = DatabasePool.getInstance().getConnection();
-const caller = new Caller();
-return new RegisterServer(db, caller).execute(interaction);
+export default {
+    get default(): Logger {
+        // Returns FileLogger if DEFAULT_LOGGER=file, else DefaultLogger
+    },
+    async log(error: any) { /* Legacy compatibility wrapper */ },
+    closeAll() { /* Cleanup for graceful shutdown */ }
+}
+
+class LoggerService {
+    private connections: Map<string, Logger> = new Map();
+    // Singleton pattern with lazy-loaded logger instances
+}
 ```
 
-### 1.7 State Management
+**Logger Implementations:**
 
-| State Type | Implementation | Location | Persistence |
-|------------|----------------|----------|-------------|
-| Chat history | In-memory object | `chat_ai.ts` | None (lost on restart) |
-| Server data | SQLite + encryption | `database.ts` | Disk |
-| Command registry | Discord.js Collection | `bot.commands` | Memory |
-| Configuration | Environment variables | `config/index.ts` | Process env |
+| Logger | File | Storage | Use Case |
+|--------|------|---------|----------|
+| DefaultLogger | `src/loggers/default_logger.ts` | SQLite database by date | Production |
+| FileLogger | `src/loggers/file_logger.ts` | Flat file by session ID | Local development |
 
-### 1.8 Typing Overview
+Both implement the `Logger` interface:
+```typescript
+interface Logger {
+    info(message: string, stack?: string): void;
+    debug(message: string, stack?: string): void;
+    error(error: Error): void;
+    close?(): void;
+}
+```
 
-**Current interfaces defined in `src/helpers/interfaces.ts`:**
-- `ServerDetails` - Pterodactyl server model
-- `PterodactylResponse` - API response wrapper
-- `ExtendedClient` - Discord client with commands Collection
+### 1.5 Helper/Data Layer
 
-**Missing interfaces:**
-- `Command` - No formal command structure interface
-- `CommandResponse` - No unified response type
-- `ChatMessage` - No type for chat history entries
+#### Database Class
 
-### 1.9 Configuration Management
+**File: `src/helpers/database.ts`**
 
-**File:** `src/config/index.ts`
+SQLite wrapper using better-sqlite3 with:
+- Auto-initialization of schema (lines 23-35)
+- AES-256-GCM encryption for API keys (lines 138-162)
+- CRUD operations for `pterodactyl_servers` table
 
-- Centralizes all environment variables
-- Provides `validateRequiredConfig()` for early validation
-- Auto-adjusts `media.file_root` for test vs. production environments
+#### Caller Class
+
+**File: `src/helpers/caller.ts`**
+
+HTTP client wrapper with:
+- SSRF protection via `validateServerSSRF()` (lines 60-91)
+- DNS resolution and IP range blocking
+- HTTPS enforcement
+- Optional allowlist via `PTERODACTYL_ALLOWED_HOSTS`
+
+**Dual export pattern:**
+```typescript
+export class Caller {
+    async get(...) { return await get(...); }
+    async post(...) { return await post(...); }
+    async validateServerSSRF(...) { }
+}
+export default { get, post };  // Legacy function exports
+```
+
+### 1.6 Configuration Management
+
+**File: `src/config/index.ts`**
+
+Centralized configuration object with:
+- Grouped settings by feature (discord, apis)
+- Environment variable validation (`validateRequiredConfig()`)
+- Test environment detection via `JEST_WORKER_ID`
+
+```typescript
+const config = {
+    discord: { apikey },
+    apis: { quotedb, google, openai, googleai },
+    media: { file_root: process.env.JEST_WORKER_ID ? './src/' : './dist/' }
+};
+```
+
+### 1.7 Typing Strategy
+
+**File: `src/helpers/interfaces.ts`**
+
+Central interface definitions:
+
+```typescript
+export interface ExtendedClient extends Client {
+    version?: string;
+    commands?: Collection<string, any>;  // Note: 'any' type for commands
+}
+
+export interface Logger {
+    info(message: string, stack?: string): void;
+    debug(message: string, stack?: string): void;
+    error(error: Error): void;
+    close?(): void;
+}
+
+export interface GithubBranchResponse { ... }
+export interface GithubTagResponse { ... }
+export interface GithubInfo { ... }
+```
 
 ---
 
 ## 2. Identified Architectural Smells
 
-### 2.1 Weak Type Safety
+### 2.1 Type Safety Issues
 
-**Severity:** High | **Impact:** Maintainability, IDE support, refactoring safety
+#### 2.1.1 Extensive Use of `any` Type
 
-**Problem:** Pervasive use of `any` types defeats TypeScript benefits.
+**Severity: Medium**
 
-**Locations:**
+Multiple locations use `any` type, defeating TypeScript's benefits:
+
+| Location | Issue |
+|----------|-------|
+| `src/helpers/interfaces.ts:5` | `Collection<string, any>` for commands |
+| `src/commands/buildCommands.ts:39-40` | `Array<any>` and `Collection<string, any>` |
+| `src/index.ts:38` | `(command as any).setupCollector` |
+| `src/helpers/database.ts:84` | `values: any[]` |
+| `src/commands/pterodactyl/shared/serverControlComponents.ts:67-70` | `components: any[]` |
+
+**Impact:** Runtime type errors, reduced IDE support, harder refactoring.
+
+#### 2.1.2 Missing Command Interface
+
+**Severity: Medium**
+
+No formal `Command` interface exists. Commands are loosely typed objects. This is evident in:
+- `buildCommands.ts` line 40: Commands stored as `Collection<string, any>`
+- `index.ts` line 29: `bot.commands!.get(interaction.commandName)` returns `any`
+- `index.ts` line 38: Type assertion `(command as any).setupCollector`
+
+### 2.2 Inconsistent Patterns
+
+#### 2.2.1 Mixed Export Styles
+
+**Severity: Low**
+
+| Pattern | Example |
+|---------|---------|
+| Default object literal | `src/commands/ping.ts` |
+| Default class | `src/commands/pterodactyl/register_server.ts` |
+| Named + default function exports | `src/helpers/caller.ts` |
+| Default class with static methods | `src/helpers/utilities.ts` |
+
+#### 2.2.2 Inconsistent Dependency Injection
+
+**Severity: Medium**
+
+Some commands receive dependencies via constructor (pterodactyl subcommands), while others access singletons directly:
+
+**Injected (Good):**
 ```typescript
-// src/commands/buildCommands.ts:40
-client.commands = new Collection<string, any>();
-
-// src/commands/buildCommands.ts:39
-const commands: Array<any> = [];
-
-// src/index.ts:39
-(command as any).setupCollector  // Type casting without interface
-```
-
-**Impact:**
-- Loss of IDE autocomplete
-- Runtime errors not caught at compile time
-- Refactoring becomes risky
-
----
-
-### 2.2 Global State in Commands
-
-**Severity:** High | **Impact:** Testability, concurrency, data loss
-
-**Problem:** Chat history stored as module-level object.
-
-```typescript
-// src/commands/chat_ai.ts:12
-const chatHistory: { [key: string]: [{ "role": string, "content": string }] } = {};
-```
-
-**Issues:**
-- State lost on bot restart
-- Unbounded memory growth (MAX_HISTORY_LENGTH is per-server, no global limit)
-- Potential race conditions in concurrent execution
-- Not mockable for testing
-- No type safety on message structure
-
----
-
-### 2.3 Inconsistent Dependency Injection
-
-**Severity:** Medium | **Impact:** Testability variance across codebase
-
-**Problem:** Pterodactyl uses DI, other commands use global imports.
-
-```typescript
-// Pterodactyl (testable)
-constructor(db: Database, caller: Caller) { ... }
-
-// Other commands (hard to test)
-import CALLER from '../helpers/caller.js';
-```
-
----
-
-### 2.4 SetupCollector Binding Issue
-
-**Severity:** Medium | **Impact:** Potential runtime errors, context mismatch
-
-**Location:** `src/commands/pterodactyl/master.ts:112`
-
-```typescript
-setupCollector: new ServerStatus(
-    DatabasePool.getInstance().getConnection(),
-    new Caller()
-).setupCollector,
-```
-
-**Problem:** Creates an orphan instance just for method binding. The `this` context won't match the execution instance, leading to potential state inconsistencies.
-
----
-
-### 2.5 Event Handler Tight Coupling
-
-**Severity:** Medium | **Impact:** Extensibility, testing
-
-**Problem:** `src/index.ts` contains inline event handling logic.
-
-```typescript
-bot.on('interactionCreate', async (interaction) => {
-    // 1. Validate interaction type
-    // 2. Get command from collection
-    // 3. Defer reply with ephemeral logic
-    // 4. Execute command
-    // 5. Handle errors
-    // 6. Setup collector if present
-})
-```
-
-**Issues:**
-- Cannot add middleware (rate limiting, permissions, logging)
-- No pre/post execution hooks
-- Error handling mixed with dispatch logic
-- setupCollector check is ad-hoc (`'setupCollector' in command`)
-
----
-
-### 2.6 Response Format Inconsistency
-
-**Severity:** Low | **Impact:** Consistency, debugging
-
-**Problem:** Commands return varying response formats.
-
-```typescript
-// Pattern 1: String
-return 'Pong';
-
-// Pattern 2: Object with content
-return { content: '...', ephemeral: true };
-
-// Pattern 3: Embed
-return { embeds: [embed.toJSON()] };
-
-// Pattern 4: Complex with files
-return { embeds: [embed], files: [attachment] };
-
-// Pattern 5: Error
-return { embeds: [...], files: [...], flags: MessageFlags.Ephemeral, isError: true };
-```
-
-No unified contract for command responses.
-
----
-
-### 2.7 Message Handler Hardcoding
-
-**Severity:** Medium | **Impact:** Maintainability, extensibility
-
-**Problem:** Hardcoded routing for mention-based messages.
-
-```typescript
-// src/index.ts
-bot.on('messageCreate', async (message) => {
-    if (!content)
-        response = await bot.commands!.get('create_quote')!.executeReply(message, bot);
-    else
-        response = await bot.commands!.get('chat')!.executeLegacy(message, bot);
-})
-```
-
-**Issues:**
-- Tightly couples handler to specific commands
-- No registry for message-handling commands
-- Fails silently if command lacks the method
-
----
-
-### 2.8 Mixed Export Patterns in Caller
-
-**Severity:** Low | **Impact:** Consistency, confusion
-
-**Problem:** Dual export patterns.
-
-```typescript
-// src/helpers/caller.ts
-export class Caller { ... }
-export default { get, post };  // Module-level functions
-```
-
-Two ways to use the same functionality leads to inconsistent usage across the codebase.
-
----
-
-### 2.9 Logger Late Initialization Risk
-
-**Severity:** Low | **Impact:** Silent failures, lost error information
-
-**Location:** `src/helpers/logging.ts`
-
-```typescript
-let logFile: string | undefined;
-async init(sessionId: string) { ... }
-async log(error: any) {
-    if (!logFile) { console.error('Log file not initialized'); return; }
+// register_server.ts lines 7-13
+export default class RegisterServer {
+    private db: Database;
+    private caller: Caller;
+    constructor(db: Database, caller: Caller) {
+        this.db = db;
+        this.caller = caller;
+    }
 }
 ```
 
-Logger fails silently if `init()` not called before `log()`.
-
----
-
-### 2.10 Hardcoded Repository Constants
-
-**Severity:** Low | **Impact:** Portability
-
-**Location:** `src/helpers/infoCard.ts`
-
+**Direct singleton access:**
 ```typescript
-const GITHUB_REPO_OWNER = 'Mirasii';
-const GITHUB_REPO_NAME = 'BongBot';
+// chat_ai.ts line 58
+let resp = await CALLER.post(api.openai.url, ...);
 ```
 
-Should be configuration-driven for portability.
+### 2.3 State Management Concerns
 
----
+#### 2.3.1 Global In-Memory State
 
-### 2.11 Summary Table
+**Severity: Medium**
 
-| Smell | Severity | Files Affected | Priority |
-|-------|----------|----------------|----------|
-| Weak type safety (`any`) | High | `buildCommands.ts`, `index.ts` | P0 |
-| Global state (chatHistory) | High | `chat_ai.ts` | P1 |
-| Inconsistent DI | Medium | All simple commands | P1 |
-| setupCollector binding | Medium | `pterodactyl/master.ts` | P2 |
-| Event handler coupling | Medium | `index.ts` | P2 |
-| Message handler hardcoding | Medium | `index.ts` | P2 |
-| Response inconsistency | Low | All commands | P3 |
-| Mixed export patterns | Low | `caller.ts` | P3 |
-| Logger initialization | Low | `logging.ts` | P3 |
-| Hardcoded constants | Low | `infoCard.ts` | P3 |
+**File: `src/commands/chat_ai.ts` line 12:**
+```typescript
+const chatHistory: { [key: string]: [{ "role": string, "content": string }] } = {};
+```
+
+This module-level state:
+- Lost on bot restart
+- Not shared across bot instances (scaling issue)
+- Memory leak potential (only splices when exceeding 100 messages)
+
+#### 2.3.2 TikTok Client Global Variable
+
+**Severity: Low**
+
+**File: `src/index.ts` line 15:**
+```typescript
+let tiktok_client;
+```
+
+Declared at module scope but assigned in event handler (line 76). The variable is never used after assignment.
+
+### 2.4 Error Handling Gaps
+
+#### 2.4.1 Silent Error Swallowing
+
+**Severity: Medium**
+
+Some catch blocks suppress errors silently:
+
+**File: `src/commands/pterodactyl/shared/pterodactylApi.ts` lines 11-17:**
+```typescript
+export async function fetchServerResources(...): Promise<ServerResources | null> {
+    try {
+        // ...
+    } catch {
+        return null;  // Error details lost
+    }
+}
+```
+
+**File: `src/commands/pterodactyl/server_status.ts` line 99:**
+```typescript
+}).catch(() => {});  // Silent failure
+```
+
+#### 2.4.2 Inconsistent Error Response Format
+
+**Severity: Low**
+
+Error responses use different formats:
+- `buildError()` returns structured error with embeds
+- Some commands return plain strings on error
+- Some throw and let index.ts handle with `buildUnknownError()`
+
+### 2.5 Coupling Issues
+
+#### 2.5.1 Database Schema Coupling
+
+**Severity: Medium**
+
+**File: `src/helpers/database.ts`**
+
+The Database class is tightly coupled to pterodactyl feature:
+- Schema defined inline (lines 24-34)
+- Only `pterodactyl_servers` table exists
+- Class named generically but serves single feature
+
+### 2.6 Security Considerations
+
+#### 2.6.1 Environment Variable Non-Null Assertion
+
+**Severity: Medium**
+
+**File: `src/helpers/database.ts` line 139:**
+```typescript
+const key = Buffer.from(process.env.ENCRYPTION_KEY!, 'hex');
+```
+
+Non-null assertion (`!`) on `ENCRYPTION_KEY` could cause runtime crash if missing. This should be validated at startup.
 
 ---
 
 ## 3. Proposed Improvements
 
-### 3.1 Define Formal Command Interface (P0)
+### 3.1 Type Safety Improvements
 
-**File:** `src/helpers/interfaces.ts`
+#### 3.1.1 Create Formal Command Interface
+
+Add to `src/helpers/interfaces.ts`:
 
 ```typescript
-import {
-    ChatInputCommandInteraction,
-    Message,
-    SlashCommandBuilder,
-    EmbedBuilder,
-    AttachmentBuilder,
-    ActionRowBuilder
-} from 'discord.js';
-
-export interface CommandResponse {
-    content?: string;
-    embeds?: EmbedBuilder[];
-    files?: AttachmentBuilder[];
-    components?: ActionRowBuilder[];
-    ephemeral?: boolean;
-    isError?: boolean;
-}
-
-export interface CommandFullDesc {
-    description: string;
-    options: Array<{ name: string; description: string }>;
-}
-
 export interface Command {
     data: SlashCommandBuilder;
-    execute(
-        interaction: ChatInputCommandInteraction,
-        client: ExtendedClient
-    ): Promise<CommandResponse>;
+    execute(interaction: ChatInputCommandInteraction, bot: ExtendedClient): Promise<CommandResponse>;
+    fullDesc: {
+        description: string;
+        options: CommandOption[];
+    };
+    msgFlag?: MessageFlags;
+    executeReply?(message: Message, bot: ExtendedClient): Promise<CommandResponse>;
+    executeLegacy?(message: Message, bot: ExtendedClient): Promise<CommandResponse>;
+    setupCollector?(interaction: ChatInputCommandInteraction, message: Message): Promise<void>;
+}
 
-    // Optional methods
-    executeReply?: (message: Message, client: ExtendedClient) => Promise<CommandResponse>;
-    executeLegacy?: (message: Message, client: ExtendedClient) => Promise<CommandResponse>;
-    setupCollector?: (
-        interaction: ChatInputCommandInteraction,
-        message: Message
-    ) => Promise<void>;
+export interface CommandOption {
+    name: string;
+    description: string;
+}
 
-    // Optional properties
-    ephemeralDefer?: boolean;
-    fullDesc?: CommandFullDesc;
+export type CommandResponse =
+    | string
+    | { embeds: EmbedBuilder[]; files?: AttachmentBuilder[]; ephemeral?: boolean; isError?: boolean };
+```
+
+**Impact:**
+- Enables type-safe command registration
+- IDE autocomplete for command properties
+- Compile-time validation of command structure
+
+#### 3.1.2 Update ExtendedClient
+
+```typescript
+export interface ExtendedClient extends Client {
+    version?: string;
+    commands?: Collection<string, Command>;  // Changed from 'any'
 }
 ```
 
-**Update `buildCommands.ts`:**
-```typescript
-import { Command } from '../helpers/interfaces.js';
+### 3.2 Architectural Improvements
 
-client.commands = new Collection<string, Command>();
-const commands: Command[] = [];
+#### 3.2.1 Extract Repository Pattern for Database
+
+Create separate repository classes to decouple database access:
+
+```
+src/repositories/
+├── pterodactylServerRepository.ts
+└── baseRepository.ts
 ```
 
----
+**Benefits:**
+- Each feature owns its data layer
+- Easier to test with mock repositories
+- Schema changes isolated to single file
 
-### 3.2 Extract Chat History Service (P1)
+#### 3.2.2 Standardize Dependency Injection
 
-**New file:** `src/services/chatHistoryService.ts`
+Convert all commands to accept dependencies via factory function or constructor, following the pterodactyl pattern.
+
+### 3.3 State Management Improvements
+
+#### 3.3.1 Extract Chat History Service
+
+Move chat history to a dedicated service with optional persistence:
 
 ```typescript
-export interface ChatMessage {
-    role: 'user' | 'assistant';
-    content: string;
-}
-
+// src/services/chatHistoryService.ts
 export class ChatHistoryService {
     private history: Map<string, ChatMessage[]> = new Map();
-    private readonly MAX_HISTORY_PER_SERVER = 100;
-    private readonly MAX_SERVERS = 1000;
 
-    getHistory(serverId: string): ChatMessage[] {
-        return this.history.get(serverId) ?? [];
-    }
-
-    addMessage(serverId: string, message: ChatMessage): void {
-        // Enforce global limit
-        if (this.history.size >= this.MAX_SERVERS && !this.history.has(serverId)) {
-            const oldestKey = this.history.keys().next().value;
-            this.history.delete(oldestKey);
-        }
-
-        const history = this.getHistory(serverId);
-        history.push(message);
-
-        // Enforce per-server limit
-        if (history.length > this.MAX_HISTORY_PER_SERVER) {
-            history.splice(0, 2); // Remove oldest pair
-        }
-
-        this.history.set(serverId, history);
-    }
-
-    clearServer(serverId: string): void {
-        this.history.delete(serverId);
-    }
-
-    clearAll(): void {
-        this.history.clear();
-    }
-}
-
-// Singleton export
-export const chatHistoryService = new ChatHistoryService();
-```
-
-**Update `chat_ai.ts`:**
-```typescript
-import { chatHistoryService } from '../services/chatHistoryService.js';
-
-// Replace global chatHistory object usage with:
-const history = chatHistoryService.getHistory(serverId);
-chatHistoryService.addMessage(serverId, { role: 'user', content: userMessage });
-```
-
----
-
-### 3.3 Fix setupCollector Binding (P2)
-
-**File:** `src/commands/pterodactyl/master.ts`
-
-**Before:**
-```typescript
-setupCollector: new ServerStatus(
-    DatabasePool.getInstance().getConnection(),
-    new Caller()
-).setupCollector,
-```
-
-**After:**
-```typescript
-// Create factory function
-const getServerStatus = () => new ServerStatus(
-    DatabasePool.getInstance().getConnection(),
-    new Caller()
-);
-
-export default {
-    // ... existing code ...
-
-    async execute(interaction: ChatInputCommandInteraction) {
-        const subcommand = interaction.options.getSubcommand();
-
-        switch(subcommand) {
-            case 'manage':
-                return await getServerStatus().execute(interaction);
-            // ... other cases
-        }
-    },
-
-    setupCollector: async (
-        interaction: ChatInputCommandInteraction,
-        message: Message
-    ) => {
-        return getServerStatus().setupCollector(interaction, message);
-    }
+    addMessage(serverId: string, message: ChatMessage): void { /* ... */ }
+    getHistory(serverId: string): ChatMessage[] { /* ... */ }
+    clear(serverId: string): void { /* ... */ }
 }
 ```
 
----
+### 3.4 Error Handling Improvements
 
-### 3.4 Create Event Dispatcher Service (P2)
-
-**New file:** `src/services/commandDispatcher.ts`
+#### 3.4.1 Create Typed Errors
 
 ```typescript
-import { ChatInputCommandInteraction } from 'discord.js';
-import { Command, CommandResponse, ExtendedClient } from '../helpers/interfaces.js';
-import { buildError } from '../helpers/errorBuilder.js';
-
-type HookFunction = (command: Command, interaction: ChatInputCommandInteraction) => Promise<void>;
-
-export class CommandDispatcher {
-    private preExecuteHooks: HookFunction[] = [];
-    private postExecuteHooks: HookFunction[] = [];
-
-    onPreExecute(hook: HookFunction): void {
-        this.preExecuteHooks.push(hook);
-    }
-
-    onPostExecute(hook: HookFunction): void {
-        this.postExecuteHooks.push(hook);
-    }
-
-    async dispatch(
-        command: Command,
-        interaction: ChatInputCommandInteraction,
-        bot: ExtendedClient
-    ): Promise<CommandResponse> {
-        // Run pre-execute hooks
-        for (const hook of this.preExecuteHooks) {
-            await hook(command, interaction);
-        }
-
-        // Defer reply
-        const ephemeral = command.ephemeralDefer ?? false;
-        await interaction.deferReply({ ephemeral });
-
-        let response: CommandResponse;
-
-        try {
-            response = await command.execute(interaction, bot);
-        } catch (error) {
-            response = await buildError(interaction, error);
-        }
-
-        // Run post-execute hooks
-        for (const hook of this.postExecuteHooks) {
-            await hook(command, interaction);
-        }
-
-        return response;
+// src/helpers/errors.ts
+export class BongBotError extends Error {
+    constructor(
+        message: string,
+        public readonly code: string,
+        public readonly userFacing: boolean = true
+    ) {
+        super(message);
     }
 }
 
-export const commandDispatcher = new CommandDispatcher();
+export class ApiError extends BongBotError { /* ... */ }
+export class DatabaseError extends BongBotError { /* ... */ }
 ```
 
----
+#### 3.4.2 Add Logging to Silent Catch Blocks
 
-### 3.5 Create Message Handler Registry (P2)
-
-**New file:** `src/services/messageHandlerRegistry.ts`
+Replace silent catches with logged failures:
 
 ```typescript
-import { Message } from 'discord.js';
-import { ExtendedClient } from '../helpers/interfaces.js';
-
-interface MessageHandler {
-    commandName: string;
-    method: 'executeReply' | 'executeLegacy';
-    condition: (message: Message) => boolean;
+// Before
+} catch {
+    return null;
 }
 
-export class MessageHandlerRegistry {
-    private handlers: MessageHandler[] = [];
-
-    register(handler: MessageHandler): void {
-        this.handlers.push(handler);
-    }
-
-    async handle(message: Message, bot: ExtendedClient): Promise<any> {
-        for (const handler of this.handlers) {
-            if (handler.condition(message)) {
-                const command = bot.commands?.get(handler.commandName);
-                if (command && handler.method in command) {
-                    return (command as any)[handler.method](message, bot);
-                }
-            }
-        }
-        return null;
-    }
-}
-
-// Default configuration
-export const messageHandlerRegistry = new MessageHandlerRegistry();
-
-// Register default handlers
-messageHandlerRegistry.register({
-    commandName: 'create_quote',
-    method: 'executeReply',
-    condition: (message) => !message.content.replace(/<@!?\d+>/g, '').trim()
-});
-
-messageHandlerRegistry.register({
-    commandName: 'chat',
-    method: 'executeLegacy',
-    condition: (message) => !!message.content.replace(/<@!?\d+>/g, '').trim()
-});
-```
-
----
-
-### 3.6 Consolidate Caller Export Pattern (P3)
-
-**File:** `src/helpers/caller.ts`
-
-Remove the default export and use class-only:
-
-```typescript
-export class Caller {
-    async get<T>(url: string, headers?: Record<string, string>): Promise<T> { ... }
-    async post<T>(url: string, body: any, headers?: Record<string, string>): Promise<T> { ... }
-
-    // Static methods for convenience
-    static async get<T>(url: string, headers?: Record<string, string>): Promise<T> {
-        return new Caller().get(url, headers);
-    }
-
-    static async post<T>(url: string, body: any, headers?: Record<string, string>): Promise<T> {
-        return new Caller().post(url, body, headers);
-    }
-}
-
-// Remove: export default { get, post };
-```
-
----
-
-### 3.7 Add Command Validation at Build Time
-
-**File:** `src/commands/buildCommands.ts`
-
-```typescript
-import { Command } from '../helpers/interfaces.js';
-
-function validateCommand(command: any): command is Command {
-    return (
-        command.data?.name &&
-        typeof command.execute === 'function' &&
-        command.fullDesc?.description !== undefined
-    );
-}
-
-for (const command of commandsArray) {
-    if (!validateCommand(command)) {
-        throw new Error(`Invalid command structure: ${command.data?.name || 'unknown'}`);
-    }
-    client.commands.set(command.data.name, command);
+// After
+} catch (error) {
+    this.logger.debug(`Failed to fetch resources: ${error.message}`);
+    return null;
 }
 ```
 
----
+### 3.5 Configuration Improvements
 
-### 3.8 Configuration-Driven Repository Info
+#### 3.5.1 Validate All Required Variables at Startup
 
-**File:** `src/config/index.ts`
+Extend `validateRequiredConfig()` to include `ENCRYPTION_KEY` validation with format checking.
 
-```typescript
-github: {
-    owner: process.env.GITHUB_OWNER || 'Mirasii',
-    repo: process.env.GITHUB_REPO || 'BongBot',
-}
-```
+### 3.6 Testing Improvements
 
----
+#### 3.6.1 Create Test Utilities Module
 
-### 3.9 Implementation Priority Matrix
-
-| Priority | Improvement | Effort | Impact | Risk |
-|----------|-------------|--------|--------|------|
-| P0 | Define Command interface | Low | High | Low |
-| P1 | Extract ChatHistoryService | Medium | High | Low |
-| P1 | Apply Command interface to buildCommands | Low | High | Low |
-| P2 | Fix setupCollector binding | Low | Medium | Low |
-| P2 | Create CommandDispatcher | Medium | Medium | Medium |
-| P2 | Create MessageHandlerRegistry | Medium | Medium | Low |
-| P3 | Consolidate Caller exports | Low | Low | Low |
-| P3 | Add command validation | Low | Medium | Low |
-| P3 | Config-driven constants | Low | Low | Low |
+Consolidate test helpers into `tests/utils/mockFactories.ts` and remove `globalThis` usage.
 
 ---
 
-### 3.10 Scalability Considerations for Sharding
+## Summary
 
-Current state assessment for sharding readiness:
-
-| Component | Sharding Ready | Notes |
-|-----------|----------------|-------|
-| Commands | Yes | Stateless execution |
-| Chat History | No | In-memory, per-process |
-| Database | Partially | SQLite not suitable for concurrent writes |
-| TikTok Notifier | No | Would send duplicate notifications |
-| Logger | No | File per session, not shared |
-
-**Recommendations for sharding:**
-1. Move chat history to Redis or shared database
-2. Replace SQLite with PostgreSQL or use SQLite in WAL mode with single writer
-3. Implement distributed lock for TikTok notifications
-4. Use centralized logging service (e.g., Winston with transport)
-
----
-
-## 4. Testing Architecture
-
-### 4.1 Current Test Infrastructure
-
-- **Framework**: Jest with ESM support (`NODE_OPTIONS=--experimental-vm-modules`)
-- **HTTP Mocking**: MSW (Mock Service Worker)
-- **Test Structure**: Mirrors source structure in `tests/`
-
-### 4.2 Test Utilities
-
-| Utility | Purpose |
-|---------|---------|
-| `tests/setup.ts` | Global MSW lifecycle |
-| `tests/utils/testSetup.ts` | Reusable MSW setup functions |
-| `tests/utils/commandTestUtils.ts` | Mock factories for interactions/clients |
-| `tests/mocks/handlers.ts` | Default HTTP handlers |
-
-### 4.3 Testing Pattern for DI Commands
-
-The Pterodactyl tests demonstrate the preferred pattern:
-
-```typescript
-const mockDb = { addServer: jest.fn(), ... };
-const caller = new Caller();
-const instance = new RegisterServer(mockDb as any, caller);
-```
-
----
-
-## 5. Dependency Graph
-
-```
-src/index.ts
-|-- discord.js (Client, Events)
-|-- src/config/index.ts
-|-- src/helpers/logging.ts
-|-- src/helpers/errorBuilder.ts
-|   |-- src/helpers/logging.ts
-|   +-- src/helpers/embedBuilder.ts
-|       +-- src/helpers/randomFile.ts
-|-- src/helpers/infoCard.ts
-|-- src/commands/buildCommands.ts
-|   +-- [All command modules]
-+-- src/commands/naniko.ts (TikTok)
-
-Command Dependencies:
-|-- Pterodactyl commands --> Database, Caller, shared utilities
-|-- Quote commands --> Caller, QuoteBuilder
-|-- Chat AI --> Caller, EmbedBuilder, Google AI SDK
-+-- Media commands --> EmbedBuilder, config
-```
-
----
-
-## 6. Critical Files Reference
-
-If implementing the proposed improvements, prioritize these files:
-
-| File | Priority | Change |
-|------|----------|--------|
-| `src/helpers/interfaces.ts` | P0 | Add Command interface and CommandResponse type definitions |
-| `src/commands/buildCommands.ts` | P0 | Add type safety and validation to command registration |
-| `src/commands/chat_ai.ts` | P1 | Extract state to ChatHistoryService |
-| `src/commands/pterodactyl/master.ts` | P2 | Fix setupCollector binding |
-| `src/index.ts` | P2 | Extract event handler logic into dedicated service class |
-| `src/helpers/caller.ts` | P3 | Consolidate to single export pattern (class-only) |
-
----
-
-## Architectural Strengths to Preserve
-
-While addressing the smells above, maintain these existing strengths:
+### Strengths to Preserve
 
 1. **Clean Separation of Concerns** - Event listeners separate from command logic
 2. **Dependency Injection in Pterodactyl** - Excellent testability pattern to expand
@@ -933,8 +574,20 @@ While addressing the smells above, maintain these existing strengths:
 4. **SSRF Protection** - Private IP blocking in Caller
 5. **Centralized Configuration** - Fail-fast validation
 6. **Modular Command Structure** - Easy to add new commands
-7. **Shared Pterodactyl Utilities** - Good example of horizontal code organization
+7. **Comprehensive Test Coverage** - 99%+ coverage with proper mocking
+8. **Logging Service with Multiple Backends** - SQLite for production, file for development
+
+### Priority Improvements
+
+| Priority | Improvement | Effort | Impact |
+|----------|-------------|--------|--------|
+| **High** | Add formal Command interface | Low | High |
+| **High** | Validate ENCRYPTION_KEY at startup | Low | High |
+| **Medium** | Standardize DI across all commands | Medium | High |
+| **Medium** | Add logging to silent catch blocks | Low | Medium |
+| **Low** | Extract chat history to dedicated service | Medium | Medium |
+| **Low** | Consolidate Caller export patterns | Low | Low |
 
 ---
 
-*Generated by Code Architect Agent*
+*Last updated: January 2026*
