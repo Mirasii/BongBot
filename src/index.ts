@@ -34,7 +34,7 @@ bot.on('interactionCreate', async (interaction: Interaction) => {
             await interaction.deleteReply(); 
         }
         const message = await interaction.followUp(response);
-        if (command && 'setupCollector' in command) {
+        if (command && typeof (command as any).setupCollector=== 'function') {
             await (command as any).setupCollector(interaction, message);
         }
     } catch (error) {
