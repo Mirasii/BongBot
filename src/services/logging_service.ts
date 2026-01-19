@@ -56,8 +56,8 @@ class LoggerService {
     }
 
     closeAll(): void {
-        for (const db of this.connections.values()) {
-            db.close?.();
+        for (const logger of this.connections.values()) {
+            logger.close?.();
         }
         this.connections.clear();
     }

@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, Message, MessageFlags } from 'discord.js';
 import RegisterServer from './register_server.js';
 import ListServers from './list_servers.js';
-import ServerStatus, * as serverStatus from './server_status.js';
+import ServerStatus from './server_status.js';
 import UpdateServer from './update_server.js';
 import RemoveServer from './remove_server.js';
 import DatabasePool from '../../services/databasePool.js';
