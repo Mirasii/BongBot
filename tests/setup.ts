@@ -1,7 +1,6 @@
 
 import { server } from './mocks/server.js';
 import { jest } from '@jest/globals';
-import path from 'path';
 
 jest.mock('fs', () => ({
     readFileSync: jest.fn()
