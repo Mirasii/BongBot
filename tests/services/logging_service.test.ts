@@ -47,6 +47,7 @@ describe('LoggingService', () => {
         } else {
             delete process.env.DEFAULT_LOGGER;
         }
+        LOGGER.closeAll();
     });
 
     describe('default getter', () => {
