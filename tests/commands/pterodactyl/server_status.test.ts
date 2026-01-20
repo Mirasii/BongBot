@@ -2007,5 +2007,32 @@ describe('server_status command', () => {
                 expect(result.components.length).toBeLessThanOrEqual(5);
             }
         });
+
+        it('should return early from setupCollector if subcommand is not manage', () => {
+            const nonManageInteraction = {
+                ...mockInteraction,
+                options: {
+                    getString: jest.fn((key: string) => null),
+                    getSubcommand: jest.fn(() => 'list'), // Not 'manage'
+                },
+            };
+
+            const collectorCallbacks: any = {};
+            const testMockMessage = {
+                createMessageComponentCollector: jest.fn().mockReturnValue({
+                    on: jest.fn((event: string, callback: any) => {
+                        collectorCallbacks[event] = callback;
+                    }),
+                }),
+                components: [],
+                edit: jest.fn().mockResolvedValue(undefined),
+            };
+
+            setupCollector(nonManageInteraction, testMockMessage);
+
+            // createMessageComponentCollector should NOT have been called
+            expect(testMockMessage.createMessageComponentCollector).not.toHaveBeenCalled();
+        });
+
     });
 });

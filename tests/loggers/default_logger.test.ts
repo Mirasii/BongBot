@@ -224,5 +224,35 @@ describe('DefaultLogger', () => {
                 expect.stringContaining('Stack trace content')
             );
         });
+
+        it('should handle logLegacy function throwing error', async () => {
+            mockRun.mockImplementation(() => {
+                throw new Error('DB insert failed');
+            });
+            // Make access throw to trigger a failure in logLegacy before we even get to writeFile
+            mockAccess.mockRejectedValue(new Error('Access error'));
+            mockWriteFile.mockRejectedValue(new Error('Write failed'));
+
+            const logger = new DefaultLogger();
+            logger.info('Test message');
+
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            // Should log that legacy fallback failed
+            expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to log to legacy file:', expect.any(Error));
+        });
+
+        it('should handle error object without message property', () => {
+            const logger = new DefaultLogger();
+            // Create an error-like object without message
+            const errorWithoutMessage = { stack: 'Custom stack trace' } as unknown as Error;
+            Object.defineProperty(errorWithoutMessage, 'message', { value: '' });
+
+            logger.error(errorWithoutMessage);
+
+            // The error.message || error fallback should use the error object itself
+            expect(mockRun).toHaveBeenCalledWith(expect.any(String), 'Custom stack trace', 'ERROR', 'test-session-id-123');
+            expect(consoleErrorSpy).toHaveBeenCalled();
+        });
     });
 });

@@ -1,17 +1,1249 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="6" failures="0" errors="0" time="1.732">
-  <testsuite name="tests\commands\arab.test.ts" errors="0" failures="0" skipped="0" timestamp="2025-11-06T21:55:49" time="1.472" tests="6">
-    <testcase classname="arab command › arab command structure" name="should have a data property of SlashCommandBuilder type" time="0.002">
+<testsuites name="jest tests" tests="570" failures="0" errors="0" time="7.557">
+  <testsuite name="tests/commands/seachicken.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:50" time="1.086" tests="6">
+    <testcase classname="sea command › sea command structure" name="should have a data property of SlashCommandBuilder type" time="0.002">
     </testcase>
-    <testcase classname="arab command › arab command structure" name="should have a name of &quot;arab&quot;" time="0">
+    <testcase classname="sea command › sea command structure" name="should have a name of &quot;sea&quot;" time="0">
+    </testcase>
+    <testcase classname="sea command › sea command structure" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="sea command › sea command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="sea command › sea command execution" name="should return an object with SeaChicken.mp4 as attachment" time="0.001">
+    </testcase>
+    <testcase classname="sea command › sea command execution" name="should handle errors gracefully" time="0.027">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/hentai.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:50" time="1.086" tests="6">
+    <testcase classname="hentai command › hentai command structure" name="should have a data property of SlashCommandBuilder type" time="0.004">
+    </testcase>
+    <testcase classname="hentai command › hentai command structure" name="should have a name of &quot;hentai&quot;" time="0.001">
+    </testcase>
+    <testcase classname="hentai command › hentai command structure" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="hentai command › hentai command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="hentai command › hentai command execution" name="should return an object with Hentai.webm as attachment" time="0.001">
+    </testcase>
+    <testcase classname="hentai command › hentai command execution" name="should handle errors gracefully" time="0.028">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/yes.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:50" time="1.087" tests="6">
+    <testcase classname="yes command › yes command structure" name="should have a data property of SlashCommandBuilder type" time="0.002">
+    </testcase>
+    <testcase classname="yes command › yes command structure" name="should have a name of &quot;yes&quot;" time="0.001">
+    </testcase>
+    <testcase classname="yes command › yes command structure" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="yes command › yes command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="yes command › yes command execution" name="should return an object with yes.mp4 as attachment" time="0">
+    </testcase>
+    <testcase classname="yes command › yes command execution" name="should handle errors gracefully" time="0.025">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/quotedb_get_random.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:51" time="0.396" tests="9">
+    <testcase classname="command structure" name="should have a data property" time="0.001">
+    </testcase>
+    <testcase classname="command structure" name="should have a name of &quot;random_quotes&quot;" time="0.001">
+    </testcase>
+    <testcase classname="command structure" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="quotedb_get_random command execution" name="should return a single random quote by default" time="0.001">
+    </testcase>
+    <testcase classname="quotedb_get_random command execution" name="should return the specified number of random quotes" time="0.001">
+    </testcase>
+    <testcase classname="quotedb_get_random command execution" name="should return an error if more than 5 quotes are requested" time="0">
+    </testcase>
+    <testcase classname="quotedb_get_random command execution" name="should return an empty quote embed if no quotes are found" time="0.005">
+    </testcase>
+    <testcase classname="quotedb_get_random command execution" name="should handle API errors" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/chat_ai.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:51" time="0.499" tests="19">
+    <testcase classname="chat command structure" name="should have a data property of SlashCommandBuilder type" time="0.002">
+    </testcase>
+    <testcase classname="chat command structure" name="should have a name of &quot;chat&quot;" time="0">
+    </testcase>
+    <testcase classname="chat command structure" name="should have a description" time="0.001">
+    </testcase>
+    <testcase classname="chat command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="chat_ai command execution" name="should call OpenAI API when it is active" time="0.012">
+    </testcase>
+    <testcase classname="chat_ai command execution" name="should call Google AI API when it is active" time="0.006">
+    </testcase>
+    <testcase classname="chat_ai command execution" name="should return a message when no AI is active" time="0.002">
+    </testcase>
+    <testcase classname="chat_ai command execution" name="should handle legacy commands" time="0.002">
+    </testcase>
+    <testcase classname="chat_ai command execution" name="should throw an error when OpenAI API call fails" time="0.003">
+    </testcase>
+    <testcase classname="chat_ai command execution" name="should handle Google AI image generation failure and fallback to random file" time="0.003">
+    </testcase>
+    <testcase classname="chat_ai command execution" name="should handle multiple messages and maintain history" time="0.01">
+    </testcase>
+    <testcase classname="chat_ai command execution" name="should handle history limit and splice old messages" time="0.035">
+    </testcase>
+    <testcase classname="chat_ai command execution" name="should throw error when Google AI returns no text response" time="0.001">
+    </testcase>
+    <testcase classname="chat_ai command execution" name="should use globalName when nickname is null" time="0.002">
+    </testcase>
+    <testcase classname="chat_ai command execution" name="should use globalName in legacy message when nickname is null" time="0">
+    </testcase>
+    <testcase classname="chat_ai command execution" name="should throw error when input is null" time="0.001">
+    </testcase>
+    <testcase classname="chat_ai command execution" name="should throw error when serverId is null" time="0">
+    </testcase>
+    <testcase classname="chat_ai command execution" name="should throw error when authorId is null" time="0">
+    </testcase>
+    <testcase classname="chat_ai command execution" name="should throw error when Google AI API key is not set" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/vape.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:51" time="0.329" tests="6">
+    <testcase classname="vape command › vape command structure" name="should have a data property of SlashCommandBuilder type" time="0.002">
+    </testcase>
+    <testcase classname="vape command › vape command structure" name="should have a name of &quot;vape&quot;" time="0.001">
+    </testcase>
+    <testcase classname="vape command › vape command structure" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="vape command › vape command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="vape command › vape command execution" name="should return an object with vape.mp4 as attachment" time="0.002">
+    </testcase>
+    <testcase classname="vape command › vape command execution" name="should handle errors gracefully" time="0.004">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/pterodactyl/server_status.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:51" time="0.775" tests="61">
+    <testcase classname="server_status command › command methods" name="should have a setupCollector method" time="0.001">
+    </testcase>
+    <testcase classname="server_status command › execute method - single server users" name="should return error if user has no registered servers" time="0.001">
+    </testcase>
+    <testcase classname="server_status command › execute method - single server users" name="should return error if servers is null" time="0">
+    </testcase>
+    <testcase classname="server_status command › execute method - single server users" name="should fetch and display server status for single server user" time="0.041">
+    </testcase>
+    <testcase classname="server_status command › execute method - single server users" name="should include control components in response" time="0.004">
+    </testcase>
+    <testcase classname="server_status command › execute method - multiple server users" name="should require server_name parameter when user has multiple servers" time="0.001">
+    </testcase>
+    <testcase classname="server_status command › execute method - multiple server users" name="should work with server_name parameter" time="0.003">
+    </testcase>
+    <testcase classname="server_status command › execute method - multiple server users" name="should return error for invalid server_name" time="0">
+    </testcase>
+    <testcase classname="server_status command › server state display" name="should display running server with resource info" time="0.002">
+    </testcase>
+    <testcase classname="server_status command › server state display" name="should display offline server without resource info" time="0.004">
+    </testcase>
+    <testcase classname="server_status command › server state display" name="should handle unknown server state" time="0.002">
+    </testcase>
+    <testcase classname="server_status command › error handling" name="should handle database error" time="0.001">
+    </testcase>
+    <testcase classname="server_status command › error handling" name="should handle network errors" time="0">
+    </testcase>
+    <testcase classname="server_status command › error handling" name="should handle empty server list" time="0.002">
+    </testcase>
+    <testcase classname="server_status command › helper functions - formatting" name="should format bytes correctly" time="0.003">
+    </testcase>
+    <testcase classname="server_status command › helper functions - formatting" name="should format CPU percentage correctly" time="0.002">
+    </testcase>
+    <testcase classname="server_status command › helper functions - formatting" name="should format uptime in hours and minutes" time="0.002">
+    </testcase>
+    <testcase classname="server_status command › status emojis" name="should show green circle for running state" time="0.002">
+    </testcase>
+    <testcase classname="server_status command › status emojis" name="should show red circle for offline state" time="0.002">
+    </testcase>
+    <testcase classname="server_status command › status emojis" name="should show yellow circle for starting state" time="0.002">
+    </testcase>
+    <testcase classname="server_status command › setupCollector method" name="should setup a collector with correct timeout" time="0">
+    </testcase>
+    <testcase classname="server_status command › setupCollector method" name="should reject interactions from different users" time="0.001">
+    </testcase>
+    <testcase classname="server_status command › setupCollector method" name="should handle button interaction with stop action" time="0.004">
+    </testcase>
+    <testcase classname="server_status command › setupCollector method" name="should handle select menu interaction with start action" time="0.006">
+    </testcase>
+    <testcase classname="server_status command › setupCollector method" name="should handle restart action" time="0.005">
+    </testcase>
+    <testcase classname="server_status command › setupCollector method" name="should handle stop all action" time="0.003">
+    </testcase>
+    <testcase classname="server_status command › setupCollector method" name="should handle stop all with partial failures" time="0.004">
+    </testcase>
+    <testcase classname="server_status command › setupCollector method" name="should handle stop all when all servers fail" time="0.004">
+    </testcase>
+    <testcase classname="server_status command › setupCollector method" name="should handle server command failure" time="0.003">
+    </testcase>
+    <testcase classname="server_status command › setupCollector method" name="should handle database server not found" time="0.001">
+    </testcase>
+    <testcase classname="server_status command › setupCollector method" name="should handle collector error gracefully" time="0">
+    </testcase>
+    <testcase classname="server_status command › setupCollector method" name="should clear components when collector ends" time="0.001">
+    </testcase>
+    <testcase classname="server_status command › setupCollector method" name="should handle message.edit rejection on collector end" time="0.001">
+    </testcase>
+    <testcase classname="server_status command › setupCollector method" name="should handle unknown component type when disabling components" time="0.002">
+    </testcase>
+    <testcase classname="server_status command › dependency injection" name="should use the injected database" time="0.002">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle fetchServers error when response not ok" time="0.002">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle fetchServerResources returning null when response not ok" time="0.001">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle sendServerCommand catch block" time="0.004">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle uptime less than 1 hour" time="0.002">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should show stopping emoji for stopping state" time="0.001">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle StringSelectMenu when disabling components" time="0.003">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle refreshStatus when dbServer is null" time="0.001">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should poll until state changes with setInterval" time="0.007">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should trigger setInterval callback when polling" time="0.004">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should truncate long server names in control components" time="0.002">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle poll timeout (max attempts reached)" time="0.089">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle poll with null resource response" time="0.005">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle refreshStatus error in catch block" time="0.001">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle multiple servers with different states for control components" time="0.003">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle followUp error in catch block silently" time="0.001">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle dbServer without id in component interaction" time="0.001">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle unknown action in replyMessage lookup" time="0.003">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle error with undefined dbServerId (no refreshStatus call)" time="0.001">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle servers with all offline states (no stop all button)" time="0.002">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle many servers creating multiple menu rows" time="0.016">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle refreshStatus with running server and resource state" time="0.004">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle servers with unknown state (not running/offline)" time="0.002">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle refreshStatus with non-running server state" time="0.007">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should handle createControlComponents with no valid options (all unknown states)" time="0.002">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should limit menu rows to 4 and add stop all button as 5th row" time="0.056">
+    </testcase>
+    <testcase classname="server_status command › edge cases and error paths" name="should return early from setupCollector if subcommand is not manage" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/classic.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:51" time="0.348" tests="6">
+    <testcase classname="classic command › classic command structure" name="should have a data property of SlashCommandBuilder type" time="0.001">
+    </testcase>
+    <testcase classname="classic command › classic command structure" name="should have a name of &quot;classic&quot;" time="0">
+    </testcase>
+    <testcase classname="classic command › classic command structure" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="classic command › classic command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="classic command › classic command execution" name="should return an object with classic.mp4 as attachment" time="0.004">
+    </testcase>
+    <testcase classname="classic command › classic command execution" name="should handle errors gracefully" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/club_kid.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:52" time="0.364" tests="7">
+    <testcase classname="club_kid command structure" name="should have a data property of SlashCommandBuilder type" time="0.001">
+    </testcase>
+    <testcase classname="club_kid command structure" name="should have a name of &quot;club_kid&quot;" time="0.001">
+    </testcase>
+    <testcase classname="club_kid command structure" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="club_kid command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="club_kid command › execution" name="should return a random video file from the clubkid directory" time="0.001">
+    </testcase>
+    <testcase classname="club_kid command › execution" name="should handle case when no mp4 files are found" time="0">
+    </testcase>
+    <testcase classname="club_kid command › execution" name="should abstract errors with buildError function" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/funk.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:52" time="0.367" tests="6">
+    <testcase classname="funk command › funk command structure" name="should have a data property of SlashCommandBuilder type" time="0.001">
+    </testcase>
+    <testcase classname="funk command › funk command structure" name="should have a name of &quot;funk&quot;" time="0">
+    </testcase>
+    <testcase classname="funk command › funk command structure" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="funk command › funk command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="funk command › funk command execution" name="should return an object with funk.mp4 as attachment" time="0.004">
+    </testcase>
+    <testcase classname="funk command › funk command execution" name="should handle errors gracefully" time="0.004">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/userinfo.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:52" time="0.387" tests="10">
+    <testcase classname="command structure" name="should have a data property" time="0">
+    </testcase>
+    <testcase classname="command structure" name="should have a name of &quot;usercard&quot;" time="0">
+    </testcase>
+    <testcase classname="command structure" name="should have a description" time="0.001">
+    </testcase>
+    <testcase classname="command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="userinfo command execution" name="should return info card for the interaction user if no target is provided" time="0.002">
+    </testcase>
+    <testcase classname="userinfo command execution" name="should return info card for the target user if provided" time="0.001">
+    </testcase>
+    <testcase classname="userinfo command execution" name="should return error message when not in a guild" time="0">
+    </testcase>
+    <testcase classname="userinfo command execution" name="should show &quot;Yes&quot; when user is a bot" time="0.001">
+    </testcase>
+    <testcase classname="userinfo command execution" name="should show &quot;None&quot; when member has no roles" time="0">
+    </testcase>
+    <testcase classname="userinfo command execution" name="should handle errors and return error response" time="0.004">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/dance.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:52" time="0.327" tests="6">
+    <testcase classname="dance command › dance command structure" name="should have a data property of SlashCommandBuilder type" time="0.009">
+    </testcase>
+    <testcase classname="dance command › dance command structure" name="should have a name of &quot;dance&quot;" time="0">
+    </testcase>
+    <testcase classname="dance command › dance command structure" name="should have a description" time="0.001">
+    </testcase>
+    <testcase classname="dance command › dance command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="dance command › dance command execution" name="should return an object with dance.mp4 as attachment" time="0.001">
+    </testcase>
+    <testcase classname="dance command › dance command execution" name="should handle errors gracefully" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/pterodactyl/shared/serverControlComponents.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:52" time="0.331" tests="16">
+    <testcase classname="serverControlComponents › buildServerControlComponents" name="should build start option for offline servers" time="0.001">
+    </testcase>
+    <testcase classname="serverControlComponents › buildServerControlComponents" name="should build restart and stop options for running servers" time="0">
+    </testcase>
+    <testcase classname="serverControlComponents › buildServerControlComponents" name="should add stop all button when any server is running" time="0.001">
+    </testcase>
+    <testcase classname="serverControlComponents › buildServerControlComponents" name="should not add stop all button when no servers are running" time="0">
+    </testcase>
+    <testcase classname="serverControlComponents › buildServerControlComponents" name="should handle unknown server state" time="0.001">
+    </testcase>
+    <testcase classname="serverControlComponents › buildServerControlComponents" name="should handle null resources" time="0">
+    </testcase>
+    <testcase classname="serverControlComponents › buildServerControlComponents" name="should truncate long server names" time="0">
+    </testcase>
+    <testcase classname="serverControlComponents › buildServerControlComponents" name="should create multiple menu rows when many servers exist" time="0.001">
+    </testcase>
+    <testcase classname="serverControlComponents › buildServerControlComponents" name="should handle empty servers array" time="0">
+    </testcase>
+    <testcase classname="serverControlComponents › buildServerControlComponents" name="should handle mixed server states" time="0.001">
+    </testcase>
+    <testcase classname="serverControlComponents › disableAllComponents" name="should disable StringSelect components" time="0">
+    </testcase>
+    <testcase classname="serverControlComponents › disableAllComponents" name="should disable Button components" time="0.001">
+    </testcase>
+    <testcase classname="serverControlComponents › disableAllComponents" name="should handle multiple buttons in a row" time="0">
+    </testcase>
+    <testcase classname="serverControlComponents › disableAllComponents" name="should return row as-is for unknown component types" time="0">
+    </testcase>
+    <testcase classname="serverControlComponents › disableAllComponents" name="should handle empty components array" time="0.001">
+    </testcase>
+    <testcase classname="serverControlComponents › disableAllComponents" name="should handle mixed component types across rows" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/naniko.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:52" time="0.269" tests="39">
+    <testcase classname="TikTokLiveNotifier - without TIKTOK_USERNAME" name="should return early if TIKTOK_USERNAME is not set" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › constructor" name="should throw error if LIVE_DISPLAY_NAME is missing" time="0.01">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › constructor" name="should throw error for invalid time format" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › constructor" name="should throw error for time out of range" time="0">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › constructor" name="should use default time values if not set" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › constructor" name="should initialize with client and logger" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › constructor" name="should create embed card with correct properties" time="0.002">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › constructor" name="should not include Twitch link when TWITCH_STREAM is not set" time="0">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › constructor" name="should include Twitch link when TWITCH_STREAM is set" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › constructor" name="should handle TWITCH_STREAM set but TWITCH_USERNAME undefined" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › constructor" name="should schedule cron job" time="0">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › constructor" name="should parse multiple channel IDs from environment" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › constructor" name="should handle undefined channel IDs" time="0">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › constructor" name="should handle empty string channel IDs" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › constructor" name="should handle client with undefined user" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › fetchAvatarFromProfile" name="should fetch avatar from TikTok profile with only avatarLarger" time="0.005">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › fetchAvatarFromProfile" name="should use avatarMedium if avatarLarger is not available" time="0.003">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › fetchAvatarFromProfile" name="should handle fetch response not ok" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › fetchAvatarFromProfile" name="should handle missing script tag in HTML" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › fetchAvatarFromProfile" name="should handle invalid JSON in script tag" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › fetchAvatarFromProfile" name="should handle missing avatar data in parsed JSON" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › fetchAvatarFromProfile" name="should handle partial JSON structure with missing user" time="0.002">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › fetchAvatarFromProfile" name="should handle fetch throwing an error" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › lockImmutables" name="should freeze internal objects" time="0">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › checkLive - scheduled task" name="should check if user is live when scheduled" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › checkLive - scheduled task" name="should handle user not online error gracefully" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › checkLive - scheduled task" name="should catch and log other errors" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › checkLive - scheduled task" name="should catch and log non-Error values as Error" time="0">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › checkLive - scheduled task" name="should not send notification if already sent today" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › checkLive - scheduled task" name="should send notification to configured channels when live" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › checkLive - scheduled task" name="should log error when no channel IDs configured" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › checkLive - scheduled task" name="should handle channel fetch failure" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › checkLive - scheduled task" name="should handle non-text-based channel" time="0.002">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › checkLive - scheduled task" name="should handle channel without send method" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › checkLive - scheduled task" name="should handle channel with send property that is not a function" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › checkLive - scheduled task" name="should handle channel send throwing an error" time="0.001">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › checkLive - scheduled task" name="should handle channel send throwing a non-Error value" time="0.002">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › checkLive - scheduled task" name="should return early if connect returns falsy" time="0">
+    </testcase>
+    <testcase classname="TikTokLiveNotifier › checkLive - scheduled task" name="should clear dayCheck map on new day" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/cherry.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:52" time="0.386" tests="6">
+    <testcase classname="cherry command › cherry command structure" name="should have a data property of SlashCommandBuilder type" time="0">
+    </testcase>
+    <testcase classname="cherry command › cherry command structure" name="should have a name of &quot;cherry&quot;" time="0">
+    </testcase>
+    <testcase classname="cherry command › cherry command structure" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="cherry command › cherry command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="cherry command › cherry command execution" name="should return an object with cherry.mp4 as attachment" time="0.008">
+    </testcase>
+    <testcase classname="cherry command › cherry command execution" name="should handle errors gracefully" time="0.021">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/pterodactyl/master.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:52" time="0.359" tests="22">
+    <testcase classname="pterodactyl master command" name="should export a command object" time="0.001">
+    </testcase>
+    <testcase classname="pterodactyl master command" name="should have data property with SlashCommandBuilder" time="0.001">
+    </testcase>
+    <testcase classname="pterodactyl master command" name="should have command name &quot;pterodactyl&quot;" time="0">
+    </testcase>
+    <testcase classname="pterodactyl master command" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="pterodactyl master command" name="should have execute method" time="0.001">
+    </testcase>
+    <testcase classname="pterodactyl master command" name="should have setupCollector method" time="0">
+    </testcase>
+    <testcase classname="pterodactyl master command" name="should call setupCollector and delegate to ServerStatus" time="0.007">
+    </testcase>
+    <testcase classname="pterodactyl master command" name="should have fullDesc property" time="0">
+    </testcase>
+    <testcase classname="pterodactyl master command" name="should have 5 subcommands" time="0.001">
+    </testcase>
+    <testcase classname="pterodactyl master command" name="should have register subcommand" time="0">
+    </testcase>
+    <testcase classname="pterodactyl master command" name="should have list subcommand" time="0.001">
+    </testcase>
+    <testcase classname="pterodactyl master command" name="should have manage subcommand" time="0">
+    </testcase>
+    <testcase classname="pterodactyl master command" name="should have update subcommand" time="0.001">
+    </testcase>
+    <testcase classname="pterodactyl master command" name="should have remove subcommand" time="0">
+    </testcase>
+    <testcase classname="pterodactyl master command" name="register subcommand should have required options" time="0">
+    </testcase>
+    <testcase classname="pterodactyl master command" name="update subcommand should have optional url and api_key options" time="0.001">
+    </testcase>
+    <testcase classname="pterodactyl master command › execute method" name="should call register_server execute for register subcommand" time="0">
+    </testcase>
+    <testcase classname="pterodactyl master command › execute method" name="should call list_servers execute for list subcommand" time="0">
+    </testcase>
+    <testcase classname="pterodactyl master command › execute method" name="should call server_status execute for manage subcommand" time="0">
+    </testcase>
+    <testcase classname="pterodactyl master command › execute method" name="should call update_server execute for update subcommand" time="0.005">
+    </testcase>
+    <testcase classname="pterodactyl master command › execute method" name="should call remove_server execute for remove subcommand" time="0">
+    </testcase>
+    <testcase classname="pterodactyl master command › execute method" name="should return unknown subcommand message for invalid subcommand" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/arab.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:53" time="0.389" tests="6">
+    <testcase classname="arab command › arab command structure" name="should have a data property of SlashCommandBuilder type" time="0.001">
+    </testcase>
+    <testcase classname="arab command › arab command structure" name="should have a name of &quot;arab&quot;" time="0.002">
     </testcase>
     <testcase classname="arab command › arab command structure" name="should have a description" time="0">
     </testcase>
-    <testcase classname="arab command › arab command structure" name="should have an execute method" time="0.001">
+    <testcase classname="arab command › arab command structure" name="should have an execute method" time="0">
     </testcase>
-    <testcase classname="arab command › arab command execution" name="should return an object with arab.mp4 as attachment" time="0.002">
+    <testcase classname="arab command › arab command execution" name="should return an object with arab.mp4 as attachment" time="0.001">
     </testcase>
-    <testcase classname="arab command › arab command execution" name="should handle errors gracefully" time="0.036">
+    <testcase classname="arab command › arab command execution" name="should handle errors gracefully" time="0.004">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/buildCommands.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:53" time="0.287" tests="7">
+    <testcase classname="buildCommands" name="should create a commands collection on the client" time="0.001">
+    </testcase>
+    <testcase classname="buildCommands" name="should add all commands to the client commands collection" time="0">
+    </testcase>
+    <testcase classname="buildCommands" name="should set commands with correct names as keys" time="0">
+    </testcase>
+    <testcase classname="buildCommands" name="should return an array of command data in JSON format" time="0.001">
+    </testcase>
+    <testcase classname="buildCommands" name="should return commands with name property" time="0.006">
+    </testcase>
+    <testcase classname="buildCommands" name="should store command objects in the collection" time="0">
+    </testcase>
+    <testcase classname="buildCommands" name="should handle all 30 commands without errors" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/quotedb_post.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:53" time="0.301" tests="11">
+    <testcase classname="command structure" name="should have a data property" time="0.001">
+    </testcase>
+    <testcase classname="command structure" name="should have a name of &quot;create_quote&quot;" time="0">
+    </testcase>
+    <testcase classname="command structure" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="command structure" name="should have an execute method" time="0.001">
+    </testcase>
+    <testcase classname="quotedb_post command execution" name="should successfully create a quote via slash command" time="0.001">
+    </testcase>
+    <testcase classname="quotedb_post command execution" name="should handle error when creating a quote via slash command" time="0">
+    </testcase>
+    <testcase classname="quotedb_post command execution" name="should successfully create a quote via reply" time="0.001">
+    </testcase>
+    <testcase classname="quotedb_post command execution" name="should return message if no reply reference" time="0">
+    </testcase>
+    <testcase classname="quotedb_post command execution" name="should return message if replied message is empty or inaccessible" time="0.001">
+    </testcase>
+    <testcase classname="quotedb_post command execution" name="should handle error when creating a quote via reply" time="0">
+    </testcase>
+    <testcase classname="quotedb_post command execution" name="should use username when member is null in reply" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/creeper.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:53" time="0.323" tests="6">
+    <testcase classname="creeper command › creeper command structure" name="should have a data property of SlashCommandBuilder type" time="0.001">
+    </testcase>
+    <testcase classname="creeper command › creeper command structure" name="should have a name of &quot;creeper&quot;" time="0.002">
+    </testcase>
+    <testcase classname="creeper command › creeper command structure" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="creeper command › creeper command structure" name="should have an execute method" time="0.001">
+    </testcase>
+    <testcase classname="creeper command › creeper command execution" name="should return an object with creeper.webm as attachment" time="0.002">
+    </testcase>
+    <testcase classname="creeper command › creeper command execution" name="should handle errors gracefully" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/callirap.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:53" time="0.317" tests="6">
+    <testcase classname="callirap command › callirap command structure" name="should have a data property of SlashCommandBuilder type" time="0">
+    </testcase>
+    <testcase classname="callirap command › callirap command structure" name="should have a name of &quot;callirap&quot;" time="0">
+    </testcase>
+    <testcase classname="callirap command › callirap command structure" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="callirap command › callirap command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="callirap command › callirap command execution" name="should return an object with callirap.mp4 as attachment" time="0.002">
+    </testcase>
+    <testcase classname="callirap command › callirap command execution" name="should handle errors gracefully" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/hoe.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:53" time="0.309" tests="6">
+    <testcase classname="hoe command › hoe command structure" name="should have a data property of SlashCommandBuilder type" time="0.001">
+    </testcase>
+    <testcase classname="hoe command › hoe command structure" name="should have a name of &quot;hoe&quot;" time="0">
+    </testcase>
+    <testcase classname="hoe command › hoe command structure" name="should have a description" time="0.001">
+    </testcase>
+    <testcase classname="hoe command › hoe command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="hoe command › hoe command execution" name="should return an object with hoe.mp4 as attachment" time="0.001">
+    </testcase>
+    <testcase classname="hoe command › hoe command execution" name="should handle errors gracefully" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/no.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:53" time="0.291" tests="6">
+    <testcase classname="no command › no command structure" name="should have a data property of SlashCommandBuilder type" time="0.001">
+    </testcase>
+    <testcase classname="no command › no command structure" name="should have a name of &quot;no&quot;" time="0.001">
+    </testcase>
+    <testcase classname="no command › no command structure" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="no command › no command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="no command › no command execution" name="should return an object with no.mp4 as attachment" time="0.001">
+    </testcase>
+    <testcase classname="no command › no command execution" name="should handle errors gracefully" time="0.005">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/cringe.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:53" time="0.352" tests="6">
+    <testcase classname="command structure" name="should have a data property" time="0.011">
+    </testcase>
+    <testcase classname="command structure" name="should have a name of &quot;cringe&quot;" time="0">
+    </testcase>
+    <testcase classname="command structure" name="should have a description" time="0.001">
+    </testcase>
+    <testcase classname="command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="cringe command execution" name="should return the correct file object" time="0.001">
+    </testcase>
+    <testcase classname="cringe command execution" name="should handle error scenarios" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/die.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:53" time="0.362" tests="6">
+    <testcase classname="die command › die command structure" name="should have a data property of SlashCommandBuilder type" time="0.001">
+    </testcase>
+    <testcase classname="die command › die command structure" name="should have a name of &quot;die&quot;" time="0">
+    </testcase>
+    <testcase classname="die command › die command structure" name="should have a description" time="0.001">
+    </testcase>
+    <testcase classname="die command › die command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="die command › die command execution" name="should return an object with die.mp4 as attachment" time="0.001">
+    </testcase>
+    <testcase classname="die command › die command execution" name="should handle errors gracefully" time="0.004">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/mirasi.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:54" time="0.351" tests="6">
+    <testcase classname="mirasi command › mirasi command structure" name="should have a data property of SlashCommandBuilder type" time="0.001">
+    </testcase>
+    <testcase classname="mirasi command › mirasi command structure" name="should have a name of &quot;mirasi&quot;" time="0.001">
+    </testcase>
+    <testcase classname="mirasi command › mirasi command structure" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="mirasi command › mirasi command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="mirasi command › mirasi command execution" name="should return an object with mirasi.mp4 as attachment" time="0.001">
+    </testcase>
+    <testcase classname="mirasi command › mirasi command execution" name="should handle errors gracefully" time="0.004">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/helpers/errorBuilder.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:54" time="0.292" tests="3">
+    <testcase classname="errorBuilder helper" name="buildError should correctly build an error embed with command name" time="0.002">
+    </testcase>
+    <testcase classname="errorBuilder helper" name="buildError should correctly build an error embed for unknown command" time="0.001">
+    </testcase>
+    <testcase classname="errorBuilder helper" name="buildUnknownError should correctly build an error embed with default message" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/you.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:54" time="0.296" tests="6">
+    <testcase classname="command structure" name="should have a data property" time="0.001">
+    </testcase>
+    <testcase classname="command structure" name="should have a name of &quot;you&quot;" time="0">
+    </testcase>
+    <testcase classname="command structure" name="should have a description" time="0.001">
+    </testcase>
+    <testcase classname="command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="you command execution" name="should return the correct file object" time="0.001">
+    </testcase>
+    <testcase classname="you command execution" name="should handle error scenarios" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/loggers/default_logger.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:54" time="0.324" tests="15">
+    <testcase classname="DefaultLogger › constructor" name="should initialize the database and create logs table" time="0.005">
+    </testcase>
+    <testcase classname="DefaultLogger › constructor" name="should log the initialization message to console" time="0.003">
+    </testcase>
+    <testcase classname="DefaultLogger › info" name="should insert log entry with INFO level and print to console" time="0.003">
+    </testcase>
+    <testcase classname="DefaultLogger › info" name="should handle optional stack parameter" time="0.003">
+    </testcase>
+    <testcase classname="DefaultLogger › debug" name="should insert log entry with DEBUG level and print to console" time="0.003">
+    </testcase>
+    <testcase classname="DefaultLogger › debug" name="should handle optional stack parameter" time="0.002">
+    </testcase>
+    <testcase classname="DefaultLogger › error" name="should insert log entry with ERROR level and print to console" time="0.005">
+    </testcase>
+    <testcase classname="DefaultLogger › error" name="should handle error without stack" time="0.003">
+    </testcase>
+    <testcase classname="DefaultLogger › close" name="should close the database connection" time="0.003">
+    </testcase>
+    <testcase classname="DefaultLogger › legacy fallback logging" name="should fallback to file logging when DB insert fails" time="0.013">
+    </testcase>
+    <testcase classname="DefaultLogger › legacy fallback logging" name="should append to existing log file when it exists" time="0.013">
+    </testcase>
+    <testcase classname="DefaultLogger › legacy fallback logging" name="should handle legacy append failure gracefully" time="0.015">
+    </testcase>
+    <testcase classname="DefaultLogger › legacy fallback logging" name="should include stack trace in legacy log when present" time="0.014">
+    </testcase>
+    <testcase classname="DefaultLogger › legacy fallback logging" name="should handle logLegacy function throwing error" time="0.013">
+    </testcase>
+    <testcase classname="DefaultLogger › legacy fallback logging" name="should handle error object without message property" time="0.002">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/polka.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:54" time="0.277" tests="6">
+    <testcase classname="command structure" name="should have a data property" time="0.001">
+    </testcase>
+    <testcase classname="command structure" name="should have a name of &quot;clown&quot;" time="0">
+    </testcase>
+    <testcase classname="command structure" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="command structure" name="should have an execute method" time="0.001">
+    </testcase>
+    <testcase classname="polka command" name="should successfully return an image URL" time="0.001">
+    </testcase>
+    <testcase classname="polka command" name="should handle errors from google.searchImage" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/roll.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:54" time="0.301" tests="6">
+    <testcase classname="roll command › roll command structure" name="should have a data property of SlashCommandBuilder type" time="0.001">
+    </testcase>
+    <testcase classname="roll command › roll command structure" name="should have a name of &quot;roll&quot;" time="0.001">
+    </testcase>
+    <testcase classname="roll command › roll command structure" name="should have a description" time="0">
+    </testcase>
+    <testcase classname="roll command › roll command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="roll command › roll command execution" name="should return an object with koroneroll.mp4 as attachment" time="0.001">
+    </testcase>
+    <testcase classname="roll command › roll command execution" name="should handle errors gracefully" time="0.004">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/info.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:54" time="0.292" tests="6">
+    <testcase classname="command structure" name="should have a data property" time="0.001">
+    </testcase>
+    <testcase classname="command structure" name="should have a name of &quot;info&quot;" time="0">
+    </testcase>
+    <testcase classname="command structure" name="should have a description" time="0.001">
+    </testcase>
+    <testcase classname="command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="info command execution" name="should return an embed on success" time="0.002">
+    </testcase>
+    <testcase classname="info command execution" name="should return an error message on failure" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/pterodactyl/list_servers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:54" time="0.332" tests="7">
+    <testcase classname="list_servers command › execute function" name="should successfully list servers when user has servers" time="0.003">
+    </testcase>
+    <testcase classname="list_servers command › execute function" name="should handle no registered servers" time="0.005">
+    </testcase>
+    <testcase classname="list_servers command › execute function" name="should handle a single server" time="0">
+    </testcase>
+    <testcase classname="list_servers command › execute function" name="should handle database errors" time="0.001">
+    </testcase>
+    <testcase classname="list_servers command › execute function" name="should handle multiple servers with various names and URLs" time="0.001">
+    </testcase>
+    <testcase classname="list_servers command › execute function" name="should include timestamp in embed" time="0">
+    </testcase>
+    <testcase classname="list_servers command › execute function" name="should pass correct user ID to database query" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/poggeth.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:54" time="0.331" tests="6">
+    <testcase classname="poggeth command › poggeth command structure" name="should have a data property of SlashCommandBuilder type" time="0.001">
+    </testcase>
+    <testcase classname="poggeth command › poggeth command structure" name="should have a name of &quot;poggeth&quot;" time="0">
+    </testcase>
+    <testcase classname="poggeth command › poggeth command structure" name="should have a description" time="0.001">
+    </testcase>
+    <testcase classname="poggeth command › poggeth command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="poggeth command › poggeth command execution" name="should return an object with mine_pogethchampion1.mp4 as attachment" time="0.001">
+    </testcase>
+    <testcase classname="poggeth command › poggeth command execution" name="should handle errors gracefully" time="0.008">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/ping.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:55" time="0.33" tests="5">
+    <testcase classname="ping command" name="should have a data property" time="0.001">
+    </testcase>
+    <testcase classname="ping command" name="should have a name of &quot;ping&quot;" time="0">
+    </testcase>
+    <testcase classname="ping command" name="should have a description" time="0.001">
+    </testcase>
+    <testcase classname="ping command" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="ping command" name="should return &quot;Pong&quot; when executed" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/quotedb_get.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:55" time="0.337" tests="9">
+    <testcase classname="command structure" name="should have a data property" time="0.002">
+    </testcase>
+    <testcase classname="command structure" name="should have a name of &quot;get_quotes&quot;" time="0">
+    </testcase>
+    <testcase classname="command structure" name="should have a description" time="0.001">
+    </testcase>
+    <testcase classname="command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="quotedb_get command execution" name="should return a single recent quote by default" time="0.001">
+    </testcase>
+    <testcase classname="quotedb_get command execution" name="should return the specified number of recent quotes" time="0.001">
+    </testcase>
+    <testcase classname="quotedb_get command execution" name="should return an error if more than 5 quotes are requested" time="0">
+    </testcase>
+    <testcase classname="quotedb_get command execution" name="should return an empty quote embed if no quotes are found" time="0">
+    </testcase>
+    <testcase classname="quotedb_get command execution" name="should handle API errors" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/help.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:55" time="0.324" tests="8">
+    <testcase classname="help command structure" name="should have a data property of SlashCommandBuilder type" time="0.001">
+    </testcase>
+    <testcase classname="help command structure" name="should have a name of &quot;help&quot;" time="0">
+    </testcase>
+    <testcase classname="help command structure" name="should have a description" time="0.001">
+    </testcase>
+    <testcase classname="help command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="help command execution" name="should return a list of commands when no command is specified" time="0.001">
+    </testcase>
+    <testcase classname="help command execution" name="should return detailed help for a specified command" time="0.001">
+    </testcase>
+    <testcase classname="help command execution" name="should return a message for commands without full description" time="0.002">
+    </testcase>
+    <testcase classname="help command execution" name="should handle commands with no options" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/fubuki.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:55" time="0.345" tests="6">
+    <testcase classname="command structure" name="should have a data property" time="0.001">
+    </testcase>
+    <testcase classname="command structure" name="should have a name of &quot;fox&quot;" time="0">
+    </testcase>
+    <testcase classname="command structure" name="should have a description" time="0.003">
+    </testcase>
+    <testcase classname="command structure" name="should have an execute method" time="0">
+    </testcase>
+    <testcase classname="fubuki command execution" name="should return an image URL on success" time="0.001">
+    </testcase>
+    <testcase classname="fubuki command execution" name="should return an error message on failure" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/pterodactyl/update_server.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:55" time="0.252" tests="9">
+    <testcase classname="update_server command › execute function" name="should update server URL" time="0.016">
+    </testcase>
+    <testcase classname="update_server command › execute function" name="should update API key" time="0.004">
+    </testcase>
+    <testcase classname="update_server command › execute function" name="should update both URL and API key" time="0.002">
+    </testcase>
+    <testcase classname="update_server command › execute function" name="should trim server name, URL, and API key" time="0.002">
+    </testcase>
+    <testcase classname="update_server command › execute function" name="should handle error when no fields provided" time="0.001">
+    </testcase>
+    <testcase classname="update_server command › execute function" name="should handle server not found error" time="0.003">
+    </testcase>
+    <testcase classname="update_server command › execute function" name="should handle database errors" time="0.002">
+    </testcase>
+    <testcase classname="update_server command › execute function" name="should handle pterodactyl API validation failure" time="0.003">
+    </testcase>
+    <testcase classname="update_server command › execute function" name="should remove trailing slash from server URL" time="0.002">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/helpers/caller.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:55" time="0.25" tests="45">
+    <testcase classname="caller helper › default export (get/post functions)" name="get method should make a successful GET request with params and headers" time="0.01">
+    </testcase>
+    <testcase classname="caller helper › default export (get/post functions)" name="get method should make a successful GET request without params" time="0.003">
+    </testcase>
+    <testcase classname="caller helper › default export (get/post functions)" name="get method should make a successful GET request with null path" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › default export (get/post functions)" name="get method should make a successful GET request with undefined params" time="0.002">
+    </testcase>
+    <testcase classname="caller helper › default export (get/post functions)" name="get method should make a successful GET request with empty string params" time="0.003">
+    </testcase>
+    <testcase classname="caller helper › default export (get/post functions)" name="get method should handle non-ok responses" time="0.003">
+    </testcase>
+    <testcase classname="caller helper › default export (get/post functions)" name="post method should make a successful POST request with body and headers" time="0.002">
+    </testcase>
+    <testcase classname="caller helper › default export (get/post functions)" name="post method should handle non-ok responses" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › default export (get/post functions)" name="should handle 204 No Content response" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › default export (get/post functions)" name="should handle response with content-length 0" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › Caller class" name="get method should call the get function" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › Caller class" name="post method should call the post function" time="0.002">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject invalid URL format" time="0">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject non-HTTPS URLs" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should accept URLs in allowed hosts list" time="0.004">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject URLs not in allowed hosts list" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject URLs resolving to private IPv4 addresses" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject URLs resolving to loopback addresses" time="0">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject URLs resolving to 10.x.x.x addresses" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject URLs resolving to 172.16-31.x.x addresses" time="0">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject URLs resolving to link-local addresses" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject URLs resolving to 0.x.x.x addresses" time="0">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject URLs resolving to broadcast addresses" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should accept URLs resolving to public IP addresses" time="0">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject when hostname cannot be resolved" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should handle DNS resolution errors when both fail" time="0">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should succeed when only IPv4 resolves (IPv6 fails)" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should succeed when only IPv6 resolves (IPv4 fails)" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should fail when IPv4 fails and IPv6 returns empty" time="0">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should fail when IPv6 fails and IPv4 returns empty" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject IPv6 loopback address ::1" time="0">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject IPv6 unique local addresses (fc00::/7)" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject IPv6 unique local addresses (fd00::/8)" time="0">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject IPv6 link-local addresses (fe80::/10)" time="0.002">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject IPv6 link-local addresses (fe90-feb0)" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject IPv4-mapped IPv6 addresses with private IPv4" time="0">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should accept valid IPv6 addresses" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should accept IPv4-mapped IPv6 addresses with public IPv4" time="0">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should handle invalid IPv4 format (too many octets)" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should handle invalid IPv4 format (out of range)" time="0">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should handle IPv4 with negative values" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should handle allowed hosts with mixed case" time="0">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should handle URL with IP address hostname directly (skip DNS resolution)" time="0.001">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject URL with private IP address hostname" time="0">
+    </testcase>
+    <testcase classname="caller helper › validateServerSSRF" name="should reject URL with loopback IP address hostname" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/pterodactyl/register_server.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:55" time="0.352" tests="9">
+    <testcase classname="register_server command › execute function" name="should successfully register a new server" time="0.026">
+    </testcase>
+    <testcase classname="register_server command › execute function" name="should remove trailing slash from server URL" time="0.005">
+    </testcase>
+    <testcase classname="register_server command › execute function" name="should handle database errors" time="0.006">
+    </testcase>
+    <testcase classname="register_server command › execute function" name="should handle duplicate server error" time="0.009">
+    </testcase>
+    <testcase classname="register_server command › execute function" name="should handle errors and call buildError" time="0.007">
+    </testcase>
+    <testcase classname="register_server command › execute function" name="should extract all options from interaction correctly" time="0.012">
+    </testcase>
+    <testcase classname="register_server command › execute function" name="should handle pterodactyl API validation failure" time="0.002">
+    </testcase>
+    <testcase classname="register_server command › execute function" name="should reject empty server name" time="0">
+    </testcase>
+    <testcase classname="register_server command › execute function" name="should reject empty string server name" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/services/databasePool.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:55" time="0.27" tests="11">
+    <testcase classname="DatabasePool › getInstance" name="should return the same instance on multiple calls" time="0.001">
+    </testcase>
+    <testcase classname="DatabasePool › getInstance" name="should create a new instance if none exists" time="0">
+    </testcase>
+    <testcase classname="DatabasePool › getConnection" name="should create a new database connection with default filename" time="0">
+    </testcase>
+    <testcase classname="DatabasePool › getConnection" name="should create a new database connection with custom filename" time="0.001">
+    </testcase>
+    <testcase classname="DatabasePool › getConnection" name="should reuse existing connection for same filename" time="0">
+    </testcase>
+    <testcase classname="DatabasePool › getConnection" name="should create separate connections for different filenames" time="0">
+    </testcase>
+    <testcase classname="DatabasePool › getConnection" name="should use SERVER_DATABASE environment variable if set" time="0">
+    </testcase>
+    <testcase classname="DatabasePool › getConnection" name="should prioritize SERVER_DATABASE env over custom filename" time="0">
+    </testcase>
+    <testcase classname="DatabasePool › closeAll" name="should close all connections" time="0.001">
+    </testcase>
+    <testcase classname="DatabasePool › closeAll" name="should clear the connections map after closing" time="0">
+    </testcase>
+    <testcase classname="DatabasePool › closeAll" name="should handle empty connections map" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/loggers/file_logger.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:55" time="0.272" tests="11">
+    <testcase classname="FileLogger › constructor" name="should create log file if it does not exist" time="0.004">
+    </testcase>
+    <testcase classname="FileLogger › constructor" name="should not create log file if it already exists" time="0.002">
+    </testcase>
+    <testcase classname="FileLogger › info" name="should append log entry with INFO level and print to console" time="0.003">
+    </testcase>
+    <testcase classname="FileLogger › info" name="should include stack trace when provided" time="0.003">
+    </testcase>
+    <testcase classname="FileLogger › info" name="should include formatted datetime in log entry" time="0.002">
+    </testcase>
+    <testcase classname="FileLogger › debug" name="should append log entry with DEBUG level and print to console" time="0.003">
+    </testcase>
+    <testcase classname="FileLogger › debug" name="should include stack trace when provided" time="0.002">
+    </testcase>
+    <testcase classname="FileLogger › error" name="should append log entry with ERROR level and print to console" time="0.004">
+    </testcase>
+    <testcase classname="FileLogger › error" name="should handle error without stack" time="0.003">
+    </testcase>
+    <testcase classname="FileLogger › error" name="should handle error object without message property (fallback to error)" time="0.003">
+    </testcase>
+    <testcase classname="FileLogger › log failure handling" name="should handle appendFileSync failure gracefully" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/helpers/infoCard.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:56" time="0.247" tests="6">
+    <testcase classname="infoCard helper" name="generateCard should return a well-formed info card on successful API calls" time="0.008">
+    </testcase>
+    <testcase classname="infoCard helper" name="generateCard should handle GitHub API failure gracefully" time="0.009">
+    </testcase>
+    <testcase classname="infoCard helper" name="generateCard should handle branches API failure specifically" time="0.007">
+    </testcase>
+    <testcase classname="infoCard helper" name="generateCard should handle missing bot avatar gracefully" time="0.001">
+    </testcase>
+    <testcase classname="infoCard helper" name="generateCard should include all required fields" time="0.001">
+    </testcase>
+    <testcase classname="infoCard helper" name="uses fallback value when no Branch env var provided" time="0.004">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/helpers/database.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:56" time="0.248" tests="20">
+    <testcase classname="Database class › constructor" name="should create a database instance with correct path" time="0.002">
+    </testcase>
+    <testcase classname="Database class › constructor" name="should call initialize and create table" time="0.003">
+    </testcase>
+    <testcase classname="Database class › addServer" name="should successfully add a new server" time="0.002">
+    </testcase>
+    <testcase classname="Database class › addServer" name="should throw error when server already exists" time="0.009">
+    </testcase>
+    <testcase classname="Database class › addServer" name="should handle different server URLs for same user" time="0.001">
+    </testcase>
+    <testcase classname="Database class › getServerById" name="should return a server by id" time="0.001">
+    </testcase>
+    <testcase classname="Database class › getServerById" name="should return undefined when server not found" time="0.001">
+    </testcase>
+    <testcase classname="Database class › getServersByUserId" name="should return all servers for a user" time="0.002">
+    </testcase>
+    <testcase classname="Database class › getServersByUserId" name="should return empty array when user has no servers" time="0.001">
+    </testcase>
+    <testcase classname="Database class › updateServer" name="should update server URL" time="0.001">
+    </testcase>
+    <testcase classname="Database class › updateServer" name="should update API key" time="0.003">
+    </testcase>
+    <testcase classname="Database class › updateServer" name="should update both URL and API key" time="0">
+    </testcase>
+    <testcase classname="Database class › updateServer" name="should throw error when server not found" time="0.001">
+    </testcase>
+    <testcase classname="Database class › updateServer" name="should throw error when no fields provided" time="0.001">
+    </testcase>
+    <testcase classname="Database class › deleteServer" name="should successfully delete a server" time="0.001">
+    </testcase>
+    <testcase classname="Database class › deleteServer" name="should handle deletion of non-existent server" time="0.001">
+    </testcase>
+    <testcase classname="Database class › close" name="should close the database connection" time="0">
+    </testcase>
+    <testcase classname="Database class › decryption error handling" name="should throw error for invalid ciphertext format (not 3 parts)" time="0">
+    </testcase>
+    <testcase classname="Database class › decryption error handling" name="should throw error for ciphertext with 1 part" time="0">
+    </testcase>
+    <testcase classname="Database class › decryption error handling" name="should throw error for ciphertext with 4 parts" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/services/logging_service.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:56" time="0.247" tests="13">
+    <testcase classname="LoggingService › default getter" name="should return the default logger when DEFAULT_LOGGER is not set" time="0.001">
+    </testcase>
+    <testcase classname="LoggingService › default getter" name="should return the file logger when DEFAULT_LOGGER is set to &quot;file&quot;" time="0.002">
+    </testcase>
+    <testcase classname="LoggingService › default getter" name="should return the same logger instance on subsequent calls" time="0.001">
+    </testcase>
+    <testcase classname="LoggingService › log method" name="should call error method when passed an Error instance" time="0.001">
+    </testcase>
+    <testcase classname="LoggingService › log method" name="should call debug method when passed a string" time="0.002">
+    </testcase>
+    <testcase classname="LoggingService › log method" name="should stringify and call debug method when passed an object" time="0.001">
+    </testcase>
+    <testcase classname="LoggingService › log method" name="should stringify and call debug method when passed an array" time="0.001">
+    </testcase>
+    <testcase classname="LoggingService › log method" name="should stringify and call debug method when passed a number" time="0.002">
+    </testcase>
+    <testcase classname="LoggingService › LoggerService singleton" name="should reuse existing file logger connection" time="0.003">
+    </testcase>
+    <testcase classname="LoggingService › LoggerService singleton" name="should create separate instances for default and file loggers" time="0.002">
+    </testcase>
+    <testcase classname="LoggingService › closeAll method" name="should close all logger connections" time="0.002">
+    </testcase>
+    <testcase classname="LoggingService › closeAll method" name="should handle loggers without close method" time="0.003">
+    </testcase>
+    <testcase classname="LoggingService › closeAll method" name="should clear connections after closeAll" time="0.002">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/index.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:56" time="0.24" tests="22">
+    <testcase classname="BongBot" name="loads ping command into bot.commands" time="0.001">
+    </testcase>
+    <testcase classname="BongBot" name="registers event listeners" time="0.001">
+    </testcase>
+    <testcase classname="BongBot" name="logs in with provided token" time="0">
+    </testcase>
+    <testcase classname="BongBot › interactionCreate handler" name="ignores non-command interactions" time="0">
+    </testcase>
+    <testcase classname="BongBot › interactionCreate handler" name="ignores unknown commands" time="0.001">
+    </testcase>
+    <testcase classname="BongBot › interactionCreate handler" name="executes a command successfully" time="0.001">
+    </testcase>
+    <testcase classname="BongBot › interactionCreate handler" name="handles command execution errors" time="0">
+    </testcase>
+    <testcase classname="BongBot › interactionCreate handler" name="handles command execution errors when interaction not replied" time="0.002">
+    </testcase>
+    <testcase classname="BongBot › interactionCreate handler" name="handles command response with isError flag and deletes reply" time="0">
+    </testcase>
+    <testcase classname="BongBot › interactionCreate handler" name="calls setupCollector when command has setupCollector method" time="0">
+    </testcase>
+    <testcase classname="BongBot › messageCreate handler" name="handles undefined message properties gracefully" time="0">
+    </testcase>
+    <testcase classname="BongBot › messageCreate handler" name="ignores bot messages" time="0">
+    </testcase>
+    <testcase classname="BongBot › messageCreate handler" name="handles mention with empty content" time="0">
+    </testcase>
+    <testcase classname="BongBot › messageCreate handler" name="handles mention with content" time="0.001">
+    </testcase>
+    <testcase classname="BongBot › messageCreate handler" name="handles errors gracefully" time="0">
+    </testcase>
+    <testcase classname="BongBot › messageCreate handler" name="handles errors when reply fails during initialization" time="0">
+    </testcase>
+    <testcase classname="BongBot › clientReady handler" name="handles command registration failure" time="0">
+    </testcase>
+    <testcase classname="BongBot › clientReady handler" name="handles invalid channel configurations" time="0">
+    </testcase>
+    <testcase classname="BongBot › clientReady handler" name="sets commands, presence, and sends deployment card" time="0.003">
+    </testcase>
+    <testcase classname="BongBot › clientReady handler" name="warns if missing manage messages permission" time="0.002">
+    </testcase>
+    <testcase classname="BongBot › clientReady handler" name="logs when DISCORD_CHANNEL_ID is not set" time="0.001">
+    </testcase>
+    <testcase classname="BongBot › clientReady handler" name="handles channel without send method" time="0.002">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/helpers/googleSearch.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:56" time="0.225" tests="3">
+    <testcase classname="googleSearch helper" name="searchImage should return an embed with a random image URL" time="0.003">
+    </testcase>
+    <testcase classname="googleSearch helper" name="searchImage should throw an error if no images are found" time="0.006">
+    </testcase>
+    <testcase classname="googleSearch helper" name="searchImage should handle API errors" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/helpers/embedBuilder.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:56" time="0.254" tests="13">
+    <testcase classname="EMBED_BUILDER class" name="constructor should initialize embed and attachment" time="0.002">
+    </testcase>
+    <testcase classname="EMBED_BUILDER class › constructEmbedWithAttachment" name="should set description and thumbnail" time="0.002">
+    </testcase>
+    <testcase classname="EMBED_BUILDER class › constructEmbedWithAttachment" name="should throw error if no attachment is provided" time="0.005">
+    </testcase>
+    <testcase classname="EMBED_BUILDER class › constructEmbedWithImage" name="should create attachment and set image" time="0.003">
+    </testcase>
+    <testcase classname="EMBED_BUILDER class › constructEmbedWithRandomFile" name="should set description and thumbnail from a random file" time="0.001">
+    </testcase>
+    <testcase classname="EMBED_BUILDER class › constructEmbedWithRandomFile" name="should handle errors from selectRandomFile" time="0.001">
+    </testcase>
+    <testcase classname="EMBED_BUILDER class › constructEmbedWithRandomFile" name="should handle null file from selectRandomFile" time="0.001">
+    </testcase>
+    <testcase classname="EMBED_BUILDER class › addDefaultFooter" name="should set default footer with client version and avatar" time="0.001">
+    </testcase>
+    <testcase classname="EMBED_BUILDER class › addDefaultFooter" name="should handle client without version (dev build)" time="0.001">
+    </testcase>
+    <testcase classname="EMBED_BUILDER class › addDefaultFooter" name="should handle client without user avatar" time="0.001">
+    </testcase>
+    <testcase classname="EMBED_BUILDER class" name="addFooter should correctly set the footer" time="0">
+    </testcase>
+    <testcase classname="EMBED_BUILDER class" name="build should correctly return the embed and files" time="0.001">
+    </testcase>
+    <testcase classname="EMBED_BUILDER class" name="build should return embed without files if no attachment" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/config/index.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:56" time="0.257" tests="10">
+    <testcase classname="config/index.js" name="should load configuration values from process.env when set" time="0.003">
+    </testcase>
+    <testcase classname="config/index.js" name="should use default values when environment variables are not set" time="0.004">
+    </testcase>
+    <testcase classname="config/index.js" name="should correctly convert active flags to boolean" time="0.002">
+    </testcase>
+    <testcase classname="config/index.js" name="should use ./dist/ as file_root in production (when JEST_WORKER_ID is undefined)" time="0.001">
+    </testcase>
+    <testcase classname="validateRequiredConfig" name="should throw error when DISCORD_API_KEY is missing" time="0.008">
+    </testcase>
+    <testcase classname="validateRequiredConfig" name="should throw error when OPENAI_API_KEY is missing but OPENAI_ACTIVE=true" time="0.002">
+    </testcase>
+    <testcase classname="validateRequiredConfig" name="should throw error when GOOGLEAI_API_KEY is missing but GOOGLEAI_ACTIVE=true" time="0.002">
+    </testcase>
+    <testcase classname="validateRequiredConfig" name="should throw error with multiple missing keys" time="0.003">
+    </testcase>
+    <testcase classname="validateRequiredConfig" name="should not throw when all required keys are present" time="0.001">
+    </testcase>
+    <testcase classname="validateRequiredConfig" name="should not throw when optional AI keys are missing if not active" time="0.002">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/commands/pterodactyl/remove_server.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:56" time="0.254" tests="4">
+    <testcase classname="remove_server command › execute function" name="should successfully remove a server" time="0.003">
+    </testcase>
+    <testcase classname="remove_server command › execute function" name="should trim server name before removing" time="0.002">
+    </testcase>
+    <testcase classname="remove_server command › execute function" name="should handle database errors" time="0">
+    </testcase>
+    <testcase classname="remove_server command › execute function" name="should use the injected database" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/helpers/quoteBuilder.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:56" time="0.237" tests="4">
+    <testcase classname="QuoteBuilder class" name="constructor should initialize embed" time="0.001">
+    </testcase>
+    <testcase classname="QuoteBuilder class" name="setTitle should correctly set the embed title" time="0.001">
+    </testcase>
+    <testcase classname="QuoteBuilder class" name="addQuotes should correctly add quotes as fields" time="0.001">
+    </testcase>
+    <testcase classname="QuoteBuilder class" name="build should correctly set footer, timestamp, color and return embed" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="tests/helpers/randomFile.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-20T21:56:56" time="0.213" tests="10">
+    <testcase classname="getRandomFile" name="should return a random file from directory" time="0.002">
+    </testcase>
+    <testcase classname="getRandomFile" name="should handle readdir errors" time="0.001">
+    </testcase>
+    <testcase classname="getRandomFile" name="should return undefined when directory is empty" time="0">
+    </testcase>
+    <testcase classname="getRandomFile" name="should handle stat errors" time="0.001">
+    </testcase>
+    <testcase classname="getRandomFile" name="should skip directories and retry with another file" time="0.002">
+    </testcase>
+    <testcase classname="getRandomFile" name="should handle multiple non-file entries before finding a file" time="0">
+    </testcase>
+    <testcase classname="getRandomFile" name="should construct correct file paths for stat check" time="0.001">
+    </testcase>
+    <testcase classname="getRandomFile" name="should eventually return undefined if all entries are directories" time="0">
+    </testcase>
+    <testcase classname="getRandomFile" name="should work with single file in directory" time="0.001">
+    </testcase>
+    <testcase classname="getRandomFile" name="should correctly splice non-file entries from array" time="0">
     </testcase>
   </testsuite>
 </testsuites>

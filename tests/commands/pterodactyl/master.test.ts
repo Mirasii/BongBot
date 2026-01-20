@@ -94,6 +94,23 @@ describe('pterodactyl master command', () => {
         expect(typeof pterodactylCommand.setupCollector).toBe('function');
     });
 
+    it('should call setupCollector and delegate to ServerStatus', () => {
+        const mockInteraction = {
+            options: {
+                getSubcommand: jest.fn(),
+            },
+        };
+        const mockMessage = {
+            createMessageComponentCollector: jest.fn().mockReturnValue({
+                on: jest.fn(),
+            }),
+        };
+
+        pterodactylCommand.setupCollector(mockInteraction, mockMessage);
+
+        expect(mockSetupCollector).toHaveBeenCalledWith(mockInteraction, mockMessage);
+    });
+
     it('should have fullDesc property', () => {
         expect(pterodactylCommand.fullDesc).toBeDefined();
         expect(pterodactylCommand.fullDesc.description).toBeTruthy();

@@ -419,5 +419,26 @@ describe('caller helper', () => {
             await expect(callerInstance.validateServerSSRF('https://example.com'))
                 .resolves.toBeUndefined();
         });
+
+        test('should handle URL with IP address hostname directly (skip DNS resolution)', async () => {
+            // When hostname is already an IP address, net.isIP returns truthy
+            // and DNS resolution is skipped
+            await expect(callerInstance.validateServerSSRF('https://8.8.8.8'))
+                .resolves.toBeUndefined();
+
+            // DNS resolution should NOT have been called since hostname is an IP
+            expect(mockResolve4).not.toHaveBeenCalled();
+            expect(mockResolve6).not.toHaveBeenCalled();
+        });
+
+        test('should reject URL with private IP address hostname', async () => {
+            await expect(callerInstance.validateServerSSRF('https://192.168.1.1'))
+                .rejects.toThrow('Server URL resolves to a private or reserved IP address.');
+        });
+
+        test('should reject URL with loopback IP address hostname', async () => {
+            await expect(callerInstance.validateServerSSRF('https://127.0.0.1'))
+                .rejects.toThrow('Server URL resolves to a private or reserved IP address.');
+        });
     });
 });

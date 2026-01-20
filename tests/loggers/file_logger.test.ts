@@ -182,6 +182,24 @@ describe('FileLogger', () => {
                 expect.not.stringContaining('Stack Trace:')
             );
         });
+
+        it('should handle error object without message property (fallback to error)', () => {
+            mockAccessSync.mockReturnValue(undefined);
+
+            const logger = new FileLogger();
+            // Create an error-like object where message is falsy
+            const errorWithoutMessage = { stack: 'Some stack' } as unknown as Error;
+            Object.defineProperty(errorWithoutMessage, 'message', { value: '', writable: true });
+
+            logger.error(errorWithoutMessage);
+
+            // The error.message || error fallback should use the error object converted to string
+            expect(mockAppendFileSync).toHaveBeenCalledWith(
+                expect.stringContaining('.log'),
+                expect.stringContaining('[ERROR]')
+            );
+            expect(consoleErrorSpy).toHaveBeenCalled();
+        });
     });
 
     describe('log failure handling', () => {

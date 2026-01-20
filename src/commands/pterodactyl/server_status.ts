@@ -155,14 +155,13 @@ export default class ServerStatus {
             const successfulIdentifiers: string[] = [];
 
             for (const result of results) {
-                if (result.status === 'rejected') {
-                    failedServers.push('unknown');
-                    this._logger.error(new Error(`Stop command rejected: ${result.reason}`));
-                } else if (!result.value.success) {
-                    failedServers.push(result.value.name);
-                    this._logger.debug(`Failed to stop server: ${result.value.identifier} (${result.value.name})`);
+                // sendServerCommand catches all errors, so results are always fulfilled
+                const value = (result as PromiseFulfilledResult<{ identifier: string; name: string; success: boolean }>).value;
+                if (!value.success) {
+                    failedServers.push(value.name);
+                    this._logger.debug(`Failed to stop server: ${value.identifier} (${value.name})`);
                 } else {
-                    successfulIdentifiers.push(result.value.identifier);
+                    successfulIdentifiers.push(value.identifier);
                 }
             }
 
@@ -249,14 +248,8 @@ export default class ServerStatus {
         if (done) { return; }
 
         const pollInterval = setInterval(async () => {
-            try {
-                const done = await checkStatus();
-                if (done) { clearInterval(pollInterval); }
-            } catch (error) {
-                this._logger.error(error as Error);
-                clearInterval(pollInterval);
-                await this.refreshStatus(componentInteraction, dbServer.id);
-            }
+            const done = await checkStatus();
+            if (done) { clearInterval(pollInterval); }
         }, interval);
 
     }
