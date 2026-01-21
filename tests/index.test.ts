@@ -52,6 +52,7 @@ jest.unstable_mockModule('discord.js', () => {
         })),
         GatewayIntentBits: { Guilds: 1, GuildMessages: 2, MessageContent: 4 },
         ActivityType: { Playing: 'PLAYING' },
+        MessageFlags: { Loading: 1 << 7 },
         Collection: MockCollection
     };
 });
@@ -62,9 +63,8 @@ jest.unstable_mockModule('fs', () => ({
 }));
 
 // Mock logging
-jest.unstable_mockModule('../src/helpers/logging.js', () => ({
+jest.unstable_mockModule('../src/services/logging_service.js', () => ({
     default: {
-        init: jest.fn(),
         log: jest.fn()
     }
 }));
@@ -120,7 +120,7 @@ describe('BongBot', () => {
     beforeAll(async () => {
         // Import mocked modules
         Discord = await import('discord.js');
-        LOGGER = (await import('../src/helpers/logging.js')).default;
+        LOGGER = (await import('../src/services/logging_service.js')).default;
         ERROR_BUILDER = await import('../src/helpers/errorBuilder.js');
         
         // Import index.js which will use all the mocks
@@ -128,10 +128,6 @@ describe('BongBot', () => {
         
         // Get the client instance
         mockClient = (Discord.Client as any).mock.results[0].value;
-    });
-
-    it('initializes logging with sessionId', () => {
-        expect(LOGGER.init).toHaveBeenCalledWith('fixed-uuid-1234-5678-9012-abcdef123456');
     });
 
     it('loads ping command into bot.commands', () => {
@@ -235,6 +231,34 @@ describe('BongBot', () => {
             expect(interaction.deferReply).toHaveBeenCalled();
             expect(interaction.deleteReply).toHaveBeenCalled();
             expect(interaction.followUp).toHaveBeenCalledWith({ isError: true, content: 'Error response' });
+        });
+
+        it('calls setupCollector when command has setupCollector method', async () => {
+            const mockSetupCollector = jest.fn();
+            const mockMessage = { id: 'message123' };
+
+            // Add a command with setupCollector
+            const commandWithCollector = {
+                data: { name: 'server_status', toJSON: jest.fn(() => ({ name: 'server_status' })) },
+                execute: jest.fn(() => ({ content: 'Server status' })),
+                setupCollector: mockSetupCollector
+            };
+            mockClient.commands.set('server_status', commandWithCollector);
+
+            const interaction = {
+                isCommand: () => true,
+                commandName: 'server_status',
+                deferReply: jest.fn(),
+                followUp: jest.fn(() => Promise.resolve(mockMessage)),
+                deleteReply: jest.fn(),
+                replied: false
+            };
+
+            await handler(interaction);
+
+            expect(commandWithCollector.execute).toHaveBeenCalledWith(interaction, mockClient);
+            expect(interaction.followUp).toHaveBeenCalledWith({ content: 'Server status' });
+            expect(mockSetupCollector).toHaveBeenCalledWith(interaction, mockMessage);
         });
     });
 

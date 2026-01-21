@@ -1,7 +1,7 @@
-import { Client, GatewayIntentBits, Collection, ActivityType } from 'discord.js';
+import { Client, GatewayIntentBits, Collection, ActivityType, MessageFlags } from 'discord.js';
 import type { Message, MessageReplyOptions, InteractionReplyOptions, CommandInteraction, Interaction, ApplicationCommandDataResolvable } from 'discord.js';
 import type { ExtendedClient } from './helpers/interfaces.ts';
-import LOGGER from './helpers/logging.js';
+import LOGGER from './services/logging_service.js';
 import crypto from 'crypto';
 import config, { validateRequiredConfig } from './config/index.js';
 import { buildUnknownError } from './helpers/errorBuilder.js';
@@ -17,23 +17,26 @@ const token: string = config.discord.apikey!;
 const bot: ExtendedClient = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
 /** set up logging */
-const sessionId = crypto.randomUUID();
-LOGGER.init(sessionId);
+process.env.SESSION_ID = crypto.randomUUID();
 const commands: Array<ApplicationCommandDataResolvable> = buildCommands(bot);
 
 /** respond to slash commands */
 bot.on('interactionCreate', async (interaction: Interaction) => {
     if (!interaction.isCommand()) { return; }
     interaction as CommandInteraction;
+
     try {
         const command = bot.commands!.get(interaction.commandName);
         if (!command) return;
-        await interaction.deferReply();
+        await interaction.deferReply({ flags: command.msgFlag || MessageFlags.Loading });
         const response = await command.execute(interaction, bot); 
         if (response?.isError === true && interaction.replied) { 
             await interaction.deleteReply(); 
         }
-        await interaction.followUp(response);
+        const message = await interaction.followUp(response);
+        if (command && typeof (command as any).setupCollector=== 'function') {
+            await (command as any).setupCollector(interaction, message);
+        }
     } catch (error) {
         if (interaction.replied) { await interaction.deleteReply(); }
         await interaction.followUp(await buildUnknownError(error) as InteractionReplyOptions);
@@ -97,4 +100,4 @@ const postDeploymentMessage = async () => {
 /** login to bot */
 bot.login(token);
 console.log('BongBot Online!');
-console.log(`sessionId: ${sessionId}`);
+console.log(`sessionId: ${process.env.SESSION_ID}`);

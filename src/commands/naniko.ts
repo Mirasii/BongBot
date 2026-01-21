@@ -180,7 +180,8 @@ export default class TikTokLiveNotifier {
 async function fetchAvatarFromProfile(username: string): Promise<string | null> {
     try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        /* istanbul ignore next -- @preserve timeout callback only fires if fetch takes >5s */
+        const timeout = setTimeout(() => controller.abort(), 5000);
 
         const response = await fetch(`https://www.tiktok.com/@${username}`, {
             headers: {

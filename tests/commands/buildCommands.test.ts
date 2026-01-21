@@ -1,6 +1,7 @@
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 import { Collection } from 'discord.js';
 import type { ExtendedClient } from '../../src/helpers/interfaces.js';
+const commandCount = 30;
 
 // Mock all command modules
 jest.unstable_mockModule('../../src/commands/arab.js', () => ({
@@ -91,6 +92,11 @@ jest.unstable_mockModule('../../src/commands/you.js', () => ({
     default: { data: { name: 'you', toJSON: () => ({ name: 'you' }) } }
 }));
 
+// Mock pterodactyl/master.js to avoid loading Database/better-sqlite3
+jest.unstable_mockModule('../../src/commands/pterodactyl/master.js', () => ({
+    default: { data: { name: 'pterodactyl', toJSON: () => ({ name: 'pterodactyl' }) } }
+}));
+
 // Import after mocks are set up
 const { default: buildCommands } = await import('../../src/commands/buildCommands.js');
 
@@ -112,8 +118,8 @@ describe('buildCommands', () => {
     test('should add all commands to the client commands collection', () => {
         buildCommands(mockClient);
         
-        // Should have 29 commands based on the commandsArray
-        expect(mockClient.commands?.size).toBe(29);
+        // Should have commandCount commands based on the commandsArray
+        expect(mockClient.commands?.size).toBe(commandCount);
     });
 
     test('should set commands with correct names as keys', () => {
@@ -130,7 +136,7 @@ describe('buildCommands', () => {
         const result = buildCommands(mockClient);
         
         expect(Array.isArray(result)).toBe(true);
-        expect(result.length).toBe(29);
+        expect(result.length).toBe(commandCount);
     });
 
     test('should return commands with name property', () => {
@@ -153,10 +159,10 @@ describe('buildCommands', () => {
         expect(pingCommand.data.name).toBe('ping');
     });
 
-    test('should handle all 29 commands without errors', () => {
+    test(`should handle all ${commandCount} commands without errors`, () => {
         expect(() => buildCommands(mockClient)).not.toThrow();
         
         const result = buildCommands(mockClient);
-        expect(result.length).toBe(29);
+        expect(result.length).toBe(commandCount);
     });
 });

@@ -8,3 +8,5 @@ coverage/*
 .env
 report.json
 dist/*
+data/*
+logs/*

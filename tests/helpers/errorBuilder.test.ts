@@ -22,7 +22,7 @@ const mockEmbedBuilder = jest.fn().mockImplementation(() => ({
 }));
 
 // Mock logging before import
-jest.unstable_mockModule('../../src/helpers/logging.js', () => ({
+jest.unstable_mockModule('../../src/services/logging_service.js', () => ({
   default: {
     log: mockLog,
   },

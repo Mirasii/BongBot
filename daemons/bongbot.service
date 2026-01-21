@@ -1,0 +1,25 @@
+[Unit]
+Description=BongBot Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+ExecStartPre=-/usr/bin/docker stop bongbot
+ExecStartPre=-/usr/bin/docker rm bongbot
+ExecStartPre=/usr/bin/docker pull mirasi/bongbot:latest
+
+ExecStart=/usr/bin/docker run \
+  --name bongbot \
+  --env-file /etc/bongbot/prod.env \
+  --volume /etc/bongbot/data:/app/data \
+  --volume /etc/bongbot/logs:/app/logs \
+  mirasi/bongbot:latest
+
+ExecStop=/usr/bin/docker stop bongbot
+ExecStopPost=/usr/bin/docker rm bongbot
+Restart=on-failure
+
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

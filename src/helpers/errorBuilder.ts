@@ -1,7 +1,7 @@
 import { MessageFlags, Colors } from 'discord.js';
 import type { AttachmentBuilder, CommandInteraction, EmbedBuilder } from 'discord.js';
 const errorMsg = 'There was an error while executing the "{interaction}" command.';
-import LOGGER from './logging.js'
+import LOGGER from '../services/logging_service.js'
 import EMBED_BUILDER from './embedBuilder.js';
 
 async function buildError(interaction: CommandInteraction, error: any) {
