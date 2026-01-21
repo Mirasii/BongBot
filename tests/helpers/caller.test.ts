@@ -30,7 +30,7 @@ describe('caller helper', () => {
     setupStandardTestEnvironment();
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        jest.resetAllMocks();
         delete process.env.PTERODACTYL_ALLOWED_HOSTS;
     });
 
