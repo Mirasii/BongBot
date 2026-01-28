@@ -17,6 +17,7 @@ BongBot is a Discord Bot made for fun with various different commands. BongBot l
 - **Quote Database**: Store and retrieve quotes with a dedicated API
 - **Image Search**: Google Custom Search integration
 - **User Information**: Get detailed user and server information
+- **Pterodactyl Server Management**: Register and control game servers via Pterodactyl panel with interactive buttons
 - **Comprehensive Testing**: Full test coverage with Jest
 
 ## Quick Start with Docker
@@ -80,8 +81,11 @@ BongBot is a Discord Bot made for fun with various different commands. BongBot l
 | `GOOGLEAI_API_KEY` | ❌ | Google AI API key for Gemini models |
 | `GOOGLEAI_ACTIVE` | ❌ | Enable/disable Google AI integration (true/false) |
 | `GOOGLEAI_MODEL` | ❌ | Google AI model to use (default: gemini-2.5-flash-lite) |
+| `GOOGLEAI_IMAGE_MODEL` | ❌ | Google AI image model (default: gemini-2.5-flash-image-preview) |
 | `QUOTEDB_API_KEY` | ❌ | QuoteDB API key for quote management |
 | `QUOTEDB_USER_ID` | ❌ | QuoteDB user ID |
+| `SERVER_DATABASE` | ❌ | Pterodactyl database file name (default: pterodactyl.db) |
+| `ENCRYPTION_KEY` | ❌ | Hex-encoded encryption key for storing Pterodactyl API keys securely |
 
 ## Available Commands
 
@@ -93,7 +97,13 @@ BongBot is a Discord Bot made for fun with various different commands. BongBot l
 - `/create_quote <quote> <author>` - Add a new quote**
 - `/get_quotes <amount>` - Get the most recent quotes
 - `/get_random_quotes <amount>` - Get random quotes
-- Various media commands: `/arab`, `/cherry`, `/classic`, `/creeper`, `/dance`, etc.
+- `/pterodactyl` - Manage Pterodactyl panel servers with subcommands:
+  - `register` - Register a new server with URL and API key
+  - `list` - List all registered servers
+  - `manage` - View server status with interactive start/stop/restart controls
+  - `update` - Update server configuration
+  - `remove` - Remove a registered server
+- Media commands: `/arab`, `/callirap`, `/cherry`, `/classic`, `/club_kid`, `/creeper`, `/cringe`, `/dance`, `/die`, `/fubuki`, `/funk`, `/hentai`, `/hoe`, `/mirasi`, `/no`, `/polka`, `/roll`, `/seachicken`, `/vape`, `/yes`, `/you`
   
 \* This command can be invoked by pinging the bot with a message instead of using the slash command.
 
