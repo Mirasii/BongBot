@@ -348,13 +348,9 @@ jobs:
           SECRET_SSH_KEY: ${{ secrets.SSH_KEY }}
         run: |
           sync_secret() {
-            printf '%s' "$2" | gh secret set "$1" --repo Mirasii/BongBot-Ptero --env Dev
+            printf '%s' "$2" | gh secret set "$1" --repo Mirasii/BongBot-Ptero --env Prod
           }
 
-          sync_secret "DISCORD_API_KEY"    "$SECRET_DISCORD_API_KEY"
-          sync_secret "DISCORD_CHANNEL_ID" "$SECRET_DISCORD_CHANNEL_ID"
-          sync_secret "DOCKERHUB_USERNAME" "$SECRET_DOCKERHUB_USERNAME"
-          sync_secret "DOCKERHUB_TOKEN"    "$SECRET_DOCKERHUB_TOKEN"
           sync_secret "SSH_HOST"           "$SECRET_SSH_HOST"
           sync_secret "SSH_USERNAME"       "$SECRET_SSH_USERNAME"
           sync_secret "SSH_KEY"            "$SECRET_SSH_KEY"
