@@ -335,6 +335,26 @@ jobs:
 
             </details>
 
+      - name: Sync Shared Secrets to BongBot-Ptero (User PR)
+        if: github.actor != 'dependabot[bot]'
+        env:
+          GH_TOKEN: ${{ secrets.PTERO_SYNC_PAT }}
+          SECRET_DISCORD_API_KEY: ${{ secrets.DISCORD_API_KEY }}
+          SECRET_DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
+          SECRET_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          SECRET_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          SECRET_SSH_HOST: ${{ secrets.SSH_HOST }}
+          SECRET_SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SECRET_SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          sync_secret() {
+            printf '%s' "$2" | gh secret set "$1" --repo Mirasii/BongBot-Ptero --env Prod
+          }
+
+          sync_secret "SSH_HOST"           "$SECRET_SSH_HOST"
+          sync_secret "SSH_USERNAME"       "$SECRET_SSH_USERNAME"
+          sync_secret "SSH_KEY"            "$SECRET_SSH_KEY"
+
       # --- Steps for Dependabot PRs ---
       - name: Build Local Image (Dependabot)
         if: github.actor == 'dependabot[bot]'
