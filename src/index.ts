@@ -33,10 +33,7 @@ bot.on('interactionCreate', async (interaction: Interaction) => {
         if (response?.isError === true && interaction.replied) { 
             await interaction.deleteReply(); 
         }
-        const message = await interaction.followUp(response);
-        if (command && typeof (command as any).setupCollector=== 'function') {
-            await (command as any).setupCollector(interaction, message);
-        }
+        await interaction.followUp(response);
     } catch (error) {
         if (interaction.replied) { await interaction.deleteReply(); }
         await interaction.followUp(await buildUnknownError(error) as InteractionReplyOptions);

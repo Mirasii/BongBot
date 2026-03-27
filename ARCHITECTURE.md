@@ -27,7 +27,7 @@ BongBot follows a **layered architecture** with three primary tiers:
                            │
 ┌──────────────────────────▼──────────────────────────────────────┐
 │                     Command Layer                               │
-│          (src/commands/*.ts, src/commands/pterodactyl/)         │
+│                    (src/commands/*.ts)                          │
 │     Slash commands, message handlers, subcommand routing        │
 └──────────────────────────┬──────────────────────────────────────┘
                            │
@@ -76,7 +76,6 @@ export default {
 **Optional exports:**
 - `executeReply(message, bot)` - For mention-based invocation without content (line 55 in index.ts)
 - `executeLegacy(message, bot)` - For mention-based invocation with content (line 56 in index.ts)
-- `setupCollector(interaction, message)` - For interactive components (lines 37-39 in index.ts)
 - `msgFlag` - Message flags like `MessageFlags.Ephemeral`
 
 **Example - Simple Command (`src/commands/ping.ts`):**
@@ -92,75 +91,7 @@ export default {
 }
 ```
 
-#### Subcommand Pattern (Pterodactyl Module)
-
-**File: `src/commands/pterodactyl/master.ts`**
-
-The pterodactyl feature demonstrates the recommended pattern for complex multi-command features:
-
-```
-pterodactyl/
-├── master.ts                    # Main entry, routing, SlashCommandBuilder with subcommands
-├── register_server.ts           # Class: RegisterServer
-├── list_servers.ts              # Class: ListServers
-├── server_status.ts             # Class: ServerStatus (with setupCollector)
-├── update_server.ts             # Class: UpdateServer
-├── remove_server.ts             # Class: RemoveServer
-└── shared/
-    ├── pterodactylApi.ts        # API interaction functions
-    ├── serverStatusEmbed.ts     # Embed building for status display
-    └── serverControlComponents.ts # Button/select menu builders
-```
-
-**Routing in master.ts (lines 90-111):**
-```typescript
-async execute(interaction: ChatInputCommandInteraction) {
-    const subcommand = interaction.options.getSubcommand();
-    const db = DatabasePool.getInstance().getConnection();
-    const caller = new Caller();
-    switch (subcommand) {
-        case 'register':
-            return await new RegisterServer(db, caller).execute(interaction);
-        case 'list':
-            return await new ListServers(db).execute(interaction);
-        // ... etc
-    }
-}
-```
-
-**Key Design Decisions:**
-- Each subcommand is a **class** with constructor dependency injection
-- Database and HTTP clients are instantiated in master.ts and passed to handlers
-- Shared utilities in `shared/` directory prevent duplication
-
 ### 1.4 Service Layer
-
-#### DatabasePool Singleton
-
-**File: `src/services/databasePool.ts`**
-
-Manages database connections using the singleton pattern with lazy initialization:
-
-```typescript
-export default class DatabasePool {
-    private static instance: DatabasePool;
-    private connections: Map<string, Database> = new Map();
-
-    static getInstance(): DatabasePool {
-        if (!DatabasePool.instance) {
-            DatabasePool.instance = new DatabasePool();
-        }
-        return DatabasePool.instance;
-    }
-
-    getConnection(dbFileName: string = 'pterodactyl.db'): Database {
-        // Respects SERVER_DATABASE env var override
-        // Creates connection if not exists, returns cached otherwise
-    }
-
-    closeAll(): void { /* Cleanup all connections */ }
-}
-```
 
 #### LoggerService Singleton
 
@@ -202,33 +133,14 @@ interface Logger {
 
 ### 1.5 Helper/Data Layer
 
-#### Database Class
-
-**File: `src/helpers/database.ts`**
-
-SQLite wrapper using better-sqlite3 with:
-- Auto-initialization of schema (lines 23-35)
-- AES-256-GCM encryption for API keys (lines 138-162)
-- CRUD operations for `pterodactyl_servers` table
-
-#### Caller Class
+#### Caller Module
 
 **File: `src/helpers/caller.ts`**
 
-HTTP client wrapper with:
-- SSRF protection via `validateServerSSRF()` (lines 60-91)
-- DNS resolution and IP range blocking
-- HTTPS enforcement
-- Optional allowlist via `PTERODACTYL_ALLOWED_HOSTS`
+HTTP client wrapper providing `get` and `post` functions for external API calls:
 
-**Dual export pattern:**
 ```typescript
-export class Caller {
-    async get(...) { return await get(...); }
-    async post(...) { return await post(...); }
-    async validateServerSSRF(...) { }
-}
-export default { get, post };  // Legacy function exports
+export default { get, post };
 ```
 
 ### 1.6 Configuration Management
@@ -288,9 +200,6 @@ Multiple locations use `any` type, defeating TypeScript's benefits:
 |----------|-------|
 | `src/helpers/interfaces.ts:5` | `Collection<string, any>` for commands |
 | `src/commands/buildCommands.ts:39-40` | `Array<any>` and `Collection<string, any>` |
-| `src/index.ts:38` | `(command as any).setupCollector` |
-| `src/helpers/database.ts:84` | `values: any[]` |
-| `src/commands/pterodactyl/shared/serverControlComponents.ts:67-70` | `components: any[]` |
 
 **Impact:** Runtime type errors, reduced IDE support, harder refactoring.
 
@@ -301,7 +210,6 @@ Multiple locations use `any` type, defeating TypeScript's benefits:
 No formal `Command` interface exists. Commands are loosely typed objects. This is evident in:
 - `buildCommands.ts` line 40: Commands stored as `Collection<string, any>`
 - `index.ts` line 29: `bot.commands!.get(interaction.commandName)` returns `any`
-- `index.ts` line 38: Type assertion `(command as any).setupCollector`
 
 ### 2.2 Inconsistent Patterns
 
@@ -312,30 +220,15 @@ No formal `Command` interface exists. Commands are loosely typed objects. This i
 | Pattern | Example |
 |---------|---------|
 | Default object literal | `src/commands/ping.ts` |
-| Default class | `src/commands/pterodactyl/register_server.ts` |
-| Named + default function exports | `src/helpers/caller.ts` |
+| Default function exports | `src/helpers/caller.ts` |
 | Default class with static methods | `src/helpers/utilities.ts` |
 
-#### 2.2.2 Inconsistent Dependency Injection
+#### 2.2.2 Direct Singleton Access
 
 **Severity: Medium**
 
-Some commands receive dependencies via constructor (pterodactyl subcommands), while others access singletons directly:
+Commands access singletons directly rather than receiving dependencies via injection:
 
-**Injected (Good):**
-```typescript
-// register_server.ts lines 7-13
-export default class RegisterServer {
-    private db: Database;
-    private caller: Caller;
-    constructor(db: Database, caller: Caller) {
-        this.db = db;
-        this.caller = caller;
-    }
-}
-```
-
-**Direct singleton access:**
 ```typescript
 // chat_ai.ts line 58
 let resp = await CALLER.post(api.openai.url, ...);
@@ -370,29 +263,7 @@ Declared at module scope but assigned in event handler (line 76). The variable i
 
 ### 2.4 Error Handling Gaps
 
-#### 2.4.1 Silent Error Swallowing
-
-**Severity: Medium**
-
-Some catch blocks suppress errors silently:
-
-**File: `src/commands/pterodactyl/shared/pterodactylApi.ts` lines 11-17:**
-```typescript
-export async function fetchServerResources(...): Promise<ServerResources | null> {
-    try {
-        // ...
-    } catch {
-        return null;  // Error details lost
-    }
-}
-```
-
-**File: `src/commands/pterodactyl/server_status.ts` line 99:**
-```typescript
-}).catch(() => {});  // Silent failure
-```
-
-#### 2.4.2 Inconsistent Error Response Format
+#### 2.4.1 Inconsistent Error Response Format
 
 **Severity: Low**
 
@@ -400,32 +271,6 @@ Error responses use different formats:
 - `buildError()` returns structured error with embeds
 - Some commands return plain strings on error
 - Some throw and let index.ts handle with `buildUnknownError()`
-
-### 2.5 Coupling Issues
-
-#### 2.5.1 Database Schema Coupling
-
-**Severity: Medium**
-
-**File: `src/helpers/database.ts`**
-
-The Database class is tightly coupled to pterodactyl feature:
-- Schema defined inline (lines 24-34)
-- Only `pterodactyl_servers` table exists
-- Class named generically but serves single feature
-
-### 2.6 Security Considerations
-
-#### 2.6.1 Environment Variable Non-Null Assertion
-
-**Severity: Medium**
-
-**File: `src/helpers/database.ts` line 139:**
-```typescript
-const key = Buffer.from(process.env.ENCRYPTION_KEY!, 'hex');
-```
-
-Non-null assertion (`!`) on `ENCRYPTION_KEY` could cause runtime crash if missing. This should be validated at startup.
 
 ---
 
@@ -448,7 +293,6 @@ export interface Command {
     msgFlag?: MessageFlags;
     executeReply?(message: Message, bot: ExtendedClient): Promise<CommandResponse>;
     executeLegacy?(message: Message, bot: ExtendedClient): Promise<CommandResponse>;
-    setupCollector?(interaction: ChatInputCommandInteraction, message: Message): Promise<void>;
 }
 
 export interface CommandOption {
@@ -477,24 +321,9 @@ export interface ExtendedClient extends Client {
 
 ### 3.2 Architectural Improvements
 
-#### 3.2.1 Extract Repository Pattern for Database
+#### 3.2.1 Standardize Dependency Injection
 
-Create separate repository classes to decouple database access:
-
-```
-src/repositories/
-├── pterodactylServerRepository.ts
-└── baseRepository.ts
-```
-
-**Benefits:**
-- Each feature owns its data layer
-- Easier to test with mock repositories
-- Schema changes isolated to single file
-
-#### 3.2.2 Standardize Dependency Injection
-
-Convert all commands to accept dependencies via factory function or constructor, following the pterodactyl pattern.
+Convert commands to accept dependencies via factory function or constructor for improved testability.
 
 ### 3.3 State Management Improvements
 
@@ -550,15 +379,9 @@ Replace silent catches with logged failures:
 }
 ```
 
-### 3.5 Configuration Improvements
+### 3.5 Testing Improvements
 
-#### 3.5.1 Validate All Required Variables at Startup
-
-Extend `validateRequiredConfig()` to include `ENCRYPTION_KEY` validation with format checking.
-
-### 3.6 Testing Improvements
-
-#### 3.6.1 Create Test Utilities Module
+#### 3.5.1 Create Test Utilities Module
 
 Consolidate test helpers into `tests/utils/mockFactories.ts` and remove `globalThis` usage.
 
@@ -569,24 +392,18 @@ Consolidate test helpers into `tests/utils/mockFactories.ts` and remove `globalT
 ### Strengths to Preserve
 
 1. **Clean Separation of Concerns** - Event listeners separate from command logic
-2. **Dependency Injection in Pterodactyl** - Excellent testability pattern to expand
-3. **Database Encryption** - AES-256-GCM for API keys at rest
-4. **SSRF Protection** - Private IP blocking in Caller
-5. **Centralized Configuration** - Fail-fast validation
-6. **Modular Command Structure** - Easy to add new commands
-7. **Comprehensive Test Coverage** - 99%+ coverage with proper mocking
-8. **Logging Service with Multiple Backends** - SQLite for production, file for development
+2. **Centralized Configuration** - Fail-fast validation
+3. **Modular Command Structure** - Easy to add new commands
+4. **Comprehensive Test Coverage** - 99%+ coverage with proper mocking
+5. **Logging Service with Multiple Backends** - SQLite for production, file for development
 
 ### Priority Improvements
 
 | Priority | Improvement | Effort | Impact |
 |----------|-------------|--------|--------|
 | **High** | Add formal Command interface | Low | High |
-| **High** | Validate ENCRYPTION_KEY at startup | Low | High |
 | **Medium** | Standardize DI across all commands | Medium | High |
-| **Medium** | Add logging to silent catch blocks | Low | Medium |
 | **Low** | Extract chat history to dedicated service | Medium | Medium |
-| **Low** | Consolidate Caller export patterns | Low | Low |
 
 ---
 

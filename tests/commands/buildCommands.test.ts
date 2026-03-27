@@ -1,7 +1,7 @@
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 import { Collection } from 'discord.js';
 import type { ExtendedClient } from '../../src/helpers/interfaces.js';
-const commandCount = 30;
+const commandCount = 29;
 
 // Mock all command modules
 jest.unstable_mockModule('../../src/commands/arab.js', () => ({
@@ -90,11 +90,6 @@ jest.unstable_mockModule('../../src/commands/yes.js', () => ({
 }));
 jest.unstable_mockModule('../../src/commands/you.js', () => ({
     default: { data: { name: 'you', toJSON: () => ({ name: 'you' }) } }
-}));
-
-// Mock pterodactyl/master.js to avoid loading Database/better-sqlite3
-jest.unstable_mockModule('../../src/commands/pterodactyl/master.js', () => ({
-    default: { data: { name: 'pterodactyl', toJSON: () => ({ name: 'pterodactyl' }) } }
 }));
 
 // Import after mocks are set up
