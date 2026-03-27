@@ -3,11 +3,10 @@
 # Project: BongBot
 
 ## Project Description
-A Discord Bot built on NodeJS in TypeScript. Contains several functions, including an ai chatbot, pterodactyl server management, a quote API and others.
+A Discord Bot built on NodeJS in TypeScript. Contains several functions, including an ai chatbot, a quote API and others.
 
 ## Tech Stack:
 - Bot: TypeScript
-- Database: SQLite
 - Testing: jest, ts-jest
 
 ## Code Conventions
@@ -32,7 +31,6 @@ A Discord Bot built on NodeJS in TypeScript. Contains several functions, includi
     - /helpers - helper functions for re-usable code declarations
     - responses - Media files used by chatbot and error responses
 - tests - Test Files
-- data - .db files for SQLite usage (data folder is in gitignore and shouldn't be committed)
 
 ## Important Notes
 - API calls should use caller utility in /src/helpers/caller.ts
@@ -79,18 +77,9 @@ Commands follow a consistent pattern with required exports:
 Optional command methods:
 - `executeReply(message, bot)`: For mention-based invocation without content (used by quote creation)
 - `executeLegacy(message, bot)`: For mention-based invocation with content (used by chat)
-- `setupCollector(interaction, message)`: For commands needing button/select menu collectors
 - `ephemeralDefer`: Boolean to make initial reply ephemeral
 
 Commands are registered in `src/commands/buildCommands.ts` - add new commands to the `commandsArray`.
-
-### Subcommand Pattern (Pterodactyl)
-
-Complex features use a master command with subcommands. See `src/commands/pterodactyl/master.ts`:
-- Master file defines the SlashCommandBuilder with `.addSubcommand()`
-- Each subcommand is a separate class in its own file
-- Master's `execute()` routes to subcommand handlers via switch statement
-This is a new structure that is expected to be the standard structure going forward for when multiple commands interact with a system.
 
 ### Configuration
 
@@ -105,13 +94,12 @@ Tests use Jest with ESM support and MSW for HTTP mocking:
 
 For tests requiring custom handlers, import `setupServer` from `msw/node` and create a local server. Use `jest.useFakeTimers()` for time-dependent tests.
 
-### Database
-
-`src/helpers/database.ts` wraps better-sqlite3 for the Pterodactyl server management feature. Database files are SQLite.
-
 ### Key Helpers
 
 - `caller.ts`: HTTP client wrapper for external APIs
 - `errorBuilder.ts`: Standardized error response formatting
 - `embedBuilder.ts`: Discord embed construction utilities
 - `quoteBuilder.ts`: Quote-specific embed formatting
+
+## TODO
+- Migrate shared helpers/utilities (e.g. caller, errorBuilder, embedBuilder) from this repo to the `bongbot-core` package and consume them as a dependency, matching the pattern used by `BongBot-Ptero`.
