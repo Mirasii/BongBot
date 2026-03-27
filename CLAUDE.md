@@ -102,4 +102,4 @@ For tests requiring custom handlers, import `setupServer` from `msw/node` and cr
 - `quoteBuilder.ts`: Quote-specific embed formatting
 
 ## TODO
-- Migrate shared helpers/utilities (e.g. caller, errorBuilder, embedBuilder) from this repo to the `bongbot-core` package and consume them as a dependency, matching the pattern used by `BongBot-Ptero`.
+- Replace duplicated helpers/utilities (e.g. caller, errorBuilder, embedBuilder) with imports from the `bongbot-core` package, which already provides these shared modules.
