@@ -9,6 +9,9 @@
         "dev": "docker build . -t bongbot && docker run --rm --env-file .env --volume ./data:/app/data --volume ./logs:/app/logs bongbot",
         "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --json --coverage --outputFile=report.json --passWithNoTests --silent"
     },
+    "dependencies": {
+        "bongbot-ptero": "github:Mirasii/BongBot-Ptero#export-commands-for-composite-bot"
+    },
     "devDependencies": {
         "@google/generative-ai": "^0.24.1",
         "@types/better-sqlite3": "^7.6.13",
