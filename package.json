@@ -10,7 +10,7 @@
         "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --json --coverage --outputFile=report.json --passWithNoTests --silent"
     },
     "dependencies": {
-        "bongbot-ptero": "github:Mirasii/BongBot-Ptero#export-commands-for-composite-bot"
+        "bongbot-ptero": "github:Mirasii/BongBot-Ptero#fix-tsc-issues"
     },
     "devDependencies": {
         "@google/generative-ai": "^0.24.1",
