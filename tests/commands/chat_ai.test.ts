@@ -346,7 +346,7 @@ describe('chat_ai command execution', () => {
       guild: {
         members: mockGuildMemberManager,
         id: null,
-      } as Partial<Guild>,
+      } as unknown as Guild,
     } as unknown as ChatInputCommandInteraction<CacheType>;
 
     await expect(chatAiCommand.execute(mockInteractionNoServer, mockClient)).rejects.toThrow('No server ID available');

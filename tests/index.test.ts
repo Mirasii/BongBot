@@ -240,7 +240,7 @@ describe('BongBot', () => {
             // Add a command with setupCollector
             const commandWithCollector = {
                 data: { name: 'server_status', toJSON: jest.fn(() => ({ name: 'server_status' })) },
-                execute: jest.fn(() => ({ content: 'Server status' })),
+                execute: jest.fn<any>(() => ({ content: 'Server status' })),
                 setupCollector: mockSetupCollector
             };
             mockClient.commands.set('server_status', commandWithCollector);
@@ -249,7 +249,7 @@ describe('BongBot', () => {
                 isCommand: () => true,
                 commandName: 'server_status',
                 deferReply: jest.fn(),
-                followUp: jest.fn(() => Promise.resolve(mockMessage)),
+                followUp: jest.fn<any>(() => Promise.resolve(mockMessage)),
                 deleteReply: jest.fn(),
                 replied: false
             };
@@ -375,7 +375,7 @@ describe('BongBot', () => {
         it('sets commands, presence, and sends deployment card', async () => {
             process.env.DISCORD_CHANNEL_ID = 'test-channel-id';
 
-            const mockDeleteFn = jest.fn().mockResolvedValue(undefined);
+            const mockDeleteFn = jest.fn<any>().mockResolvedValue(undefined);
             const mockMessages = new (Discord.Collection as any)([
                 ['1', { author: { id: 'bot123' }, delete: mockDeleteFn }]
             ]);
