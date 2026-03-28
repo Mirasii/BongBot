@@ -19,6 +19,8 @@ const config: Config = {
   // ✅ Optional resolver for tsconfig paths
   resolver: 'ts-jest-resolver',
 
+  testPathIgnorePatterns: ['/node_modules/', '/dist/'],
+
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
 
   // ✅ Ignore transformation for ESM-compatible node_modules
