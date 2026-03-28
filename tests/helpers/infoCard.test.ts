@@ -118,8 +118,13 @@ describe('infoCard helper', () => {
             })
         );
 
-        // Need to re-import to clear the cached apiResponse
-        const freshInfoCard = await import('../../src/helpers/infoCard.js?t=' + Date.now());
+        // Reset modules to clear the cached apiResponse from previous tests
+        jest.resetModules();
+        jest.unstable_mockModule('discord.js', () => ({
+            EmbedBuilder: mockEmbedBuilder,
+            Colors: { Purple: '#800080' }
+        }));
+        const freshInfoCard = await import('../../src/helpers/infoCard.js');
         const card = await freshInfoCard.generateCard(mockBot);
 
         expect(card).toBeDefined();
@@ -142,8 +147,13 @@ describe('infoCard helper', () => {
             })
         );
 
-        // Need to re-import to clear the cached apiResponse
-        const freshInfoCard = await import('../../src/helpers/infoCard.js?t=' + Date.now());
+        // Reset modules to clear the cached apiResponse from previous tests
+        jest.resetModules();
+        jest.unstable_mockModule('discord.js', () => ({
+            EmbedBuilder: mockEmbedBuilder,
+            Colors: { Purple: '#800080' }
+        }));
+        const freshInfoCard = await import('../../src/helpers/infoCard.js');
         const card = await freshInfoCard.generateCard(mockBot);
 
         expect(card).toBeDefined();
@@ -180,9 +190,7 @@ describe('infoCard helper', () => {
         delete process.env.BRANCH;
         process.env.ENV = 'dev';
 
-        // Need to re-import to clear the cached apiResponse and force new API call
-        const freshInfoCard = await import('../../src/helpers/infoCard.js?t=' + Date.now());
-        const card = await freshInfoCard.generateCard(mockBot);
+        const card = await infoCard.generateCard(mockBot);
 
         expect(card).toBeDefined();
         expect(card.data.description).toContain('main'); // Should use fallback 'main'

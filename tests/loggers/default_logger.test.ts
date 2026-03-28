@@ -10,9 +10,9 @@ jest.unstable_mockModule('../../src/helpers/utilities.js', () => ({
     },
 }));
 
-const mockAccess = jest.fn<() => Promise<void>>();
-const mockWriteFile = jest.fn<() => Promise<void>>();
-const mockAppendFile = jest.fn<() => Promise<void>>();
+const mockAccess = jest.fn<(...args: any[]) => Promise<void>>();
+const mockWriteFile = jest.fn<(...args: any[]) => Promise<void>>();
+const mockAppendFile = jest.fn<(...args: any[]) => Promise<void>>();
 
 jest.unstable_mockModule('fs/promises', () => ({
     default: {
