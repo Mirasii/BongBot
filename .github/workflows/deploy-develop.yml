@@ -339,7 +339,6 @@ jobs:
         if: github.actor != 'dependabot[bot]'
         env:
           GH_TOKEN: ${{ secrets.PTERO_SYNC_PAT }}
-          SECRET_DISCORD_API_KEY: ${{ secrets.DISCORD_API_KEY }}
           SECRET_DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
           SECRET_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           SECRET_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -348,7 +347,7 @@ jobs:
           SECRET_SSH_KEY: ${{ secrets.SSH_KEY }}
         run: |
           sync_secret() {
-            printf '%s' "$2" | gh secret set "$1" --repo Mirasii/BongBot-Ptero --env Prod
+            printf '%s' "$2" | gh secret set "$1" --repo Mirasii/BongBot-Booru --env Dev
           }
 
           sync_secret "SSH_HOST"           "$SECRET_SSH_HOST"
