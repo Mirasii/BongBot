@@ -10,3 +10,4 @@ report.json
 dist/*
 data/*
 logs/*
+test-results/*
