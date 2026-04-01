@@ -1,13 +1,8 @@
-/**
- * @fileoverview Updated unit test suite for BongBot (Core-Refactored)
- */
 import { jest, describe, it, expect, beforeAll } from '@jest/globals';
 
-// Define mocks for the command execution
 const mockExecuteReply = jest.fn<any>(() => Promise.resolve({ content: 'pong reply!' }));
 const mockExecuteLegacy = jest.fn<any>(() => Promise.resolve({ content: 'pong legacy!' }));
 
-// 1. Mock @pookiesoft/bongbot-core BEFORE any imports
 jest.unstable_mockModule('@pookiesoft/bongbot-core', () => {
     return {
         startWithFunctions: jest.fn(async () => ({
@@ -22,12 +17,10 @@ jest.unstable_mockModule('@pookiesoft/bongbot-core', () => {
     };
 });
 
-// 2. Mock discord.js
 jest.unstable_mockModule('discord.js', () => ({
     Collection: Map,
 }));
 
-// 3. Mock internal helpers/configs
 jest.unstable_mockModule('../src/config/index.js', () => ({
     validateRequiredConfig: jest.fn()
 }));
@@ -50,9 +43,7 @@ describe('BongBot index.ts', () => {
 
     beforeAll(async () => {
         bongCore = await import('@pookiesoft/bongbot-core');
-        // Import index.ts to trigger the initialization logic
         await import('../src/index.js');
-        // Get the result of startWithFunctions from the mock
         mockBot = await (bongCore.startWithFunctions as any).mock.results[0].value;
     });
 
@@ -69,7 +60,6 @@ describe('BongBot index.ts', () => {
         let messageHandler: Function;
 
         beforeAll(() => {
-            // Find the handler registered to messageCreate
             messageHandler = mockBot.on.mock.calls.find((c: any[]) => c[0] === 'messageCreate')[1];
         });
 
@@ -101,7 +91,6 @@ describe('BongBot index.ts', () => {
 
             expect(mockExecuteReply).toHaveBeenCalled();
             expect(replyMsg.delete).toHaveBeenCalled();
-            // Verify final response was sent
             expect(message.reply).toHaveBeenCalledWith({ content: 'pong reply!' });
         });
 
@@ -137,28 +126,22 @@ describe('BongBot index.ts', () => {
             expect(ERROR_BUILDER.buildUnknownError).toHaveBeenCalled();
             expect(replyMsg.delete).toHaveBeenCalled();
         });
-        
+
         it('handles errors when initial reply fails (branch coverage for line 34)', async () => {
-        const ERROR_BUILDER = await import('../src/helpers/errorBuilder.js');
+            const ERROR_BUILDER = await import('../src/helpers/errorBuilder.js');
 
-        // Force the initial "thinking" reply to fail
-        const message = {
-            author: { bot: false },
-            mentions: { users: { has: () => true } },
-            content: '<@bot123> trigger error',
-            // This rejection happens BEFORE 'reply' is assigned
-            reply: jest.fn<() => Promise<void>>().mockRejectedValueOnce(new Error('Discord API Down'))
-        };
+            const message = {
+                author: { bot: false },
+                mentions: { users: { has: () => true } },
+                content: '<@bot123> trigger error',
+                reply: jest.fn<() => Promise<void>>().mockRejectedValueOnce(new Error('Discord API Down'))
+            };
 
-        await messageHandler(message);
+            await messageHandler(message);
 
-        // This ensures that the code reached the catch block
-        expect(ERROR_BUILDER.buildUnknownError).toHaveBeenCalled();
-
-        // This confirms the second message.reply (the error response) was attempted
-        // even though the first reply didn't exist to be deleted
-        expect(message.reply).toHaveBeenCalledTimes(2);
-    });
+            expect(ERROR_BUILDER.buildUnknownError).toHaveBeenCalled();
+            expect(message.reply).toHaveBeenCalledTimes(2);
+        });
     });
 
     it('initializes TikTok client on clientReady', async () => {
