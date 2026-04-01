@@ -52,7 +52,9 @@ jobs:
         run: |
           npm ci
           npm run test
-
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
       # --- Debug coverage files ---
       - name: Debug Coverage Files
         run: |

@@ -13,7 +13,7 @@ jobs:
       contents: write
       pull-requests: read
       packages: read
-      
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v5
@@ -28,6 +28,7 @@ jobs:
         env:
           JEST_JUNIT_OUTPUT_DIR: ./test-results
           JEST_JUNIT_OUTPUT_NAME: junit.xml
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # --- Upload coverage and test analytics to Codecov ---
       - name: Upload coverage reports to Codecov
