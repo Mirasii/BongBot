@@ -1,46 +1,19 @@
-import { Client, GatewayIntentBits, Collection, ActivityType, MessageFlags } from 'discord.js';
-import type { Message, MessageReplyOptions, InteractionReplyOptions, CommandInteraction, Interaction, ApplicationCommandDataResolvable } from 'discord.js';
-import type { ExtendedClient } from './helpers/interfaces.ts';
-import LOGGER from './services/logging_service.js';
-import crypto from 'crypto';
-import config, { validateRequiredConfig } from './config/index.js';
+import type { Message, MessageReplyOptions } from 'discord.js';
+import type { ExtendedClient } from '@pookiesoft/bongbot-core';
+import { validateRequiredConfig } from './config/index.js';
 import { buildUnknownError } from './helpers/errorBuilder.js';
-import { generateCard } from './helpers/infoCard.js';
 import buildCommands from './commands/buildCommands.js';
 import TikTok from './commands/naniko.js';
+import { startWithFunctions } from '@pookiesoft/bongbot-core';
 
-// Validate required environment variables early to fail fast
+let tiktok_client: TikTok;
+/** initialise shared bot code */
+const bot: ExtendedClient = await startWithFunctions('PookieSoft', 'BongBot', buildCommands, ['setupCollector']);
+
+/** needed as additional config not in -core */
 validateRequiredConfig();
-
-let tiktok_client;
-const token: string = config.discord.apikey!;
-const bot: ExtendedClient = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
-
-/** set up logging */
-process.env.SESSION_ID = crypto.randomUUID();
-const commands: Array<ApplicationCommandDataResolvable> = buildCommands(bot);
-
-/** respond to slash commands */
-bot.on('interactionCreate', async (interaction: Interaction) => {
-    if (!interaction.isCommand()) { return; }
-    interaction as CommandInteraction;
-
-    try {
-        const command = bot.commands!.get(interaction.commandName);
-        if (!command) return;
-        await interaction.deferReply({ flags: command.msgFlag || MessageFlags.Loading });
-        const response = await command.execute(interaction, bot); 
-        if (response?.isError === true && interaction.replied) { 
-            await interaction.deleteReply(); 
-        }
-        const message = await interaction.followUp(response);
-        if (command && typeof (command as any).setupCollector === 'function') {
-            await (command as any).setupCollector(interaction, message);
-        }
-    } catch (error) {
-        if (interaction.replied) { await interaction.deleteReply(); }
-        await interaction.followUp(await buildUnknownError(error) as InteractionReplyOptions);
-    }
+bot.on('clientReady', () => {
+    tiktok_client = new TikTok(bot, bot.logger as any);
 });
 
 /** respond to messages */
@@ -62,42 +35,3 @@ bot.on('messageCreate', async (message: Message) => {
         await message.reply(errorResp as MessageReplyOptions);
     }   
 });
-
-/** set commands on bot ready */
-bot.on('clientReady', async () => {
-    try {
-        await bot.application!.commands.set(commands);
-        bot.user!.setPresence({ activities: [{ 
-            name: `with your heart`, 
-            type: ActivityType.Playing
-        }], status: 'online' });
-        console.log('Commands Initiated!');
-        await postDeploymentMessage();
-        tiktok_client = new TikTok(bot, LOGGER);
-    } catch (error) {
-        LOGGER.log(error);
-    }
-});
-
-const postDeploymentMessage = async () => {
-    if (!process.env.DISCORD_CHANNEL_ID) { LOGGER.log('DISCORD_CHANNEL_ID not set'); return; }
-    const channel = await bot.channels.fetch(process.env.DISCORD_CHANNEL_ID);
-    if (!channel || !channel.isTextBased()) return;
-    if (!('send' in channel && typeof channel.send === 'function')) return;
-    try {
-        const messages = await channel.messages.fetch({ limit: 100 });
-        const botMessages = messages.filter((msg: Message) => msg.author.id === bot.user!.id);
-        botMessages?.forEach((message: Message) => message.delete());
-    } catch (err: any) {
-        console.warn(`Warning: Could not delete messages. The bot might be missing 'Manage Messages' permissions. Error: ${err.message}`);
-    }
-    // Send the composed embed to the channel.
-    const card = await generateCard(bot);
-    await channel.send({ embeds: [card] });
-    
-};
-
-/** login to bot */
-bot.login(token);
-console.log('BongBot Online!');
-console.log(`sessionId: ${process.env.SESSION_ID}`);
