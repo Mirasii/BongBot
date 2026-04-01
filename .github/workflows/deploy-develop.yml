@@ -54,7 +54,7 @@ jobs:
           npm run test
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
+
       # --- Debug coverage files ---
       - name: Debug Coverage Files
         run: |
@@ -248,6 +248,8 @@ jobs:
         with:
           context: .
           push: true
+          secrets: |
+            NODE_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:pr-${{ github.event.pull_request.number }}
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:latest

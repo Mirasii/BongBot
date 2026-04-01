@@ -129,6 +129,8 @@ jobs:
         with:
           context: .
           push: true
+          secrets: |
+            NODE_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot:${{ steps.get_version.outputs.new_tag }}
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot:latest
