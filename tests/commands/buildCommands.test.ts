@@ -93,7 +93,7 @@ jest.unstable_mockModule('../../src/commands/you.js', () => ({
 }));
 
 // Mock bongbot-ptero to avoid loading native dependencies
-jest.unstable_mockModule('bongbot-ptero', () => ({
+jest.unstable_mockModule('@pookiesoft/bongbot-ptero', () => ({
     pterodactyl: { data: { name: 'pterodactyl', toJSON: () => ({ name: 'pterodactyl' }) } }
 }));
 

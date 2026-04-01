@@ -29,7 +29,7 @@ import userinfo from './userinfo.js';
 import vape from './vape.js';
 import yes from './yes.js';
 import you from './you.js';
-import { pterodactyl } from 'bongbot-ptero';
+import { pterodactyl } from '@pookiesoft/bongbot-ptero';
 
 const commandsArray = [ arab, callirap, chat_ai, cherry, classic, club_kid, creeper, cringe, dance, die, fubuki, funk,
                         help, hentai, hoe, info, mirasi, no, ping, polka, quotedb_get, quotedb_get_random, quotedb_post,
