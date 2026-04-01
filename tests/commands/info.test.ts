@@ -1,15 +1,16 @@
 import { jest } from '@jest/globals';
 import type { ChatInputCommandInteraction, CacheType } from 'discord.js';
-import { ExtendedClient } from '../../src/helpers/interfaces.js';
+import { ExtendedClient } from '@pookiesoft/bongbot-core';
 
 // Mock functions
 const mockGenerateCard = jest.fn<() => Promise<any>>();
 const mockBuildError = jest.fn<() => Promise<string>>();
 
 // Mock infoCard before import
-jest.unstable_mockModule('../../src/helpers/infoCard.js', () => ({
-  generateCard: mockGenerateCard
+jest.unstable_mockModule('@pookiesoft/bongbot-core', () => ({
+    generateCard: mockGenerateCard
 }));
+
 
 // Mock errorBuilder before import
 jest.unstable_mockModule('../../src/helpers/errorBuilder.js', () => ({

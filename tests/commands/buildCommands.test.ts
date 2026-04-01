@@ -1,8 +1,13 @@
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 import { Collection } from 'discord.js';
-import type { ExtendedClient } from '../../src/helpers/interfaces.js';
+import type { ExtendedClient } from '@pookiesoft/bongbot-core';
 const commandCount = 30;
-
+jest.unstable_mockModule('@pookiesoft/bongbot-core', () => ({
+    commandBuilder: jest.fn((client: ExtendedClient, commands: any[]) => {
+        commands.forEach(cmd => client.commands.set(cmd.data.name, cmd));
+        return commands.map(cmd => cmd.data.toJSON());
+    }),
+}));
 // Mock all command modules
 jest.unstable_mockModule('../../src/commands/arab.js', () => ({
     default: { data: { name: 'arab', toJSON: () => ({ name: 'arab' }) } }

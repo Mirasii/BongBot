@@ -75,7 +75,7 @@ jest.unstable_mockModule('../src/helpers/errorBuilder.js', () => ({
 }));
 
 // Mock infoCard
-jest.unstable_mockModule('../src/helpers/infoCard.js', () => ({
+jest.unstable_mockModule('@pookiesoft/bongbot-core', () => ({
     generateCard: jest.fn(() => ({ title: 'Fake Card' }))
 }));
 
