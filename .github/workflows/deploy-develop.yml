@@ -14,6 +14,7 @@ jobs:
     permissions:
       checks: write
       pull-requests: write
+      packages: read
 
     steps:
       # Checkout the code
