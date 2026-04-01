@@ -1,8 +1,8 @@
 # BongBot
 
-![Build Status](https://img.shields.io/github/actions/workflow/status/Mirasii/BongBot/deploy.yml?label=Production%20Deploy&logo=github)
-![Coverage](https://codecov.io/gh/Mirasii/BongBot/branch/main/graph/badge.svg)
-![License](https://img.shields.io/github/license/Mirasii/BongBot?v=2)
+![Build Status](https://img.shields.io/github/actions/workflow/status/PookieSoft/BongBot/deploy.yml?label=Production%20Deploy&logo=github)
+![Coverage](https://codecov.io/gh/PookieSoft/BongBot/branch/main/graph/badge.svg)
+![License](https://img.shields.io/github/license/PookieSoft/BongBot?v=2)
 ![Node Version](https://img.shields.io/badge/node-%3E%3D24.0.0-brightgreen?logo=node.js)
 
 Welcome to BongBot! 🤖
@@ -31,7 +31,7 @@ BongBot is a Discord Bot made for fun with various different commands. BongBot l
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/Mirasii/BongBot.git
+   git clone https://github.com/PookieSoft/BongBot.git
    cd BongBot
    ```
 
