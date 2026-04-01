@@ -349,6 +349,8 @@ jobs:
           push: false
           load: true
           tags: bongbot-local:dependabot-pr-${{ github.event.pull_request.number }}
+          secrets: |
+            NODE_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
 
       - name: Smoke Test Local Container (Dependabot)
         if: github.actor == 'dependabot[bot]'
