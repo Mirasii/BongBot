@@ -14,6 +14,7 @@ jobs:
     permissions:
       checks: write
       pull-requests: write
+      packages: read
 
     steps:
       # Checkout the code
@@ -51,6 +52,8 @@ jobs:
         run: |
           npm ci
           npm run test
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # --- Debug coverage files ---
       - name: Debug Coverage Files
@@ -245,6 +248,8 @@ jobs:
         with:
           context: .
           push: true
+          secrets: |
+            NODE_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:pr-${{ github.event.pull_request.number }}
             ${{ secrets.DOCKERHUB_USERNAME }}/bongbot-develop:latest
@@ -344,6 +349,8 @@ jobs:
           push: false
           load: true
           tags: bongbot-local:dependabot-pr-${{ github.event.pull_request.number }}
+          secrets: |
+            NODE_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
 
       - name: Smoke Test Local Container (Dependabot)
         if: github.actor == 'dependabot[bot]'

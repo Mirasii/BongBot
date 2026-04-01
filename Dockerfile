@@ -7,8 +7,11 @@ COPY ./package.json /app/package.json
 COPY ./package-lock.json /app/package-lock.json
 COPY ./tsconfig.json /app/tsconfig.json
 COPY ./esbuild.config.mjs /app/esbuild.config.mjs
+COPY ./.npmrc /app/.npmrc
 
-RUN --mount=type=cache,target=/root/.npm-production npm ci
+RUN --mount=type=secret,id=NODE_AUTH_TOKEN \
+    export NODE_AUTH_TOKEN=$(cat /run/secrets/NODE_AUTH_TOKEN) && npm ci
+
 RUN npm run build
 # Copy static files to the build output.
 COPY ./src/files /app/dist/files

@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, CommandInteraction } from 'discord.js';
-import { generateCard } from '../helpers/infoCard.js';
+import { generateCard } from '@pookiesoft/bongbot-core'; 
 import { buildError } from '../helpers/errorBuilder.js';
-import { ExtendedClient } from '../helpers/interfaces.js';
+import type { ExtendedClient } from '@pookiesoft/bongbot-core';
 
 export default {
     data: new SlashCommandBuilder()

@@ -24,6 +24,7 @@ jobs:
       contents: read
       security-events: write
       actions: read
+      packages: read
 
     steps:
       - name: Checkout Code

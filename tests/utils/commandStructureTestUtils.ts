@@ -82,7 +82,7 @@ function testInfoCardCommand(command: Command, expectedName: string) {
     
     describe('Info Card command behavior', () => {
         test('should use infoCard helper', () => {
-            expect(require('../../src/helpers/infoCard.js')).toBeDefined();
+            expect(require('@pookiesoft/bongbot-core')).toBeDefined();
         });
         
         test('should handle errors with ERROR_BUILDER', () => {

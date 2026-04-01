@@ -16,9 +16,6 @@
     "noFallthroughCasesInSwitch": true,
     "rootDir": ".",
     "types": ["jest", "node"],
-    "paths": {
-      "bongbot-ptero": ["./node_modules/bongbot-ptero/dist/index"] 
-    }
   },
   "include": ["src/**/*", "tests/**/*"],
   "exclude": ["node_modules", "dist"]

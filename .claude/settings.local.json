@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npm test:*)",
+      "Bash(NODE_OPTIONS=--experimental-vm-modules npx jest tests/helpers/infoCard.test.ts --silent 2>&1)",
+      "Bash(docker image:*)",
+      "Bash(docker ps:*)",
+      "Bash(git remote:*)",
+      "Bash(git -C ../BongBot-Ptero remote -v)",
+      "Bash(git -C ../BongBot-Core remote -v)",
+      "Bash(git -C ../BongBot-Booru remote -v)",
+      "Bash(git -C ../BongBot-Ptero remote set-url origin https://github.com/PookieSoft/BongBot-Ptero.git)",
+      "Bash(git -C ../BongBot-Core remote set-url origin https://github.com/PookieSoft/BongBot-Core.git)",
+      "Bash(git -C ../BongBot-Booru remote set-url origin https://github.com/PookieSoft/BongBot-Booru.git)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr:*)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//home/mirasi/BongBot/**)",
+      "Bash(done)",
+      "Bash(gh repo:*)",
+      "Bash(npm install:*)",
+      "Bash(npm view:*)",
+      "Bash(gh search:*)",
+      "Bash(gh issue:*)"
+    ]
+  }
+}
