@@ -59,22 +59,26 @@ Invite the bot with the `bot` and `applications.commands` scopes and enable Mess
 3. **Run with Docker**:
 
     ```bash
+    # Create writable host directories before mounting them
+    mkdir -p data logs
     # Build and run the container
     docker build --secret id=NODE_AUTH_TOKEN,env=NODE_AUTH_TOKEN -t bongbot .
-    docker run --rm --env-file .env --volume ./data:/app/data --volume ./logs:/app/logs bongbot
+    docker run --rm --user "$(id -u):$(id -g)" --env-file .env --volume ./data:/app/data --volume ./logs:/app/logs bongbot
     ```
 
     Or use the pre-built image:
 
     ```bash
     # Dev Build
-    docker run --rm --env-file .env --volume ./data:/app/data --volume ./logs:/app/logs mirasi/bongbot-develop:latest
+    docker run --rm --user "$(id -u):$(id -g)" --env-file .env --volume ./data:/app/data --volume ./logs:/app/logs mirasi/bongbot-develop:latest
     ```
 
     ```bash
     # Release Build
-    docker run --rm --env-file .env --volume ./data:/app/data --volume ./logs:/app/logs mirasi/bongbot:latest
+    docker run --rm --user "$(id -u):$(id -g)" --env-file .env --volume ./data:/app/data --volume ./logs:/app/logs mirasi/bongbot:latest
     ```
+
+    The image uses Distroless’s dedicated `nonroot` user (UID/GID `65532:65532`), with writable `data/` and `logs/` directories. Application code remains owned by root. For ordinary Linux Docker deployments, the run commands select your current host UID/GID so bind mounts use their owner’s permissions. Run these commands as the non-root owner of those directories. Create `data/` and `logs/` as that user before running any image; existing database files must also be writable by that user. On NAS/NFS mounts, container root can be denied writes by the server, so use the directory owner’s UID/GID.
 
     Keep `data/` and `logs/` mounted across container replacements. Ptero stores registered servers and encrypted API keys in `data/`; Core writes logs under `logs/`. Retain the same `ENCRYPTION_KEY` with the Ptero database so existing API keys remain readable. `NODE_AUTH_TOKEN` is a build/install secret, not a bot runtime setting.
 
@@ -197,7 +201,7 @@ npm run build
 npm test
 ```
 
-The Docker build also copies static media into the runtime image; `npm run build` alone bundles code and SQLite dependencies. Use the Docker commands above to run the complete bot with media. The current `npm run dev` script does not forward the package token as a build secret, so use the explicit Docker build command above for authenticated builds.
+The Docker build also copies static media into the runtime image; `npm run build` alone bundles code and SQLite dependencies. Use the Docker commands above to run the complete bot with media. `npm run dev` creates the host directories, builds with the package token secret, and runs with your host UID/GID.
 
 ## Contributing
 
