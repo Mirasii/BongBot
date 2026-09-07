@@ -1,10 +1,16 @@
 import esbuild from 'esbuild';
-import { copyFileSync, existsSync, mkdirSync } from 'fs';
+import { copyFileSync, cpSync, existsSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
 
 const nativeModulePlugin = {
     name: 'native-module-plugin',
     setup(build) {
+        // Core 1.7 uses SQLite 13, whose prebuild loader needs its original directory layout.
+        build.onResolve({ filter: /^better-sqlite3$/ }, (args) => {
+            if (args.resolveDir.includes('@pookiesoft/bongbot-core')) {
+                return { path: './core-sqlite/lib/index.js', external: true };
+            }
+        });
         build.onLoad({ filter: /\.node$/ }, (args) => {
             return {
                 contents: `
@@ -44,6 +50,9 @@ const buildOptions = {
 
 // Copy better-sqlite3 native bindings after build
 async function copyNativeBindings() {
+    cpSync('node_modules/@pookiesoft/bongbot-core/node_modules/better-sqlite3', 'dist/core-sqlite', {
+        recursive: true,
+    });
     const sqlitePath = 'node_modules/better-sqlite3/build/Release/better_sqlite3.node';
     const destDir = 'dist/build/Release';
 
