@@ -1,4 +1,8 @@
-FROM node:24-slim AS builder
+# Not -slim: better-sqlite3 v13 relies on npm's implicit `node-gyp rebuild`,
+# which needs Python/make/g++ to configure even though its binding.gyp compiles
+# nothing when a prebuilt binary ships with the package. Builder stage only —
+# the release stage below is still distroless.
+FROM node:24 AS builder
 
 WORKDIR /app
 
@@ -33,7 +37,7 @@ COPY --from=builder /app/dist /app/dist
 COPY --from=builder --chown=65532:65532 /app/logs /app/logs
 COPY --from=builder --chown=65532:65532 /app/data /app/data
 COPY --from=builder /app/package.json /app/package.json
-COPY --from=builder /app/node_modules/better-sqlite3/build/Release/better_sqlite3.node /app/build/Release/better_sqlite3.node
+COPY --from=builder /app/build /app/build
 
 ENV NODE_ENV=production
 
