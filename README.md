@@ -7,7 +7,7 @@
 
 Welcome to BongBot! 🤖
 
-BongBot is a Discord bot with media commands, AI chat, quote management, Booru image search, and Pterodactyl server controls.
+BongBot is a Discord Bot made for fun with various different commands. BongBot features slash commands for sharing quotes, finding images, and managing game servers, plus a chatbot with a spicy personality!
 
 ## Features
 
