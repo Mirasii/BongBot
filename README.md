@@ -84,7 +84,7 @@ Invite the bot with the `bot` and `applications.commands` scopes and enable Mess
 
 ## Environment Configuration
 
-These settings and commands were checked against the installed releases recorded in `package-lock.json`: BongBot-Core 1.7.0, BongBot-Ptero 1.4.7, BongBot-Quote 2.1.24, and BongBot-Booru 1.0.0. Defaults below describe unset variables; `.env.example` explicitly selects Safebooru and the Europe/London timezone.
+Defaults below describe unset variables; `.env.example` explicitly selects Safebooru and the Europe/London timezone.
 
 ### Bot and logging
 
