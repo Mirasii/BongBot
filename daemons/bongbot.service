@@ -7,6 +7,8 @@ Requires=docker.service
 ExecStartPre=-/usr/bin/docker stop bongbot
 ExecStartPre=-/usr/bin/docker rm bongbot
 ExecStartPre=/usr/bin/docker pull mirasi/bongbot:latest
+# The image runs as distroless nonroot (65532); the bind mounts must be writable by it.
+ExecStartPre=/usr/bin/chown -R 65532:65532 /etc/bongbot/data /etc/bongbot/logs
 
 ExecStart=/usr/bin/docker run \
   --name bongbot \
