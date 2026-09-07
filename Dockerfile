@@ -2,6 +2,11 @@ FROM node:24-slim AS builder
 
 WORKDIR /app
 
+# SQLite's native install step requires node-gyp's build toolchain.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY ./src /app/src
 COPY ./package.json /app/package.json
 COPY ./package-lock.json /app/package-lock.json
