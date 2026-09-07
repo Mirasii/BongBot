@@ -20,8 +20,6 @@ describe('config/index.js', () => {
 
     test('should load configuration values from process.env when set', async () => {
         process.env.DISCORD_API_KEY = 'mock_discord_key';
-        process.env.GOOGLE_API_KEY = 'mock_google_key';
-        process.env.GOOGLE_CX = 'mock_google_cx';
         process.env.OPENAI_ACTIVE = 'true';
         process.env.OPENAI_API_KEY = 'mock_openai_key';
         process.env.OPENAI_MODEL = 'mock_openai_model';
@@ -33,9 +31,6 @@ describe('config/index.js', () => {
         const { default: config } = await import('../../src/config/index.js');
 
         expect(config.discord.apikey).toBe('mock_discord_key');
-        expect(config.apis.google.url).toBe('https://www.googleapis.com');
-        expect(config.apis.google.apikey).toBe('mock_google_key');
-        expect(config.apis.google.cx).toBe('mock_google_cx');
         expect(config.apis.openai.url).toBe('https://api.openai.com');
         expect(config.apis.openai.active).toBe(true);
         expect(config.apis.openai.apikey).toBe('mock_openai_key');
@@ -49,8 +44,6 @@ describe('config/index.js', () => {
     test('should use default values when environment variables are not set', async () => {
         // Ensure relevant env vars are undefined
         delete process.env.DISCORD_API_KEY;
-        delete process.env.GOOGLE_API_KEY;
-        delete process.env.GOOGLE_CX;
         delete process.env.OPENAI_ACTIVE;
         delete process.env.OPENAI_API_KEY;
         delete process.env.OPENAI_MODEL;
@@ -62,9 +55,6 @@ describe('config/index.js', () => {
         const { default: config } = await import('../../src/config/index.js');
 
         expect(config.discord.apikey).toBe(null);
-        expect(config.apis.google.url).toBe('https://www.googleapis.com');
-        expect(config.apis.google.apikey).toBe(null);
-        expect(config.apis.google.cx).toBe(null);
         expect(config.apis.openai.url).toBe('https://api.openai.com');
         expect(config.apis.openai.active).toBe(false);
         expect(config.apis.openai.apikey).toBe(null);
