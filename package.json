@@ -12,7 +12,7 @@
     "dependencies": {
         "@pookiesoft/bongbot-booru": "^1.0.0",
         "@pookiesoft/bongbot-core": "^1.7.0",
-        "@pookiesoft/bongbot-ptero": "^1.4.13",
+        "@pookiesoft/bongbot-ptero": "^2.0.1",
         "@pookiesoft/bongbot-quote": "^2.1.59"
     },
     "devDependencies": {
