@@ -16,6 +16,16 @@ bot.on('clientReady', () => {
     tiktok_client = new TikTok(bot, bot.logger as any);
 });
 
+/** Core handles slash commands; Booru also needs tag autocomplete. */
+bot.on('interactionCreate', async (interaction) => {
+    if (!interaction.isAutocomplete()) return;
+    try {
+        await bot.commands.get(interaction.commandName)?.autocomplete?.(interaction);
+    } catch (error) {
+        bot.logger.error(error as Error);
+    }
+});
+
 /** respond to messages */
 bot.on('messageCreate', async (message: Message) => {
     if (message!.author!.bot || !message!.mentions?.users!.has(bot.user!.id)) return;
