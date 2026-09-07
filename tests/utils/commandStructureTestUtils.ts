@@ -38,26 +38,6 @@ function testCommandStructure(command: Command, expectedName: string, descriptio
 }
 
 /**
- * Test Google Search command pattern (extends standard structure)
- * @param {Object} command - The command module to test
- * @param {string} expectedName - Expected command name
- * @param {string} searchQuery - Expected search query the command uses
- */
-function testGoogleSearchCommand(command: Command, expectedName: string) {
-    testCommandStructure(command, expectedName);
-
-    describe('Google Search command behavior', () => {
-        test('should use googleSearch helper', () => {
-            expect(require('../../src/helpers/googleSearch.js')).toBeDefined();
-        });
-
-        test('should handle search errors with ERROR_BUILDER', () => {
-            expect(require('../../src/helpers/errorBuilder.js')).toBeDefined();
-        });
-    });
-}
-
-/**
  * Test Embed Builder command pattern (extends standard structure)
  * @param {Object} command - The command module to test
  * @param {string} expectedName - Expected command name
@@ -91,4 +71,4 @@ function testInfoCardCommand(command: Command, expectedName: string) {
     });
 }
 
-export { testCommandStructure, testGoogleSearchCommand, testEmbedCommand, testInfoCardCommand };
+export { testCommandStructure, testEmbedCommand, testInfoCardCommand };

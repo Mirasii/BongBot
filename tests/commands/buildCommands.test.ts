@@ -1,13 +1,11 @@
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 import { Collection } from 'discord.js';
 import type { ExtendedClient } from '@pookiesoft/bongbot-core';
-const commandCount = 28;
-jest.unstable_mockModule('@pookiesoft/bongbot-core', () => ({
-    commandBuilder: jest.fn((client: ExtendedClient, commands: any[]) => {
-        commands.forEach((cmd) => client.commands.set(cmd.data.name, cmd));
-        return commands.map((cmd) => cmd.data.toJSON());
-    }),
-}));
+
+// Core imports SQLite, whose module initialization needs the real filesystem API.
+jest.unmock('fs');
+const { Caller } = await import('@pookiesoft/bongbot-core');
+const commandCount = 29;
 // Mock all command modules
 jest.unstable_mockModule('../../src/commands/arab.js', () => ({
     default: { data: { name: 'arab', toJSON: () => ({ name: 'arab' }) } },
@@ -39,9 +37,6 @@ jest.unstable_mockModule('../../src/commands/dance.js', () => ({
 jest.unstable_mockModule('../../src/commands/die.js', () => ({
     default: { data: { name: 'die', toJSON: () => ({ name: 'die' }) } },
 }));
-jest.unstable_mockModule('../../src/commands/fubuki.js', () => ({
-    default: { data: { name: 'fubuki', toJSON: () => ({ name: 'fubuki' }) } },
-}));
 jest.unstable_mockModule('../../src/commands/funk.js', () => ({
     default: { data: { name: 'funk', toJSON: () => ({ name: 'funk' }) } },
 }));
@@ -65,9 +60,6 @@ jest.unstable_mockModule('../../src/commands/no.js', () => ({
 }));
 jest.unstable_mockModule('../../src/commands/ping.js', () => ({
     default: { data: { name: 'ping', toJSON: () => ({ name: 'ping' }) } },
-}));
-jest.unstable_mockModule('../../src/commands/polka.js', () => ({
-    default: { data: { name: 'polka', toJSON: () => ({ name: 'polka' }) } },
 }));
 jest.unstable_mockModule('../../src/commands/roll.js', () => ({
     default: { data: { name: 'roll', toJSON: () => ({ name: 'roll' }) } },
@@ -105,6 +97,7 @@ describe('buildCommands', () => {
     let mockClient: ExtendedClient;
 
     beforeEach(() => {
+        process.env.IMAGE_PROVIDER = 'safebooru';
         mockClient = {
             commands: new Collection(),
         } as unknown as ExtendedClient;
@@ -127,6 +120,9 @@ describe('buildCommands', () => {
         buildCommands(mockClient);
 
         // Test a few command names
+        expect(mockClient.commands?.has('fox')).toBe(true);
+        expect(mockClient.commands?.has('clown')).toBe(true);
+        expect(mockClient.commands?.has('booru')).toBe(true);
         expect(mockClient.commands?.has('ping')).toBe(true);
         expect(mockClient.commands?.has('help')).toBe(true);
         expect(mockClient.commands?.has('arab')).toBe(true);
@@ -166,4 +162,72 @@ describe('buildCommands', () => {
         const result = buildCommands(mockClient);
         expect(result.length).toBe(commandCount);
     });
+});
+
+test('registers the real Booru search schema with autocomplete', () => {
+    const client = { commands: new Collection() } as unknown as ExtendedClient;
+    const commands = buildCommands(client);
+    const search = commands.find((command) => command.name === 'booru').options[0];
+    expect(search.name).toBe('search');
+    expect(search.options).toHaveLength(5);
+    expect(search.options.every((option: any) => option.autocomplete)).toBe(true);
+    expect(search.options[0].required).toBe(true);
+    expect(new Set(commands.map((command) => command.name)).size).toBe(commandCount);
+});
+
+test.each([
+    ['fox', 'shirakami_fubuki'],
+    ['clown', 'omaru_polka'],
+])('%s searches through the configured Booru provider', async (name, tag) => {
+    process.env.IMAGE_PROVIDER = 'safebooru';
+    process.env.ALLOW_AI_IMAGES = 'false';
+    const get = jest.spyOn(Caller.prototype, 'get').mockResolvedValue([]);
+    try {
+        const client = { commands: new Collection() } as unknown as ExtendedClient;
+        buildCommands(client);
+        const response = await client.commands.get(name)!.execute({} as any, client);
+        expect(response).toMatchObject({ content: 'No images found for those tags.' });
+        expect(get).toHaveBeenCalledWith('https://safebooru.org', '/index.php', expect.any(String));
+        const query = new URLSearchParams(get.mock.calls[0][2] as string);
+        expect(query.get('tags')).toBe(`${tag} -ai-generated`);
+    } finally {
+        get.mockRestore();
+    }
+});
+
+test('rejects invalid provider configuration before registering commands', () => {
+    process.env.IMAGE_PROVIDER = 'invalid';
+    const client = { commands: new Collection() } as unknown as ExtendedClient;
+    try {
+        expect(() => buildCommands(client)).toThrow('IMAGE_PROVIDER must be safebooru or gelbooru.');
+        expect(client.commands.size).toBe(0);
+    } finally {
+        delete process.env.IMAGE_PROVIDER;
+    }
+});
+
+test('downloads an image through Core binary HTTP and returns a Discord attachment', async () => {
+    process.env.IMAGE_PROVIDER = 'safebooru';
+    const bytes = Buffer.from('image bytes');
+    const url = 'https://safebooru.org/images/example.png';
+    const get = jest
+        .spyOn(Caller.prototype, 'get')
+        .mockResolvedValueOnce([{ id: 1, rating: 'general', file_url: url }])
+        .mockResolvedValueOnce({ data: bytes, contentType: 'image/png' });
+    try {
+        const client = { commands: new Collection() } as unknown as ExtendedClient;
+        buildCommands(client);
+        const response = (await client.commands.get('fox')!.execute({} as any, client)) as any;
+        expect(get).toHaveBeenLastCalledWith(
+            url,
+            null,
+            null,
+            expect.objectContaining({ Referer: 'https://safebooru.org/' }),
+            'binary'
+        );
+        expect(response.files[0].attachment).toEqual(bytes);
+        expect(response.files[0].name).toBe('safebooru-image.png');
+    } finally {
+        get.mockRestore();
+    }
 });

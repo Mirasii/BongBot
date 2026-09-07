@@ -3,11 +3,6 @@ const config = {
         apikey: process.env.DISCORD_API_KEY || null,
     },
     apis: {
-        google: {
-            url: 'https://www.googleapis.com',
-            apikey: process.env.GOOGLE_API_KEY || null,
-            cx: process.env.GOOGLE_CX || null,
-        },
         openai: {
             url: 'https://api.openai.com',
             active: process.env.OPENAI_ACTIVE === 'true', // Convert string 'true' to boolean

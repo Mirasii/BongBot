@@ -9,7 +9,6 @@ import creeper from './creeper.js';
 import cringe from './cringe.js';
 import dance from './dance.js';
 import die from './die.js';
-import fubuki from './fubuki.js';
 import funk from './funk.js';
 import help from './help.js';
 import hentai from './hentai.js';
@@ -18,7 +17,6 @@ import info from './info.js';
 import mirasi from './mirasi.js';
 import no from './no.js';
 import ping from './ping.js';
-import polka from './polka.js';
 import roll from './roll.js';
 import seachicken from './seachicken.js';
 import userinfo from './userinfo.js';
@@ -27,7 +25,13 @@ import yes from './yes.js';
 import you from './you.js';
 import { pterodactyl } from '@pookiesoft/bongbot-ptero';
 import { quotedb } from '@pookiesoft/bongbot-quote';
-import { commandBuilder } from '@pookiesoft/bongbot-core';
+import { Caller, commandBuilder } from '@pookiesoft/bongbot-core';
+import {
+    buildCommands as buildBooruCommands,
+    createProvider,
+    HttpImageDownloader,
+    RetryingCaller,
+} from '@pookiesoft/bongbot-booru';
 
 const commandsArray = [
     arab,
@@ -40,7 +44,6 @@ const commandsArray = [
     cringe,
     dance,
     die,
-    fubuki,
     funk,
     help,
     hentai,
@@ -49,7 +52,6 @@ const commandsArray = [
     mirasi,
     no,
     ping,
-    polka,
     roll,
     seachicken,
     userinfo,
@@ -61,5 +63,8 @@ const commandsArray = [
 ];
 
 export default function buildCommands(client: ExtendedClient) {
-    return commandBuilder(client, commandsArray);
+    const caller = new RetryingCaller(new Caller());
+    const provider = createProvider(caller);
+    const downloader = new HttpImageDownloader(caller);
+    return [...commandBuilder(client, commandsArray), ...buildBooruCommands(client, provider, downloader)];
 }

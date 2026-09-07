@@ -24,16 +24,18 @@ COPY ./src/responses /app/dist/responses
 RUN mkdir -p /app/logs
 RUN mkdir -p /app/data
 
-FROM gcr.io/distroless/nodejs24-debian13 AS release
+FROM gcr.io/distroless/nodejs24-debian13:nonroot AS release
 
 WORKDIR /app
 
 COPY --from=builder /app/dist /app/dist
-COPY --from=builder /app/logs /app/logs
-COPY --from=builder /app/data /app/data
+COPY --from=builder --chown=65532:65532 /app/logs /app/logs
+COPY --from=builder --chown=65532:65532 /app/data /app/data
 COPY --from=builder /app/package.json /app/package.json
 COPY --from=builder /app/build /app/build
 
 ENV NODE_ENV=production
+
+USER 65532:65532
 
 CMD ["--no-deprecation", "--enable-source-maps", "/app/dist/index.js"]

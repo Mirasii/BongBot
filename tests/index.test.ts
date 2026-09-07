@@ -149,3 +149,37 @@ describe('BongBot index.ts', () => {
         expect(TikTok).toHaveBeenCalled();
     });
 });
+
+describe('Booru autocomplete routing', () => {
+    async function setup() {
+        const core = await import('@pookiesoft/bongbot-core');
+        const bot = await (core.startWithFunctions as any).mock.results[0].value;
+        const handler = bot.on.mock.calls.find((call: any[]) => call[0] === 'interactionCreate')[1];
+        return { bot, handler };
+    }
+
+    it('routes autocomplete to the registered command', async () => {
+        const { bot, handler } = await setup();
+        const autocomplete = jest.fn<any>().mockResolvedValue(undefined);
+        bot.commands.set('booru', { autocomplete });
+        const interaction = { isAutocomplete: () => true, commandName: 'booru' };
+        await handler(interaction);
+        expect(autocomplete).toHaveBeenCalledWith(interaction);
+        await handler({ isAutocomplete: () => false, commandName: 'booru' });
+        expect(autocomplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores commands without autocomplete', async () => {
+        const { handler } = await setup();
+        await expect(handler({ isAutocomplete: () => true, commandName: 'missing' })).resolves.toBeUndefined();
+        await expect(handler({ isAutocomplete: () => true, commandName: 'chat' })).resolves.toBeUndefined();
+    });
+
+    it('logs autocomplete failures', async () => {
+        const { bot, handler } = await setup();
+        const error = new Error('Provider failed');
+        bot.commands.set('booru', { autocomplete: jest.fn<any>().mockRejectedValue(error) });
+        await handler({ isAutocomplete: () => true, commandName: 'booru' });
+        expect(bot.logger.error).toHaveBeenCalledWith(error);
+    });
+});

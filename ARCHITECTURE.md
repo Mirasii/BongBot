@@ -162,7 +162,7 @@ Centralized configuration object with:
 ```typescript
 const config = {
     discord: { apikey },
-    apis: { google, openai, googleai },
+    apis: { openai, googleai },
     media: { file_root: process.env.JEST_WORKER_ID ? './src/' : './dist/' },
 };
 ```
