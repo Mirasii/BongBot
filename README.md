@@ -15,7 +15,7 @@ BongBot is a Discord Bot made for fun with various different commands. BongBot l
 - **AI Chat Integration**: Powered by Google AI (Gemini) or OpenAI GPT models
 - **Media Commands**: Various fun video/audio clips and responses
 - **Quote Database**: Store and retrieve quotes with a dedicated API
-- **Image Search**: Google Custom Search integration
+- **Image Search**: BongBot-Booru integration with Safebooru or Gelbooru
 - **User Information**: Get detailed user and server information
 - **Comprehensive Testing**: Full test coverage with Jest
 
@@ -25,7 +25,7 @@ BongBot is a Discord Bot made for fun with various different commands. BongBot l
 
 - [Docker](https://www.docker.com/get-started) installed on your system
 - A Discord Bot Token (see [Discord Developer Portal](https://discord.com/developers/applications))
-- API keys for optional features (Google AI, OpenAI, Google Search, etc.)
+- API keys for optional features (Google AI, OpenAI, Gelbooru, etc.)
 
 ### Running the Bot
 
@@ -79,8 +79,6 @@ BongBot is a Discord Bot made for fun with various different commands. BongBot l
 | ------------------------- | -------- | ---------------------------------------------------------------------- |
 | `DISCORD_API_KEY`         | ✅       | Your Discord bot token                                                 |
 | `DISCORD_CHANNEL_ID`      | ✅       | Default channel ID for info card on bot launch                         |
-| `GOOGLE_API_KEY`          | ❌       | Google API key for search functionality                                |
-| `GOOGLE_CX`               | ❌       | Google Custom Search Engine ID                                         |
 | `OPENAI_API_KEY`          | ❌       | OpenAI API key for GPT models                                          |
 | `OPENAI_ACTIVE`           | ❌       | Enable/disable OpenAI integration (true/false)                         |
 | `OPENAI_MODEL`            | ❌       | OpenAI model to use (default: gpt-4o)                                  |
@@ -101,8 +99,28 @@ BongBot is a Discord Bot made for fun with various different commands. BongBot l
 | `INSTA_STREAM`            | ❌       | Include Instagram Live link in notification (true/false)               |
 | `INSTA_USERNAME`          | ❌       | Instagram username for the live link                                   |
 
+## Image search migration
+
+BongBot now uses `@pookiesoft/bongbot-booru`. The Google Custom Search implementation and its `GOOGLE_API_KEY` / `GOOGLE_CX` settings have been removed.
+
+Both former Google commands remain available: `/fox` finds Shirakami Fubuki and `/clown` finds Omaru Polka. No removed command is missing from Booru. `/fubuki` and `/polka` were source filenames, not registered command names.
+
+`/booru search` accepts `tag_1` through `tag_5` with tag autocomplete; the first tag is required. Replies attach an image and link to its board post. Grant the bot Attach Files and Embed Links permissions.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `IMAGE_PROVIDER` | `safebooru` | Select `safebooru` or `gelbooru`. If unset, `GELBOORU_SFW=false` selects Gelbooru. |
+| `GELBOORU_SFW` | `true` | Restrict Gelbooru to general-rated posts; `false` permits all ratings. |
+| `GELBOORU_API_KEY` | unset | Required when using Gelbooru. |
+| `GELBOORU_USER_ID` | unset | Positive integer user ID required when using Gelbooru. |
+| `ALLOW_AI_IMAGES` | `false` | Exclude the `ai-generated` tag unless enabled. |
+
+Safebooru requires no credentials. Rating filtering depends on the board's tags. Invalid provider settings fail during command initialization. Google AI chat configuration remains separate.
+
 ## Available Commands
 
+- `/fox`, `/clown` - Random character images from Booru
+- `/booru search` - Search by up to five tags
 - `/help` - Display available commands
 - `/ping` - Check bot responsiveness
 - `/chat <message>` - Chat with AI (Google AI or OpenAI)\*
@@ -111,7 +129,7 @@ BongBot is a Discord Bot made for fun with various different commands. BongBot l
 - `/create_quote <quote> <author>` - Add a new quote\*\*
 - `/get_quotes <amount>` - Get the most recent quotes
 - `/get_random_quotes <amount>` - Get random quotes
-- Media commands: `/arab`, `/callirap`, `/cherry`, `/classic`, `/club_kid`, `/creeper`, `/cringe`, `/dance`, `/die`, `/fubuki`, `/funk`, `/hentai`, `/hoe`, `/mirasi`, `/no`, `/polka`, `/roll`, `/seachicken`, `/vape`, `/yes`, `/you`
+- Media commands: `/arab`, `/callirap`, `/cherry`, `/classic`, `/club_kid`, `/creeper`, `/cringe`, `/dance`, `/die`, `/funk`, `/hentai`, `/hoe`, `/mirasi`, `/no`, `/roll`, `/seachicken`, `/vape`, `/yes`, `/you`
 
 \* This command can be invoked by pinging the bot with a message instead of using the slash command.
 
